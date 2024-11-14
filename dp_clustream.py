@@ -1,0 +1,157 @@
+import river.base as rbase
+import river.cluster as rcluster
+import river.utils as rutils
+from river.cluster.clustream import CluStreamMicroCluster
+import math
+from collections import defaultdict
+
+class DensityPeak_CluStream(rbase.Clusterer):
+
+    def __init__(
+        self,
+        n_macro_clusters: int = 5,
+        max_micro_clusters: int = 100,
+        micro_cluster_r_factor: int = 2,
+        time_window: int = 1000,
+        time_gap: int = 100,
+        seed = None,
+        **kwargs,
+    ):
+        super().__init__()
+        self.n_macro_clusters = n_macro_clusters
+        self.max_micro_clusters = max_micro_clusters
+        self.micro_cluster_r_factor = micro_cluster_r_factor
+        self.time_window = time_window
+        self.time_gap = time_gap
+        self.seed = seed
+
+        self.kwargs = kwargs
+
+        self.centers: dict[int, defaultdict] = {}
+        self.micro_clusters: dict[int, CluStreamMicroCluster] = {}
+
+        self._timestamp = -1
+        self._initialized = False
+
+        self._mc_centers: dict[int, defaultdict] = {}
+        self._kmeans_mc = None
+
+    def _maintain_micro_clusters(self, x, w):
+        # Calculate the threshold to delete old micro-clusters
+        threshold = self._timestamp - self.time_window
+
+        # Delete old micro-cluster if its relevance stamp is smaller than the threshold
+        del_id = None
+        for i, mc in self.micro_clusters.items():
+            if mc.relevance_stamp(self.max_micro_clusters) < threshold:
+                del_id = i
+                break
+
+        if del_id is not None:
+            self.micro_clusters[del_id] = CluStreamMicroCluster(
+                x=x,
+                w=w,
+                timestamp=self._timestamp,
+            )
+            return
+
+        # Merge the two closest micro-clusters
+        closest_a = 0
+        closest_b = 0
+        min_distance = math.inf
+        for i, mc_a in self.micro_clusters.items():
+            for j, mc_b in self.micro_clusters.items():
+                if i <= j:
+                    continue
+                dist = self._distance(mc_a.center, mc_b.center)
+                if dist < min_distance:
+                    min_distance = dist
+                    closest_a = i
+                    closest_b = j
+
+        self.micro_clusters[closest_a] += self.micro_clusters[closest_b]
+        self.micro_clusters[closest_b] = CluStreamMicroCluster(
+            x=x,
+            w=w,
+            timestamp=self._timestamp,
+        )
+
+    def _get_closest_mc(self, x):
+        closest_dist = math.inf
+        closest_idx = -1
+
+        for mc_idx, mc in self.micro_clusters.items():
+            distance = self._distance(mc.center, x)
+            if distance < closest_dist:
+                closest_dist = distance
+                closest_idx = mc_idx
+        return closest_idx, closest_dist
+
+    @staticmethod
+    def _distance(point_a, point_b):
+        return rutils.math.minkowski_distance(point_a, point_b, 2)
+
+    def learn_one(self, x, w=1.0):
+        self._timestamp += 1
+
+        if not self._initialized:
+            self.micro_clusters[len(self.micro_clusters)] = CluStreamMicroCluster(
+                x=x,
+                w=w,
+                # When initialized, all micro clusters generated previously will have the timestamp reset to the current
+                # time stamp at the time of initialization (i.e. self.max_micro_cluster - 1). Thus, the timestamp is set
+                # as follows.
+                timestamp=self.max_micro_clusters - 1,
+            )
+
+            if len(self.micro_clusters) == self.max_micro_clusters:
+                self._initialized = True
+
+            return
+
+        # Determine the closest micro-cluster with respect to the new point instance
+        # TODO: get all mcs where dp is in radius
+        closest_id, closest_dist = self._get_closest_mc(x)
+        closest_mc = self.micro_clusters[closest_id]
+
+        # Check whether the new instance fits into the closest micro-cluster
+        if closest_mc.weight == 1:
+            radius = math.inf
+            center = closest_mc.center
+            for mc_id, mc in self.micro_clusters.items():
+                if mc_id == closest_id:
+                    continue
+                distance = self._distance(mc.center, center)
+                radius = min(distance, radius)
+        else:
+            radius = closest_mc.radius(self.micro_cluster_r_factor)
+
+        if closest_dist < radius:
+            closest_mc.insert(x, w, self._timestamp)
+            return
+
+        # If the new point does not fit in the micro-cluster, micro-clusters
+        # whose relevance stamps are less than the threshold are deleted.
+        # Otherwise, closest micro-clusters are merged with each other.
+        self._maintain_micro_clusters(x=x, w=w)
+
+        # Apply incremental K-Means on micro-clusters after each time_gap
+        if self._timestamp % self.time_gap == self.time_gap - 1:
+            # Micro-cluster centers will only be saved when the calculation of macro-cluster centers
+            # is required, in order not to take up memory and time unnecessarily
+            self._mc_centers = {i: mc.center for i, mc in self.micro_clusters.items()}
+
+            self._kmeans_mc = rcluster.KMeans(
+                n_clusters=self.n_macro_clusters, seed=self.seed, **self.kwargs
+            )
+            for center in self._mc_centers.values():
+                self._kmeans_mc.learn_one(center)
+
+            self.centers = self._kmeans_mc.centers
+
+    def predict_one(self, x):
+        index, _ = self._get_closest_mc(x)
+        try:
+            return self._kmeans_mc.predict_one(self._mc_centers[index])
+        except (KeyError, AttributeError):
+            return 0
