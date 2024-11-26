@@ -1,11 +1,42 @@
-import river.base as rbase
-import river.cluster as rcluster
-import river.utils as rutils
-from river.cluster.clustream import CluStreamMicroCluster
+from __future__ import annotations
+
 import math
 from collections import defaultdict
 
-class DensityPeak_CluStream(rbase.Clusterer):
+from river import base, cluster, stats, utils
+
+# altered from River repository (https://github.com/online-ml/river), BSD 3-Clause License
+# Copyright (c) 2020, the river developers
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# Applies to orginal River code
+
+class DPCluStream(base.Clusterer):
 
     def __init__(
         self,
@@ -14,7 +45,7 @@ class DensityPeak_CluStream(rbase.Clusterer):
         micro_cluster_r_factor: int = 2,
         time_window: int = 1000,
         time_gap: int = 100,
-        seed = None,
+        seed: int | None = None,
         **kwargs,
     ):
         super().__init__()
@@ -28,9 +59,10 @@ class DensityPeak_CluStream(rbase.Clusterer):
         self.kwargs = kwargs
 
         self.centers: dict[int, defaultdict] = {}
-        self.micro_clusters: dict[int, CluStreamMicroCluster] = {}
+        self.micro_clusters: dict[int, DPCluStreamMicroCluster] = {}
 
         self._timestamp = -1
+        self._kmeans_timestamp = -1
         self._initialized = False
 
         self._mc_centers: dict[int, defaultdict] = {}
@@ -48,7 +80,7 @@ class DensityPeak_CluStream(rbase.Clusterer):
                 break
 
         if del_id is not None:
-            self.micro_clusters[del_id] = CluStreamMicroCluster(
+            self.micro_clusters[del_id] = DPCluStreamMicroCluster(
                 x=x,
                 w=w,
                 timestamp=self._timestamp,
@@ -70,7 +102,7 @@ class DensityPeak_CluStream(rbase.Clusterer):
                     closest_b = j
 
         self.micro_clusters[closest_a] += self.micro_clusters[closest_b]
-        self.micro_clusters[closest_b] = CluStreamMicroCluster(
+        self.micro_clusters[closest_b] = DPCluStreamMicroCluster(
             x=x,
             w=w,
             timestamp=self._timestamp,
@@ -82,20 +114,21 @@ class DensityPeak_CluStream(rbase.Clusterer):
 
         for mc_idx, mc in self.micro_clusters.items():
             distance = self._distance(mc.center, x)
-            if distance < closest_dist:
+            radius = mc.radius(1)
+            if distance <= radius:
                 closest_dist = distance
                 closest_idx = mc_idx
         return closest_idx, closest_dist
 
     @staticmethod
     def _distance(point_a, point_b):
-        return rutils.math.minkowski_distance(point_a, point_b, 2)
+        return utils.math.minkowski_distance(point_a, point_b, 2)
 
     def learn_one(self, x, w=1.0):
         self._timestamp += 1
 
         if not self._initialized:
-            self.micro_clusters[len(self.micro_clusters)] = CluStreamMicroCluster(
+            self.micro_clusters[len(self.micro_clusters)] = DPCluStreamMicroCluster(
                 x=x,
                 w=w,
                 # When initialized, all micro clusters generated previously will have the timestamp reset to the current
@@ -128,30 +161,127 @@ class DensityPeak_CluStream(rbase.Clusterer):
 
         if closest_dist < radius:
             closest_mc.insert(x, w, self._timestamp)
-            return
+        else:
 
-        # If the new point does not fit in the micro-cluster, micro-clusters
-        # whose relevance stamps are less than the threshold are deleted.
-        # Otherwise, closest micro-clusters are merged with each other.
-        self._maintain_micro_clusters(x=x, w=w)
+            # If the new point does not fit in the micro-cluster, micro-clusters
+            # whose relevance stamps are less than the threshold are deleted.
+            # Otherwise, closest micro-clusters are merged with each other.
+            self._maintain_micro_clusters(x=x, w=w)
 
         # Apply incremental K-Means on micro-clusters after each time_gap
         if self._timestamp % self.time_gap == self.time_gap - 1:
-            # Micro-cluster centers will only be saved when the calculation of macro-cluster centers
-            # is required, in order not to take up memory and time unnecessarily
-            self._mc_centers = {i: mc.center for i, mc in self.micro_clusters.items()}
+            self.offline_processing()
 
-            self._kmeans_mc = rcluster.KMeans(
-                n_clusters=self.n_macro_clusters, seed=self.seed, **self.kwargs
-            )
-            for center in self._mc_centers.values():
-                self._kmeans_mc.learn_one(center)
+    def offline_processing(self):
+        # Micro-cluster centers will only be saved when the calculation of macro-cluster centers
+        # is required, in order not to take up memory and time unnecessarily
+        self._mc_centers = {i: mc.center for i, mc in self.micro_clusters.items()}
 
-            self.centers = self._kmeans_mc.centers
+        self._kmeans_mc = cluster.KMeans(
+            n_clusters=self.n_macro_clusters, seed=self.seed, **self.kwargs
+        )
+        for center in self._mc_centers.values():
+            self._kmeans_mc.learn_one(center)
 
-    def predict_one(self, x):
+        self.centers = self._kmeans_mc.centers
+        self._kmeans_timestamp = self._timestamp
+
+    def predict_one(self, x, recluster=False):
+        if self._kmeans_timestamp != self._timestamp and recluster:
+            self.offline_processing()
         index, _ = self._get_closest_mc(x)
         try:
-            return self._kmeans_mc.predict_one(self._mc_centers[index])
+            if recluster:
+                return self._kmeans_mc.predict_one(self._mc_centers[index])
+            else:
+                return self._kmeans_mc.predict_one(self.micro_clusters[index].center)
         except (KeyError, AttributeError):
             return 0
+
+
+class DPCluStreamMicroCluster(base.Base):
+    """Micro-cluster class."""
+
+    def __init__(
+        self,
+        x: dict = defaultdict(float),
+        w: float | None = None,
+        timestamp: int | None = None,
+    ):
+        # Initialize with sample x
+        self.x = x
+        self.w = w
+        self.timestamp = timestamp
+        self.var_x = {}
+        for k in x:
+            v = stats.Var()
+            v.update(x[k], w)
+            self.var_x[k] = v
+        self.var_time = stats.Var()
+        self.var_time.update(timestamp, w)
+
+    @property
+    def center(self):
+        return {k: var.mean.get() for k, var in self.var_x.items()}
+
+    def radius(self, r_factor):
+        if self.weight == 1:
+            return 0
+        return self._deviation() * r_factor
+
+    def _deviation(self):
+        dev_sum = 0
+        for var in self.var_x.values():
+            dev_sum += math.sqrt(var.get())
+        return dev_sum / len(self.var_x) if len(self.var_x) > 0 else math.inf
+
+    @property
+    def weight(self):
+        return self.var_time.n
+
+    def insert(self, x, w, timestamp):
+        self.var_time.update(timestamp, w)
+        for x_idx, x_val in x.items():
+            self.var_x[x_idx].update(x_val, w)
+
+    def relevance_stamp(self, max_mc):
+        mu_time = self.var_time.mean.get()
+        if self.weight < 2 * max_mc:
+            return mu_time
+
+        sigma_time = math.sqrt(self.var_time.get())
+        return mu_time + sigma_time * self._quantile(max_mc / (2 * self.weight))
+
+    def _quantile(self, z):
+        return math.sqrt(2) * self.inverse_error(2 * z - 1)
+
+    @staticmethod
+    def inverse_error(x):
+        z = math.sqrt(math.pi) * x
+        res = x / 2
+        z2 = z * z
+
+        zprod = z2 * z
+        res += (1.0 / 24) * zprod
+
+        zprod *= z2  # z5
+        res += (7.0 / 960) * zprod
+
+        zprod *= z2  # z ^ 7
+        res += (127 * zprod) / 80640
+
+        zprod *= z2  # z ^ 9
+        res += (4369 * zprod) / 11612160
+
+        zprod *= z2  # z ^ 11
+        res += (34807 * zprod) / 364953600
+
+        zprod *= z2  # z ^ 13
+        res += (20036983 * zprod) / 797058662400
+
+        return res
+
+    def __iadd__(self, other: DPCluStreamMicroCluster):
+        self.var_time += other.var_time
+        self.var_x = {k: self.var_x[k] + other.var_x.get(k, stats.Var()) for k in self.var_x}
+        return self
