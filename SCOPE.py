@@ -36,7 +36,7 @@ from river import base, cluster, stats, utils
 
 # Applies to orginal River code
 
-class DPCluStream(base.Clusterer):
+class SCOPE(base.Clusterer):
 
     def __init__(
         self,
@@ -59,7 +59,7 @@ class DPCluStream(base.Clusterer):
         self.kwargs = kwargs
 
         self.centers: dict[int, defaultdict] = {}
-        self.micro_clusters: dict[int, DPCluStreamMicroCluster] = {}
+        self.micro_clusters: dict[int, SCOPEMicroCluster] = {}
 
         self._timestamp = -1
         self._kmeans_timestamp = -1
@@ -80,7 +80,7 @@ class DPCluStream(base.Clusterer):
                 break
 
         if del_id is not None:
-            self.micro_clusters[del_id] = DPCluStreamMicroCluster(
+            self.micro_clusters[del_id] = SCOPEMicroCluster(
                 x=x,
                 w=w,
                 timestamp=self._timestamp,
@@ -102,7 +102,7 @@ class DPCluStream(base.Clusterer):
                     closest_b = j
 
         self.micro_clusters[closest_a] += self.micro_clusters[closest_b]
-        self.micro_clusters[closest_b] = DPCluStreamMicroCluster(
+        self.micro_clusters[closest_b] = SCOPEMicroCluster(
             x=x,
             w=w,
             timestamp=self._timestamp,
@@ -128,7 +128,7 @@ class DPCluStream(base.Clusterer):
         self._timestamp += 1
 
         if not self._initialized:
-            self.micro_clusters[len(self.micro_clusters)] = DPCluStreamMicroCluster(
+            self.micro_clusters[len(self.micro_clusters)] = SCOPEMicroCluster(
                 x=x,
                 w=w,
                 # When initialized, all micro clusters generated previously will have the timestamp reset to the current
@@ -199,7 +199,7 @@ class DPCluStream(base.Clusterer):
             return 0
 
 
-class DPCluStreamMicroCluster(base.Base):
+class SCOPEMicroCluster(base.Base):
     """Micro-cluster class."""
 
     def __init__(
@@ -281,7 +281,7 @@ class DPCluStreamMicroCluster(base.Base):
 
         return res
 
-    def __iadd__(self, other: DPCluStreamMicroCluster):
+    def __iadd__(self, other: SCOPEMicroCluster):
         self.var_time += other.var_time
         self.var_x = {k: self.var_x[k] + other.var_x.get(k, stats.Var()) for k in self.var_x}
         return self

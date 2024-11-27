@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 from clustpy.partition import XMeans
-from sklearn.cluster import KMeans, SpectralClustering, DBSCAN
+from sklearn.cluster import KMeans, SpectralClustering, DBSCAN, OPTICS, MeanShift, HDBSCAN, AgglomerativeClustering
 
 from competitors.clustream import CluStream
 import river.cluster as rcluster
@@ -48,7 +48,7 @@ def reconstruct_data(micro_clusters, num, radius_mult):
 
 	for id, mc in micro_clusters.items():
 		mc_num = math.ceil(mc.weight / ratio)
-		#print(mc.weight, ratio, mc_num)
+		# print(mc.weight, ratio, mc_num)
 		new_dps, label = random_ball_num(mc.center, mc.radius(radius_mult), len(mc.center.keys()), mc_num, id)
 		for j in range(mc_num):
 			new_ds.append(new_dps[j])
@@ -66,24 +66,59 @@ def perform_clustering(data, algorithm, args):
 		clustering = xmeans.fit_predict(data, None)
 		return clustering, xmeans.cluster_centers_
 	elif algorithm == "DBHD":
-		args = {"min_cluster_size":10, "rho":1.2, "beta": 0.1} | args
+		args = {"min_cluster_size": 10, "rho": 1.2, "beta": 0.1} | args
 		print(args)
-		dbhd = DBHD(min_cluster_size=args["min_cluster_size"], rho = args["rho"], beta = args["beta"])
+		dbhd = DBHD(min_cluster_size=args["min_cluster_size"], rho=args["rho"], beta=args["beta"])
 		clustering = dbhd.fit_predict(data)
 		return clustering, None
 	elif algorithm == "Spectral":
-		args = {"n_init": 10, "gamma": 1.0, "affinity": "rbf", "n_neighbors": 10, "eigen_tol": "auto", "assign_labels": "kmeans", "degree": 3, "coef0": 1} | args
+		args = {"n_init": 10, "gamma": 1.0, "affinity": "rbf", "n_neighbors": 10, "eigen_tol": "auto",
+		        "assign_labels": "kmeans", "degree": 3, "coef0": 1} | args
 
-		spectral = SpectralClustering(n_clusters=args["n_clusters"], random_state = args["seed"], n_init = args["n_init"],
-		                              gamma = args["gamma"], affinity = args["affinity"], n_neighbors = args["n_neighbors"],
-									  eigen_tol = args["eigen_tol"], assign_labels = args["assign_labels"],
-									  degree= args["degree"], coef0 = args["coef0"])
+		spectral = SpectralClustering(n_clusters=args["n_clusters"], random_state=args["seed"], n_init=args["n_init"],
+		                              gamma=args["gamma"], affinity=args["affinity"], n_neighbors=args["n_neighbors"],
+		                              eigen_tol=args["eigen_tol"], assign_labels=args["assign_labels"],
+		                              degree=args["degree"], coef0=args["coef0"])
 		clustering = spectral.fit_predict(data, None)
 		return clustering, None
 	elif algorithm == "DBSCAN":
-		args = {"eps": 0.5, "min_samples": 5, "algorithm": 'auto', "leaf_size": 30, "p": None} | args
-		dbscan = DBSCAN(eps=args["eps"], min_samples=args["min_samples"],  algorithm=args["algorithm"], leaf_size=args["leaf_size"], p=args["p"])
+		args = {"eps": 0.5, "min_samples": 5, "algorithm": 'auto', "leaf_size": 30, "p": None, "metric_params": None,
+		        "metric": "euclidean"} | args
+		dbscan = DBSCAN(eps=args["eps"], min_samples=args["min_samples"], metric=args["metric"],
+		                metric_params=args["metric_params"], algorithm=args["algorithm"], leaf_size=args["leaf_size"],
+		                p=args["p"])
 		clustering = dbscan.fit_predict(data, None)
+		return clustering, None
+	elif algorithm == "HDBSCAN":
+		args = {"min_cluster_size":5, "min_samples":None, "cluster_selection_epsilon":0.0, "max_cluster_size":None, "metric":'euclidean', "metric_params":None, "alpha":1.0, "algorithm":'auto', "leaf_size":40, "cluster_selection_method":'eom', "allow_single_cluster":False} | args
+		hdbscan = HDBSCAN(min_cluster_size=args["min_cluster_size"], min_samples=args["min_samples"], cluster_selection_epsilon=args["cluster_selection_epsilon"], max_cluster_size=args["max_cluster_size"], metric=args["metric"], metric_params=args["metric_params"], alpha=args["alpha"], algorithm=args["algorithm"], leaf_size=args["leaf_size"], cluster_selection_method=args["cluster_selection_method"], allow_single_cluster=args["allow_single_cluster"], store_centers='centroid')
+		clustering = hdbscan.fit_predict(data, None)
+		return clustering, hdbscan.centroids_
+	elif algorithm == "OPTICS":
+		args = {"min_samples": 5, "max_eps": np.inf, "metric": "minkowski", "p": 2, "metric_params": None,
+		        "cluster_method": "xi", "eps": None, "xi": 0.05, "predecessor_correction": True, "min_cluster_size": None,
+		        "algorithm": "auto", "leaf_size": 3} | args
+		optics = OPTICS(min_samples=args["min_samples"], max_eps=args["max_eps"], metric=args["metric"], p=args["p"],
+		                metric_params=args["metric_params"], cluster_method=args["cluster_method"], eps=args["eps"],
+		                xi=args["xi"], predecessor_correction=args["predecessor_correction"],
+		                min_cluster_size=args["min_cluster_size"], algorithm=args["algorithm"], leaf_size=args["leaf_size"])
+		clustering = optics.fit_predict(data, None)
+		return clustering, None
+	elif algorithm == "MeanShift":
+		args = {"bandwidth": None, "seeds": None, "bin_seeding": False, "min_bin_freq": 1, "cluster_all": True,
+		        "n_jobs": None, "max_iter": 300} | args
+
+		meanshift = MeanShift(bandwidth=args["bandwidth"], seeds=args["seeds"], bin_seeding=args["bin_seeding"],
+		                      min_bin_freq=args["min_bin_freq"], cluster_all=args["cluster_all"], n_jobs=args["n_jobs"],
+		                      max_iter=args["max_iter"])
+		clustering = meanshift.fit_predict(data, None)
+		return clustering, None
+	elif algorithm == "Agglomerative":
+		args = {"memory": None, "connectivity": None, "compute_full_tree": 'auto', "linkage": 'ward', "distance_threshold": None, "compute_distances": False } | args
+
+		agglomerative = AgglomerativeClustering(n_clusters=args["n_clusters"], memory = args["memory"], connectivity = args["connectivity"], compute_full_tree = args["compute_full_tree"], linkage = args["linkage"], distance_threshold = args["distance_threshold"], compute_distances = args["compute_distances"])
+
+		clustering = agglomerative.fit_predict(data, None)
 		return clustering, None
 	else:
 		raise NotImplementedError
@@ -112,7 +147,7 @@ class GenCluStream(CluStream):
 			self.offline_args = {}
 		else:
 			self.offline_args = offline_args
-		if self.offline_algo == "kMeans" or self.offline_algo == "Spectral":
+		if self.offline_algo == "kMeans" or self.offline_algo == "Spectral" or self.offline_algo == "Agglomerative":
 			self.offline_args["n_clusters"] = n_macro_clusters
 		self.offline_args["seed"] = seed
 		self.offline_datascale = offline_datascale
@@ -129,7 +164,8 @@ class GenCluStream(CluStream):
 		plt.scatter(X[:, 0], X[:, 1], c=mc_assigns)
 		for id, mc in self.micro_clusters.items():
 			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor), alpha=0.4, color="lightgrey")
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+			                      alpha=0.4, color="lightgrey")
 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black")
 			plt.gca().add_patch(mc_patch)
 		plt.ylim(-0.1, 1.1)
@@ -138,13 +174,15 @@ class GenCluStream(CluStream):
 
 	def offline_processing(self):
 
-		gen_data, gen_labels = reconstruct_data(self.micro_clusters, self.offline_datascale, self.micro_cluster_r_factor)
+		gen_data, gen_labels = reconstruct_data(self.micro_clusters, self.offline_datascale,
+		                                        self.micro_cluster_r_factor)
 		gen_X = dps_to_np(gen_data)
 		plt.figure(figsize=(10, 10))
 		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
 		for id, mc in self.micro_clusters.items():
 			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor), alpha=0.4, color="lightgrey")
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+			                      alpha=0.4, color="lightgrey")
 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black")
 			plt.gca().add_patch(mc_patch)
 		plt.ylim(-0.1, 1.1)
@@ -157,7 +195,8 @@ class GenCluStream(CluStream):
 		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
 		for id, mc in self.micro_clusters.items():
 			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor), alpha=0.4, color="lightgrey")
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+			                      alpha=0.4, color="lightgrey")
 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black")
 			plt.gca().add_patch(mc_patch)
 		plt.ylim(-0.1, 1.1)
@@ -178,7 +217,8 @@ class GenCluStream(CluStream):
 		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
 		for id, mc in self.micro_clusters.items():
 			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor), alpha=0.4, color="lightgrey")
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+			                      alpha=0.4, color="lightgrey")
 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black")
 			plt.gca().add_patch(mc_patch)
 		plt.ylim(-0.1, 1.1)
@@ -186,7 +226,6 @@ class GenCluStream(CluStream):
 		plt.show()
 
 		self._offline_timestamp = self._timestamp
-
 
 	def predict_one(self, x, recluster=False, sklearn=None):
 		if self._offline_timestamp != self._timestamp:
