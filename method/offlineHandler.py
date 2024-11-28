@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as ptc
 
 from dbhd_clustering.DBHDALGO import DBHD
+from method.SCOPE import SCOPE
 from utils import dps_to_np, dict_to_np
 
 
@@ -166,7 +167,7 @@ class GenCluStream(CluStream):
 			mccenter = dict_to_np(mc.center)
 			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
 			                      alpha=0.4, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black")
+			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
 			plt.gca().add_patch(mc_patch)
 		plt.ylim(-0.1, 1.1)
 		plt.xlim(-0.1, 1.1)
@@ -183,7 +184,7 @@ class GenCluStream(CluStream):
 			mccenter = dict_to_np(mc.center)
 			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
 			                      alpha=0.4, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black")
+			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
 			plt.gca().add_patch(mc_patch)
 		plt.ylim(-0.1, 1.1)
 		plt.xlim(-0.1, 1.1)
@@ -197,7 +198,7 @@ class GenCluStream(CluStream):
 			mccenter = dict_to_np(mc.center)
 			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
 			                      alpha=0.4, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black")
+			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
 			plt.gca().add_patch(mc_patch)
 		plt.ylim(-0.1, 1.1)
 		plt.xlim(-0.1, 1.1)
@@ -219,7 +220,7 @@ class GenCluStream(CluStream):
 			mccenter = dict_to_np(mc.center)
 			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
 			                      alpha=0.4, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black")
+			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
 			plt.gca().add_patch(mc_patch)
 		plt.ylim(-0.1, 1.1)
 		plt.xlim(-0.1, 1.1)
@@ -231,5 +232,118 @@ class GenCluStream(CluStream):
 		if self._offline_timestamp != self._timestamp:
 			self.offline_processing()
 		index, _ = self._get_closest_mc(x)
+
+		return self.cluster_assignments[index]
+
+class SCOPEOffline(SCOPE):
+
+	def __init__(
+			self,
+			n_macro_clusters: int = 5,
+			max_micro_clusters: int = 100,
+			singleton_micro_clusters: int = 50,
+			micro_cluster_r_factor: int = 2,
+			time_window: int = 1000,
+			time_gap: int = 100,
+			seed: int | None = None,
+			offline_algo: str = "kMeans",
+			offline_args=None,
+			offline_datascale: int = 1000,
+			**kwargs,
+	):
+		super().__init__(n_macro_clusters=n_macro_clusters, max_micro_clusters=max_micro_clusters, singleton_micro_clusters=singleton_micro_clusters, micro_cluster_r_factor=micro_cluster_r_factor, time_window=time_window, time_gap=time_gap, seed=seed,
+		                 **kwargs)
+		self.cluster_assignments = {}
+		self.offline_algo = offline_algo
+		if offline_args is None:
+			self.offline_args = {}
+		else:
+			self.offline_args = offline_args
+		if self.offline_algo == "kMeans" or self.offline_algo == "Spectral" or self.offline_algo == "Agglomerative":
+			self.offline_args["n_clusters"] = n_macro_clusters
+		self.offline_args["seed"] = seed
+		self.offline_datascale = offline_datascale
+
+	def display_store(self):
+		X = dps_to_np(self.datastore)
+
+		#print(X)
+
+		mc_assigns = []
+		for dp in self.datastore:
+			closest_mc_id, _ = self._get_best_mc(dp)
+			mc_assigns.append(closest_mc_id)
+
+		plt.figure(figsize=(10, 10))
+		plt.scatter(X[:, 0], X[:, 1], c=mc_assigns)
+		for id, mc in self.micro_clusters.items():
+			mccenter = dict_to_np(mc.center)
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(1),
+			                      alpha=0.4, color="lightgrey")
+			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+			plt.gca().add_patch(mc_patch)
+		plt.ylim(-0.1, 1.1)
+		plt.xlim(-0.1, 1.1)
+		plt.show()
+
+	def offline_processing(self):
+
+		gen_data, gen_labels = reconstruct_data(self.micro_clusters, self.offline_datascale,
+		                                        1)
+		gen_X = dps_to_np(gen_data)
+		plt.figure(figsize=(10, 10))
+		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
+		for id, mc in self.micro_clusters.items():
+			mccenter = dict_to_np(mc.center)
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(1),
+			                      alpha=0.4, color="lightgrey")
+			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+			plt.gca().add_patch(mc_patch)
+		plt.ylim(-0.1, 1.1)
+		plt.xlim(-0.1, 1.1)
+		plt.show()
+
+		clustering, self.centers = perform_clustering(gen_X, self.offline_algo, self.offline_args)
+		num_clu = len(np.unique(clustering))
+		plt.figure(figsize=(10, 10))
+		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
+		for id, mc in self.micro_clusters.items():
+			mccenter = dict_to_np(mc.center)
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(1),
+			                      alpha=0.4, color="lightgrey")
+			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+			plt.gca().add_patch(mc_patch)
+		plt.ylim(-0.1, 1.1)
+		plt.xlim(-0.1, 1.1)
+		plt.show()
+
+		for id, mc in self.micro_clusters.items():
+			is_mc = [i for i, x in enumerate(gen_labels) if x == id]
+			labels_mc = [0] * num_clu
+			for i_mc in is_mc:
+				labels_mc[clustering[i_mc]] += 1
+			self.cluster_assignments[id] = labels_mc.index(max(labels_mc))
+
+		cluster_labels_gen = []
+		for l in gen_labels:
+			cluster_labels_gen.append(self.cluster_assignments[l])
+		plt.figure(figsize=(10, 10))
+		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
+		for id, mc in self.micro_clusters.items():
+			mccenter = dict_to_np(mc.center)
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(1),
+			                      alpha=0.4, color="lightgrey")
+			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+			plt.gca().add_patch(mc_patch)
+		plt.ylim(-0.1, 1.1)
+		plt.xlim(-0.1, 1.1)
+		plt.show()
+
+		self._offline_timestamp = self._timestamp
+
+	def predict_one(self, x, recluster=False, sklearn=None):
+		if self._offline_timestamp != self._timestamp:
+			self.offline_processing()
+		index, _ = self._get_best_mc(x)
 
 		return self.cluster_assignments[index]
