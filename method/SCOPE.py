@@ -4,6 +4,7 @@ import copy
 import math
 from collections import defaultdict
 
+import numpy as np
 from river import base, cluster, stats, utils
 
 # altered from River repository (https://github.com/online-ml/river), BSD 3-Clause License
@@ -43,6 +44,7 @@ class SCOPE(base.Clusterer):
 			self,
 			n_macro_clusters: int = 5,
 			max_micro_clusters: int = 100,
+			max_singletons: int = 25,
 			micro_cluster_r_factor: int = 2,
 			time_window: int = 1000,
 			time_gap: int = 100,
@@ -71,7 +73,9 @@ class SCOPE(base.Clusterer):
 
 		self.datastore = []
 
-		self.max_key = -1
+		self.max_key = -1 #increment before insertion
+		self.max_singletons = max_singletons
+		self.singleton_queue = SingletonQueue(max_singletons)
 
 	def _maintain_micro_clusters(self, x, w):
 		# Calculate the threshold to delete old micro-clusters
@@ -139,6 +143,7 @@ class SCOPE(base.Clusterer):
 		self.datastore.append(x)
 
 
+
 		if not self._initialized:
 			self.max_key += 1
 			self.micro_clusters[self.max_key] = SCOPEMicroCluster(
@@ -152,7 +157,6 @@ class SCOPE(base.Clusterer):
 
 			if len(self.micro_clusters) == self.max_micro_clusters:
 				self._initialized = True
-
 			return
 		else:
 
@@ -185,17 +189,7 @@ class SCOPE(base.Clusterer):
 			self.offline_processing()
 
 	def offline_processing(self):
-		# Micro-cluster centers will only be saved when the calculation of macro-cluster centers
-		# is required, in order not to take up memory and time unnecessarily
-		self._mc_centers = {i: mc.center for i, mc in self.micro_clusters.items()}
-		self._kmeans_mc = cluster.KMeans(
-			n_clusters=self.n_macro_clusters, seed=self.seed, **self.kwargs
-		)
-		for center in self._mc_centers.values():
-			self._kmeans_mc.learn_one(center)
-
-		self.centers = self._kmeans_mc.centers
-		self._offline_timestamp = self._timestamp
+		raise NotImplementedError
 
 	def predict_one(self, x, recluster=False, sklearn=False):
 		raise NotImplementedError
@@ -204,7 +198,63 @@ class SCOPE(base.Clusterer):
 		self.micro_clusters = mcs
 		self.offline_processing()
 
-	def calc_gain(self, child, parent_weight, parent_radius):
+	def dissolve_one(self):
+		min_i, min_j = self.get_lowest_gain_pair()
+		mc_a = self.micro_clusters[min_i]
+		mc_b = self.micro_clusters[min_j]
+		if self.is_child(mc_a, mc_b):
+			self.micro_clusters[min_j] += self.micro_clusters[min_i]
+			self.micro_clusters.__delitem__(min_i)
+		elif self.is_child(mc_b, mc_a):
+			self.micro_clusters[min_i] += self.micro_clusters[min_j]
+			self.micro_clusters.__delitem__(min_j)
+		else:
+			parent = self.get_parent(mc_a, mc_b)
+			self.max_key += 1
+			self.micro_clusters[self.max_key] = parent
+			self.micro_clusters.__delitem__(min_i)
+			self.micro_clusters.__delitem__(min_j)
+
+	def get_lowest_gain_pair(self):
+		min_i = 0
+		min_j = 0
+		min_gain = np.inf
+		for i, mc_a in self.micro_clusters.items():
+			for j, mc_b in self.micro_clusters.items():
+				if i < j:
+					gain = self.get_gain(mc_a, mc_b)
+					if gain < min_gain:
+						min_gain = gain
+						min_i = i
+						min_j = j
+		return min_i, min_j
+
+
+	def get_gain(self, mc_a:SCOPEMicroCluster, mc_b:SCOPEMicroCluster):
+		if self.is_child(mc_a, mc_b):
+			return self.calc_gain(mc_a, mc_b.weight, mc_b.radius) * 2
+		elif self.is_child(mc_b, mc_a):
+			return self.calc_gain(mc_b, mc_a.weight, mc_a.radius) * 2
+		else:
+			parent = self.get_parent(mc_a, mc_b)
+			parent2 = self.get_parent(mc_a, mc_b)
+			print(mc_a, mc_b, parent, parent2)
+			return self.calc_gain(mc_a, parent.weight, parent.radius) + self.calc_gain(mc_b, parent.weight, parent.radius)
+
+	def is_child(self, mc_a:SCOPEMicroCluster, mc_b:SCOPEMicroCluster):
+		dist = self._distance(mc_a.center, mc_b.center)
+		return dist + mc_a.radius <= mc_b.radius
+
+	def get_parent(self, mc_a:SCOPEMicroCluster, mc_b:SCOPEMicroCluster):
+		parent = mc_a.clone()
+		parent += mc_b
+		radius_a = self._distance(mc_a.center, parent.center) + mc_a.radius
+		radius_b = self._distance(mc_b.center, parent.center) + mc_b.radius
+		radius = max(radius_a, radius_b)
+		parent.radius = radius
+		return parent
+
+	def calc_gain(self, child:SCOPEMicroCluster, parent_weight, parent_radius):
 		d = child.d
 		child_weight = child.weight
 		child_density = child.density
@@ -266,7 +316,7 @@ class SCOPEMicroCluster(base.Base):
 
 	@property
 	def volume(self):
-		return get_volume(self.radius, self.d)
+		return get_volume(self.radius, self.d) if self.radius > 0 else 1
 
 	@property
 	def density(self):
