@@ -270,15 +270,18 @@ class SCOPEOffline(SCOPE):
 		#print(X)
 
 		mc_assigns = []
+		i = 0
 		for dp in self.datastore:
-			closest_mc_id, _ = self._get_best_mc(dp)
+			closest_mc_id, dist = self._get_best_mc(dp)
 			mc_assigns.append(closest_mc_id)
+			print(i, dp, dist, closest_mc_id, self.micro_clusters[closest_mc_id])
+			i +=1
 
 		plt.figure(figsize=(10, 10))
 		plt.scatter(X[:, 0], X[:, 1], c=mc_assigns)
 		for id, mc in self.micro_clusters.items():
 			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(1),
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(),
 			                      alpha=0.4, color="lightgrey")
 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
 			plt.gca().add_patch(mc_patch)
@@ -295,7 +298,7 @@ class SCOPEOffline(SCOPE):
 		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
 		for id, mc in self.micro_clusters.items():
 			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(1),
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(),
 			                      alpha=0.4, color="lightgrey")
 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
 			plt.gca().add_patch(mc_patch)
@@ -309,7 +312,7 @@ class SCOPEOffline(SCOPE):
 		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
 		for id, mc in self.micro_clusters.items():
 			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(1),
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(),
 			                      alpha=0.4, color="lightgrey")
 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
 			plt.gca().add_patch(mc_patch)
@@ -331,7 +334,7 @@ class SCOPEOffline(SCOPE):
 		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
 		for id, mc in self.micro_clusters.items():
 			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(1),
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(),
 			                      alpha=0.4, color="lightgrey")
 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
 			plt.gca().add_patch(mc_patch)

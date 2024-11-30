@@ -77,59 +77,38 @@ class SCOPE(base.Clusterer):
 		self.max_singletons = max_singletons
 		self.singleton_queue = SingletonQueue(max_singletons)
 
-	def _maintain_micro_clusters(self, x, w):
+	def clean_old(self):
 		# Calculate the threshold to delete old micro-clusters
 		threshold = self._timestamp - self.time_window
 
 		# Delete old micro-cluster if its relevance stamp is smaller than the threshold
-		del_id = None
 		for i, mc in self.micro_clusters.items():
 			if mc.relevance_stamp(self.max_micro_clusters) < threshold:
-				del_id = i
-				break
+				print(i, "aged out")
+				self.micro_clusters.__delitem__(i)
 
-		if del_id is not None:
-			self.micro_clusters[del_id] = SCOPEMicroCluster(
-				x=x,
-				w=w,
-				timestamp=self._timestamp,
-			)
-			return
-
-		# Merge the two closest micro-clusters
-		closest_a = 0
-		closest_b = 0
-		min_distance = math.inf
-		for i, mc_a in self.micro_clusters.items():
-			for j, mc_b in self.micro_clusters.items():
-				if i <= j:
-					continue
-				dist = self._distance(mc_a.center, mc_b.center)
-				if dist < min_distance:
-					min_distance = dist
-					closest_a = i
-					closest_b = j
-
-		self.micro_clusters[closest_a] += self.micro_clusters[closest_b]
-		self.micro_clusters[closest_b] = SCOPEMicroCluster(
-			x=x,
-			w=w,
-			timestamp=self._timestamp,
-		)
-
-	def _get_best_mc(self, x):
+	def _get_best_mc(self, x, self_id=-1, verbose=False):
 		best_dist = math.inf
 		closest_radius = math.inf
+		was_within = False
 		best_idx = -1
 
 		for mc_idx, mc in self.micro_clusters.items():
-			distance = self._distance(mc.center, x)
-			radius = mc.radius
+			if mc_idx != self_id:
+				distance = self._distance(mc.center, x)
+				radius = mc.radius()
 
-			if distance <= closest_radius:
-				best_dist = distance
-				best_idx = mc_idx
-				closest_radius = radius if radius <= distance else distance
+				if distance <= closest_radius or (not was_within and distance - radius <= closest_radius) or (not was_within and distance <= radius): # if closer than prior closest or within radius
+					if distance <= radius: # if within MC
+						closest_radius = radius
+						was_within = True
+						best_dist = distance
+						best_idx = mc_idx
+					else: # if not
+						if not was_within: # only use closer distance outside of MC if not within MC
+							closest_radius = distance - radius
+							best_dist = distance
+							best_idx = mc_idx
 
 		return best_idx, best_dist
 
@@ -142,11 +121,12 @@ class SCOPE(base.Clusterer):
 
 		self.datastore.append(x)
 
-
+		self.max_key += 1
+		insert_key = self.max_key
 
 		if not self._initialized:
-			self.max_key += 1
-			self.micro_clusters[self.max_key] = SCOPEMicroCluster(
+
+			self.micro_clusters[insert_key] = SCOPEMicroCluster(
 				x=x,
 				w=w,
 				# When initialized, all micro clusters generated previously will have the timestamp reset to the current
@@ -157,36 +137,68 @@ class SCOPE(base.Clusterer):
 
 			if len(self.micro_clusters) == self.max_micro_clusters:
 				self._initialized = True
-			return
 		else:
 
 			# TODO update empty_pos, for now just new key at end
 			self.max_key += 1
-			self.micro_clusters[self.max_key] = SCOPEMicroCluster(
+			self.micro_clusters[insert_key] = SCOPEMicroCluster(
 				x=x,
 				w=w,
 				timestamp=self._timestamp,
 			)
+			print(self._timestamp, f"New DP: {insert_key}, {self.micro_clusters[insert_key]}", flush=True)
 
-		# Determine the closest micro-cluster with respect to the new point instance
-		best_id, best_dist = self._get_best_mc(x)
-		best_mc = self.micro_clusters[best_id]
+		need_handling, emit_mc_id = self.singleton_queue.insert(insert_key)
 
-		radius = best_mc.radius
+		if emit_mc_id is not None:
+			if not self._initialized:
+				emit_mc = self.micro_clusters[emit_mc_id]
+				emit_mc.r = 0.001
+				return
+			# Determine the closest micro-cluster with respect to the new point instance
+			best_id, best_dist = self._get_best_mc(x, insert_key)
+			best_mc = self.micro_clusters[best_id]
 
-		if best_dist < radius:
-			best_mc.insert(x, w, self._timestamp)
+			radius = best_mc.radius()
 
-		else:
+			if best_dist < radius:
+				self.singleton_queue.latestInMC()
+				best_mc.insert(x, w, self._timestamp)
+				print(insert_key, f"Inserted DP: {best_id} {best_mc}, {self.singleton_queue.tail.index}, {self.singleton_queue.tail.inMC}", flush=True)
 
-			# If the new point does not fit in the micro-cluster, micro-clusters
-			# whose relevance stamps are less than the threshold are deleted.
-			# Otherwise, closest micro-clusters are merged with each other.
-			self._maintain_micro_clusters(x=x, w=w)
+			self.clean_old()
 
-		# Apply incremental K-Means on micro-clusters after each time_gap
-		if self._timestamp % self.time_gap == self.time_gap - 1:
-			self.offline_processing()
+			if need_handling:
+				emit_mc = self.micro_clusters[emit_mc_id]
+				best_id, best_dist = self._get_best_mc(emit_mc.center, emit_mc_id)
+				best_mc = self.micro_clusters[best_id]
+				radius = best_mc.radius()
+				if radius == 0: # is_singleton -> adjust emitted mc to be parent
+					self.micro_clusters[emit_mc_id] = self.get_parent(best_mc, emit_mc)
+					print(emit_mc_id, f"Singleton parent: {emit_mc_id} {best_id} {self.micro_clusters[emit_mc_id]}", flush=True)
+				elif best_dist < radius: # regular insert -> directly dissolve into parent
+					best_mc.insert(emit_mc.x, w, emit_mc.timestamp)
+					print(emit_mc_id, f"MC insert: {emit_mc_id} -> {best_id} {best_mc}", flush=True)
+					#print(self.singleton_queue.head.index, self.singleton_queue.tail.index, self.singleton_queue.keys)
+					self.micro_clusters.__delitem__(emit_mc_id)
+					#for i, mc_a in self.micro_clusters.items():
+					#	if i not in self.singleton_queue.keys:
+					#		print(mc_a)
+				elif best_dist < self.micro_cluster_r_factor * radius: # in neighborhood (used to be expansion of MC) -> adjust emitted MC to be parent
+					self.micro_clusters[emit_mc_id] = self.get_half_parent(emit_mc, best_mc)
+					print(emit_mc_id, f"make new Parent: {emit_mc_id} >  {best_id}, {self.micro_clusters[emit_mc_id]}", flush=True)
+				else: # far away TODO either copy radius of closest neighbor or treat as large irrelevant space
+					emit_mc.r = radius
+					print(emit_mc_id, f"New MC {emit_mc_id}: {emit_mc}", flush=True)
+					#print(emit_mc_id, emit_mc)
+			#print(len(self.micro_clusters), len(self.singleton_queue.keys))
+			else:
+				print(emit_mc_id, "already dealt with")
+				self.micro_clusters.__delitem__(emit_mc_id)
+
+			while (len(self.micro_clusters) - len(self.singleton_queue.keys)) > (self.max_micro_clusters - self.max_singletons): # more MCs than desired, dissolve until fulfilled
+				self.dissolve_one()
+
 
 	def offline_processing(self):
 		raise NotImplementedError
@@ -204,14 +216,17 @@ class SCOPE(base.Clusterer):
 		mc_b = self.micro_clusters[min_j]
 		if self.is_child(mc_a, mc_b):
 			self.micro_clusters[min_j] += self.micro_clusters[min_i]
+			print(min_j, f"Parent merge: {min_i} -> {min_j} {self.micro_clusters[min_j]}")
 			self.micro_clusters.__delitem__(min_i)
 		elif self.is_child(mc_b, mc_a):
 			self.micro_clusters[min_i] += self.micro_clusters[min_j]
+			print(min_i, f"Parent merge: {min_j} -> {min_i} {self.micro_clusters[min_i]}")
 			self.micro_clusters.__delitem__(min_j)
 		else:
 			parent = self.get_parent(mc_a, mc_b)
 			self.max_key += 1
 			self.micro_clusters[self.max_key] = parent
+			print(self.max_key, f"New MC merge: {min_i} + {min_j} -> {self.max_key} {self.micro_clusters[self.max_key]}")
 			self.micro_clusters.__delitem__(min_i)
 			self.micro_clusters.__delitem__(min_j)
 
@@ -221,44 +236,56 @@ class SCOPE(base.Clusterer):
 		min_gain = np.inf
 		for i, mc_a in self.micro_clusters.items():
 			for j, mc_b in self.micro_clusters.items():
-				if i < j:
-					gain = self.get_gain(mc_a, mc_b)
-					if gain < min_gain:
-						min_gain = gain
-						min_i = i
-						min_j = j
+				if i not in self.singleton_queue.keys and j not in self.singleton_queue.keys:
+					if i < j:
+						try:
+							gain = self.get_gain(mc_a, mc_b)
+							if gain < min_gain:
+								min_gain = gain
+								min_i = i
+								min_j = j
+						except:
+							print(i, mc_a, j , mc_b)
+							raise Exception("")
+
 		return min_i, min_j
 
 
 	def get_gain(self, mc_a:SCOPEMicroCluster, mc_b:SCOPEMicroCluster):
 		if self.is_child(mc_a, mc_b):
-			return self.calc_gain(mc_a, mc_b.weight, mc_b.radius) * 2
+			return self.calc_gain(mc_a, mc_b.weight, mc_b.radius()) * 2
 		elif self.is_child(mc_b, mc_a):
-			return self.calc_gain(mc_b, mc_a.weight, mc_a.radius) * 2
+			return self.calc_gain(mc_b, mc_a.weight, mc_a.radius()) * 2
 		else:
 			parent = self.get_parent(mc_a, mc_b)
-			parent2 = self.get_parent(mc_a, mc_b)
-			print(mc_a, mc_b, parent, parent2)
-			return self.calc_gain(mc_a, parent.weight, parent.radius) + self.calc_gain(mc_b, parent.weight, parent.radius)
+			return self.calc_gain(mc_a, parent.weight-mc_a.weight, parent.radius()) + self.calc_gain(mc_b, parent.weight-mc_b.weight, parent.radius())
 
 	def is_child(self, mc_a:SCOPEMicroCluster, mc_b:SCOPEMicroCluster):
 		dist = self._distance(mc_a.center, mc_b.center)
-		return dist + mc_a.radius <= mc_b.radius
+		return dist + mc_a.radius() <= mc_b.radius()
+
+	def get_half_parent(self, mc_a:SCOPEMicroCluster, mc_b:SCOPEMicroCluster): # parent with only weights from mc_a
+		actual_parent = self.get_parent(mc_a, mc_b)
+		half_parent = SCOPEMicroCluster(x=actual_parent.center, w=mc_a.weight, timestamp=mc_a.timestamp, var_time=mc_a.var_time, r=actual_parent.r)
+		return half_parent
 
 	def get_parent(self, mc_a:SCOPEMicroCluster, mc_b:SCOPEMicroCluster):
-		parent = mc_a.clone()
+		parent = SCOPEMicroCluster(x=mc_a.x, w=mc_a.w, timestamp=mc_a.timestamp, var_time=copy.deepcopy(mc_a.var_time),
+		                           var_x=copy.deepcopy(mc_a.var_x))
+		#print(mc_a, parent)
 		parent += mc_b
-		radius_a = self._distance(mc_a.center, parent.center) + mc_a.radius
-		radius_b = self._distance(mc_b.center, parent.center) + mc_b.radius
+		radius_a = self._distance(mc_a.center, parent.center) + mc_a.radius()
+		radius_b = self._distance(mc_b.center, parent.center) + mc_b.radius()
 		radius = max(radius_a, radius_b)
-		parent.radius = radius
+		parent.r = radius
 		return parent
 
 	def calc_gain(self, child:SCOPEMicroCluster, parent_weight, parent_radius):
 		d = child.d
 		child_weight = child.weight
 		child_density = child.density
-		return (child_density - get_density(parent_weight+child_weight, parent_radius, d)) * child_weight
+		child_radius = child.radius()
+		return parent_radius
 
 
 
@@ -277,15 +304,15 @@ class SCOPEMicroCluster(base.Base):
 			self,
 			x: dict = defaultdict(float),
 			w: float | None = None,
-			radius: float = 0,
+			r: float = 0,
 			timestamp: int | None = None,
-			var_x = None,
 			var_time = None,
+			var_x = None
 	):
 		# Initialize with sample x
 		self.x = x
 		self.w = w
-		self.radius = radius
+		self.r = r
 		self.timestamp = timestamp
 		self.d = len(x.keys())
 		if var_x is None:
@@ -294,10 +321,13 @@ class SCOPEMicroCluster(base.Base):
 				v = stats.Var()
 				v.update(x[k], w)
 				self.var_x[k] = v
+		else:
+			self.var_x = var_x
+
+		if var_time is None:
 			self.var_time = stats.Var()
 			self.var_time.update(timestamp, w)
 		else:
-			self.var_x = var_x
 			self.var_time = var_time
 
 	@property
@@ -314,13 +344,16 @@ class SCOPEMicroCluster(base.Base):
 	def weight(self):
 		return self.var_time.n
 
+	def radius(self, mult=1):
+		return self.r * mult
+
 	@property
 	def volume(self):
-		return get_volume(self.radius, self.d) if self.radius > 0 else 1
+		return get_volume(self.r, self.d) if self.r > 0 else 1
 
 	@property
 	def density(self):
-		return get_density(self.weight, self.radius, self.d)
+		return get_density(self.weight, self.r, self.d)
 
 	def insert(self, x, w, timestamp):
 		self.var_time.update(timestamp, w)
@@ -369,6 +402,9 @@ class SCOPEMicroCluster(base.Base):
 		self.var_x = {k: self.var_x[k] + other.var_x.get(k, stats.Var()) for k in self.var_x}
 		return self
 
+	def __str__(self):
+		return f"[{self.center}, r={self.r}, weight={self.weight}, time={self.var_time.mean}]"
+
 class SingletonQueue:
 	def __init__(self, max_length):
 		self.max_length = max_length
@@ -379,22 +415,24 @@ class SingletonQueue:
 		self.mid = None
 
 	def insert(self, index):
+		#print(index, flush=True)
 		sp = SingeltonPointer(index, self.tail, None)
 		self.keys.add(index)
+		#print(self.keys, flush=True)
 		self.length += 1
 		removed_index = None
 		needs_handling = False
 		if self.head is not None: #not first element
-			if self.length < self.max_length: #not initilaization
+			if self.length > self.max_length:
 				if self.mid.inMC:
-					self.mid, removed_index, _ = self.remove(self.mid)
+					removed_index, _ = self.remove(self.mid)
 				else:
-					self.head, removed_index, inMC = self.remove(self.head)
+					removed_index, inMC = self.remove(self.head)
 					needs_handling = not inMC
 					if not needs_handling:
 						print("Unexpected behaviour: inserted MC after half of queue", flush=True)
 			else:
-				mid_pos = self.max_length/2
+				mid_pos = math.ceil(self.max_length/2)
 				if self.length == mid_pos:
 					self.mid = sp
 			self.tail.update_after(sp)
@@ -415,20 +453,27 @@ class SingletonQueue:
 
 		if before is not None:
 			before.update_after(after)
+		else: # move up next element to tracked positions
+			self.head = after
+		if self.mid.index == index:
+			self.mid = after
+		if self.tail.index == index:
+			self.tail = after
+
 		after.update_before(before)
 		del sp
 		self.keys.discard(index)
 		self.length -= 1
 
-		return after, index, inMC
+		return index, inMC
 
 
 class SingeltonPointer:
 	def __init__(self, index, before, after):
-		self.index = index
-		self.before = before
-		self.after = after
-		self.inMC = False
+		self.index = index # index of singleton MC in scope.micro_clusters
+		self.before = before # pointer added before this in queue
+		self.after = after # pointer added after this in queue
+		self.inMC = False # specifically: inserted at initial arrival, not for singletons that got merged with other singleton at end of queue
 
 	def update_after(self, after):
 		self.after = after
