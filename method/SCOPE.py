@@ -71,6 +71,8 @@ class SCOPE(base.Clusterer):
 
 		self.datastore = []
 
+		self.max_key = -1
+
 	def _maintain_micro_clusters(self, x, w):
 		# Calculate the threshold to delete old micro-clusters
 		threshold = self._timestamp - self.time_window
@@ -136,8 +138,10 @@ class SCOPE(base.Clusterer):
 
 		self.datastore.append(x)
 
+
 		if not self._initialized:
-			self.micro_clusters[len(self.micro_clusters)] = SCOPEMicroCluster(
+			self.max_key += 1
+			self.micro_clusters[self.max_key] = SCOPEMicroCluster(
 				x=x,
 				w=w,
 				# When initialized, all micro clusters generated previously will have the timestamp reset to the current
@@ -150,25 +154,25 @@ class SCOPE(base.Clusterer):
 				self._initialized = True
 
 			return
+		else:
+
+			# TODO update empty_pos, for now just new key at end
+			self.max_key += 1
+			self.micro_clusters[self.max_key] = SCOPEMicroCluster(
+				x=x,
+				w=w,
+				timestamp=self._timestamp,
+			)
 
 		# Determine the closest micro-cluster with respect to the new point instance
-		closest_id, closest_dist = self._get_closest_mc(x)
-		closest_mc = self.micro_clusters[closest_id]
+		best_id, best_dist = self._get_best_mc(x)
+		best_mc = self.micro_clusters[best_id]
 
-		# Check whether the new instance fits into the closest micro-cluster
-		if closest_mc.weight == 1:
-			radius = math.inf
-			center = closest_mc.center
-			for mc_id, mc in self.micro_clusters.items():
-				if mc_id == closest_id:
-					continue
-				distance = self._distance(mc.center, center)
-				radius = min(distance, radius)
-		else:
-			radius = closest_mc.radius(self.micro_cluster_r_factor)
+		radius = best_mc.radius
 
-		if closest_dist < radius:
-			closest_mc.insert(x, w, self._timestamp)
+		if best_dist < radius:
+			best_mc.insert(x, w, self._timestamp)
+
 		else:
 
 			# If the new point does not fit in the micro-cluster, micro-clusters
@@ -314,3 +318,73 @@ class SCOPEMicroCluster(base.Base):
 		self.var_time += other.var_time
 		self.var_x = {k: self.var_x[k] + other.var_x.get(k, stats.Var()) for k in self.var_x}
 		return self
+
+class SingletonQueue:
+	def __init__(self, max_length):
+		self.max_length = max_length
+		self.keys = set()
+		self.length = 0
+		self.head = None
+		self.tail = None
+		self.mid = None
+
+	def insert(self, index):
+		sp = SingeltonPointer(index, self.tail, None)
+		self.keys.add(index)
+		self.length += 1
+		removed_index = None
+		needs_handling = False
+		if self.head is not None: #not first element
+			if self.length < self.max_length: #not initilaization
+				if self.mid.inMC:
+					self.mid, removed_index, _ = self.remove(self.mid)
+				else:
+					self.head, removed_index, inMC = self.remove(self.head)
+					needs_handling = not inMC
+					if not needs_handling:
+						print("Unexpected behaviour: inserted MC after half of queue", flush=True)
+			else:
+				mid_pos = self.max_length/2
+				if self.length == mid_pos:
+					self.mid = sp
+			self.tail.update_after(sp)
+		else:
+			self.head = sp
+		self.tail = sp
+
+		return needs_handling, removed_index
+
+	def latestInMC(self):
+		self.tail.inMC = True
+
+	def remove(self, sp: SingeltonPointer):
+		before = sp.before
+		after = sp.after
+		index = sp.index
+		inMC = sp.inMC
+
+		if before is not None:
+			before.update_after(after)
+		after.update_before(before)
+		del sp
+		self.keys.discard(index)
+		self.length -= 1
+
+		return after, index, inMC
+
+
+class SingeltonPointer:
+	def __init__(self, index, before, after):
+		self.index = index
+		self.before = before
+		self.after = after
+		self.inMC = False
+
+	def update_after(self, after):
+		self.after = after
+
+	def update_before(self, before):
+		self.before = before
+
+	def intoMC(self):
+		self.inMC = True
