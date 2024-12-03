@@ -49,6 +49,7 @@ class SCOPE(base.Clusterer):
 			time_window: int = 1000,
 			time_gap: int = 100,
 			seed: int | None = None,
+			dissolve = False,
 			**kwargs,
 	):
 		super().__init__()
@@ -77,6 +78,8 @@ class SCOPE(base.Clusterer):
 		self.max_singletons = max_singletons
 		self.singleton_queue = SingletonQueue(max_singletons)
 
+		self.dissolve = dissolve
+
 	def clean_old(self):
 		# Calculate the threshold to delete old micro-clusters
 		threshold = self._timestamp - self.time_window
@@ -87,9 +90,87 @@ class SCOPE(base.Clusterer):
 				print(i, "aged out")
 				self.micro_clusters.__delitem__(i)
 
-	def _get_best_mc(self, x, self_id=-1, verbose=False):
-		best_dist = math.inf
-		closest_radius = math.inf
+	# if distance closest is singleton -> report that
+	# else:
+	#   if inside radius: select smallest radius
+	#   else: select smallest distance to radius
+
+
+	def _get_best_mc(self, x, self_id=-1):
+		closest_singleton_dist = math.inf
+		closest_singleton_idx = -1
+		closest_overall_dist = math.inf
+		closest_overall_radius = math.inf
+		closest_overall_idx = -1
+		closest_radius_dist = math.inf
+		closest_radius_radius = math.inf
+		closest_radius_rdist = math.inf
+		closest_radius_idx = -1
+		smallest_in_radius = math.inf
+		smallest_in_dist = math.inf
+		smallest_in_idx = -1
+		closest_in_radius = math.inf
+		closest_in_dist = math.inf
+		closest_in_idx = -1
+
+		for mc_idx, mc in self.micro_clusters.items():
+			if mc_idx != self_id:
+				distance = self._distance(mc.center, x)
+				radius = mc.radius()
+
+				if distance < closest_overall_dist: # is new closest overall
+					closest_overall_dist = distance
+					closest_overall_idx = mc_idx
+					closest_overall_radius = radius
+
+				if radius == 0: # is singleton
+					if distance < closest_singleton_dist: # is new closest singleton
+						closest_singleton_dist = distance
+						closest_singleton_idx = mc_idx
+
+				if distance <= radius: # if is inside MC
+					if radius < smallest_in_radius: # if radius is smaller
+						smallest_in_radius = radius
+						smallest_in_dist = distance
+						smallest_in_idx = mc_idx
+					if distance <= closest_in_dist:
+						closest_in_radius = radius
+						closest_in_dist = distance
+						closest_in_idx = mc_idx
+
+				elif distance - radius < closest_radius_rdist: # if not inside, but still close to boundary
+					closest_radius_rdist = distance - radius
+					closest_radius_dist = distance
+					closest_radius_radius = radius
+					closest_radius_idx = mc_idx
+
+
+		print(closest_singleton_idx, closest_overall_idx)
+		if closest_singleton_idx == closest_overall_idx: # if singleton is closest, use that
+			print("Singleton best")
+			return closest_singleton_idx, closest_singleton_dist
+		if smallest_in_idx > 0: # if was in any MC
+			if closest_radius_radius < smallest_in_radius: #if there is nearby, even smaller MC
+				if smallest_in_radius > closest_radius_radius * self.micro_cluster_r_factor and closest_radius_dist <= closest_radius_radius * self.micro_cluster_r_factor: #nearby one was better
+					print("nearby best, though in MC")
+					return closest_radius_idx, closest_radius_dist
+			print("in MC best")
+			return smallest_in_idx, smallest_in_dist
+		if closest_radius_dist <= closest_radius_radius * self.micro_cluster_r_factor: # expand MC that needs to be expanded the least
+			print("nearby best")
+			print(closest_radius_dist, closest_radius_idx)
+			return closest_radius_idx, closest_radius_dist
+		else: # expansion not sufficient, grab closest overall
+			print("closest best")
+			return closest_overall_idx, closest_overall_dist
+
+
+	def _get_best_mc_old(self, x, self_id=-1, verbose=False):
+		best_dist = math.inf # absolute smallest distance so far
+		cur_dist = math.inf # current assigned distance
+		singleton = False
+		smallest_radius = math.inf # smallest radius
+		closest_radius = math.inf # smallest distance to radius
 		was_within = False
 		best_idx = -1
 
@@ -98,19 +179,40 @@ class SCOPE(base.Clusterer):
 				distance = self._distance(mc.center, x)
 				radius = mc.radius()
 
-				if distance <= closest_radius or (not was_within and distance - radius <= closest_radius) or (not was_within and distance <= radius): # if closer than prior closest or within radius
-					if distance <= radius: # if within MC
-						closest_radius = radius
-						was_within = True
-						best_dist = distance
-						best_idx = mc_idx
-					else: # if not
-						if not was_within: # only use closer distance outside of MC if not within MC
+				# if radius == 0:
+				# 	if distance < best_dist:
+				# 		best_dist = distance
+				# 		cur_dist = distance
+				# 		closest_radius = distance
+				# 		singleton = True
+				# 		best_idx = mc_idx
+				if not singleton or distance <= best_dist: # only do this part if closer than nearest singelton
+					singleton = False
+					if distance <= best_dist:
+						best_dist = distance # update even if not assigned
+					if was_within: # if it was in radius before
+						if radius < smallest_radius: # if second radius is smaller
+							if distance <= radius:  # if within radius now
+								cur_dist = distance
+								smallest_radius = radius
+								was_within = True
+								best_idx = mc_idx
+							#elif distance <= cur_dist:
+							#	cur_dist = distance
+							#	smallest_radius = radius
+							#	was_within = True
+							#	best_idx = mc_idx
+
+					else:
+						if distance - radius <= closest_radius: # closer than to previously closest radius
+							if distance <= radius: # if within radius now
+								was_within = True
+								smallest_radius = radius
+							cur_dist = distance
 							closest_radius = distance - radius
-							best_dist = distance
 							best_idx = mc_idx
 
-		return best_idx, best_dist
+		return best_idx, cur_dist
 
 	@staticmethod
 	def _distance(point_a, point_b):
@@ -188,7 +290,7 @@ class SCOPE(base.Clusterer):
 					self.micro_clusters[emit_mc_id] = self.get_half_parent(emit_mc, best_mc)
 					print(emit_mc_id, f"make new Parent: {emit_mc_id} >  {best_id}, {self.micro_clusters[emit_mc_id]}", flush=True)
 				else: # far away TODO either copy radius of closest neighbor or treat as large irrelevant space
-					emit_mc.r = radius
+					emit_mc.r = 0.001
 					print(emit_mc_id, f"New MC {emit_mc_id}: {emit_mc}", flush=True)
 					#print(emit_mc_id, emit_mc)
 			#print(len(self.micro_clusters), len(self.singleton_queue.keys))
@@ -212,6 +314,10 @@ class SCOPE(base.Clusterer):
 
 	def dissolve_one(self):
 		min_i, min_j = self.get_lowest_gain_pair()
+		if min_i == min_j:
+			print(min_i, "Dissolution")
+			self.micro_clusters.__delitem__(min_i)
+			return
 		mc_a = self.micro_clusters[min_i]
 		mc_b = self.micro_clusters[min_j]
 		if self.is_child(mc_a, mc_b):
@@ -247,6 +353,12 @@ class SCOPE(base.Clusterer):
 						except:
 							print(i, mc_a, j , mc_b)
 							raise Exception("")
+					if i == j and self.dissolve:
+						gain = self.calc_gain(mc_a, 0, 1)
+						if gain < min_gain:
+							min_gain = gain
+							min_i = i
+							min_j = j
 
 		return min_i, min_j
 
@@ -283,9 +395,9 @@ class SCOPE(base.Clusterer):
 	def calc_gain(self, child:SCOPEMicroCluster, parent_weight, parent_radius):
 		d = child.d
 		child_weight = child.weight
-		child_density = child.density
+		#child_density = child.density
 		child_radius = child.radius()
-		return parent_radius
+		return (parent_radius - child_radius) * child_weight
 
 
 
