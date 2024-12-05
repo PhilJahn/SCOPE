@@ -39,7 +39,7 @@ def read_file(str, i = "uci"):
 	return np.array(x), np.array(label).reshape(1, len(label))[0]
 
 def load_data(str, i, seed = 0):
-	np.random.seed(seed)
+	#np.random.seed(seed)
 	scaler = MinMaxScaler()
 	X, y = read_file(str, i)
 	X = scaler.fit_transform(X)

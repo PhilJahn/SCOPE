@@ -110,10 +110,6 @@ class SCOPE(base.Clusterer):
 					if distance <= cur_dist and not was_within:
 						best_idx = mc_idx
 						cur_dist = distance
-
-
-
-
 		return best_idx, cur_dist
 
 	@staticmethod
@@ -287,7 +283,9 @@ class SCOPE(base.Clusterer):
 	def calc_gain(self, child:SCOPEMicroCluster, parent:SCOPEMicroCluster):
 		expansion = self._distance(child.get_min(), parent.get_min())
 		expansion += self._distance(child.get_max(), parent.get_max())
-		return expansion * child.weight
+
+		childsize = self._distance(child.get_max(), child.get_min())
+		return expansion#/parent.weight - childsize/child.weight
 
 
 
