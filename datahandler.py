@@ -1,16 +1,21 @@
 import numpy as np
+from numpy.random import PCG64
 from sklearn.preprocessing import MinMaxScaler
 
-def read_file(str, i = "uci"):
+def read_file(str):
 	dic = {}
 	classmember = 0
-	if (i == "artificial"):
+	try:
 		file = open("./data/artificial" + "/" + str + ".arff", "r")
-	elif i == "real":
-		file = open("./data/real-world" + "/" + str + ".arff", "r")
-	elif i == "uci":
-		#ucipp-master/uci/abalone-3class.arff
-		file = open("./data/ucipp-master/uci/" + str + ".arff", "r")
+	except:
+		try:
+			file = open("./data/real-world" + "/" + str + ".arff", "r")
+		except:
+			try:
+				file = open("./data/ucipp-master/uci/" + str + ".arff", "r")
+			except:
+				raise FileNotFoundError
+
 	x = []
 	label = []
 	for line in file:
@@ -38,11 +43,13 @@ def read_file(str, i = "uci"):
 			x.append(k)
 	return np.array(x), np.array(label).reshape(1, len(label))[0]
 
-def load_data(str, i, seed = 0):
+def load_data(str, seed = 0):
 	#np.random.seed(seed)
+
+	generator = np.random.Generator(PCG64(seed))
 	scaler = MinMaxScaler()
-	X, y = read_file(str, i)
+	X, y = read_file(str)
 	X = scaler.fit_transform(X)
-	idx = np.random.permutation(len(X))
+	idx = generator.permutation(len(X))
 	X, y = X[idx], y[idx]
 	return X,y
