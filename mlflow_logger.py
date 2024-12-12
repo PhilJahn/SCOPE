@@ -1,8 +1,12 @@
+import json
 import logging
 import pathlib
+import pickle
+import tempfile
 from typing import Dict, Any, Tuple, Sequence
 
 import mlflow
+import numpy as np
 import pandas as pd
 
 from utils import flatten_dict
@@ -61,11 +65,14 @@ class MLFlowLogger:
         """
 		self.current_run = mlflow.start_run(run_name=name, experiment_id=self.experiment_id)
 
+
 		# create output directory
 		output_path = self.root / str(self.current_run.info.run_id)
 		if output_path.is_dir():
 			logging.error('Output path already exists! {p}'.format(p=output_path))
 		output_path.mkdir(exist_ok=True, parents=True)
+
+		self.output_path = output_path
 
 		print(type(output_path))
 		print(output_path)
@@ -87,8 +94,27 @@ class MLFlowLogger:
         """
 		mlflow.end_run()
 
+	#def log_artifacts(self):
+	#	if self.log_file is not None:
+	#		mlflow.log_artifact(local_path=self.log_file)
+
+	def log_numpy(self, numpy_array, name):
+		filepath = self.output_path.joinpath(f"{name}.npy")
+		print(filepath, flush =True)
+		np.save(filepath, numpy_array)
+		mlflow.log_artifact(local_path=str(filepath))
+
+	#based on https://stackoverflow.com/questions/36965507/writing-a-dictionary-to-a-text-file
+	def log_dict(self, dictionary, name):
+		filepath = self.output_path.joinpath(f"{name}.txt")
+		print(filepath, flush =True)
+		with open(filepath, 'w+') as f:
+			print(dictionary, file=f)
+		mlflow.log_artifact(local_path=str(filepath))
+
+
 	@staticmethod
-	def log_results(result: Dict[str, Any], step=None, log_file=None, pl_stat_file=None, stat_file=None, solver_stat_file = None):
+	def log_results(result: Dict[str, Any], step=None):
 		"""
         :param stat_file: Path to statistics file of current step
         :param log_file: Path to logging file
@@ -98,17 +124,6 @@ class MLFlowLogger:
         :return: None.
         """
 		mlflow.log_metrics(metrics=flatten_dict(result), step=step)
-		if log_file is not None:
-			mlflow.log_artifact(local_path=log_file)
-		if stat_file is not None:
-			if pathlib.Path(stat_file).exists():
-				mlflow.log_artifact(local_path=stat_file)
-		if pl_stat_file is not None:
-			if pathlib.Path(pl_stat_file).exists():
-				mlflow.log_artifact(local_path=pl_stat_file)
-		if solver_stat_file is not None:
-			if pathlib.Path(solver_stat_file).exists():
-				mlflow.log_artifact(local_path=solver_stat_file)
 
 
 	def get_entries(
