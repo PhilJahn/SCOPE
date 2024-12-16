@@ -154,28 +154,14 @@ def main(args):
 	param_dicts = make_param_dicts(param_vals)
 	print(param_dicts)
 	j = 0
+	f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}.txt', 'w', newline='\n', buffering=1000)
 	for param_dict in param_dicts:
-		if socket.gethostname() == "PhilippPC23":
-			flow_logger = mlflow_logger.MLFlowLogger(experiment_name="SCOPE_Local")
-		elif args.method == "scope":
-			flow_logger = mlflow_logger.MLFlowLogger(experiment_name="SCOPE")
-		elif args.method == "circscope":
-			flow_logger = mlflow_logger.MLFlowLogger(experiment_name="CircSCOPE")
-		else:
-			flow_logger = mlflow_logger.MLFlowLogger(experiment_name="SCOPE_Competitors")
 
 		X, Y = load_data(args.ds, seed=0)
 		num_cls = len(np.unique(Y))
 
 		args.class_num = num_cls
-
-		mmc = param_dict["mmc"]
-		run_name = f"{args.ds}_{method_name}_{mmc}_{j}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-		hp_dict = vars(args) | param_dict
-		# print(hp_dict)
-		run_id, output_path = flow_logger.init_experiment(run_name, hyper_parameters=hp_dict)
-
-		flow_logger.log_dict(param_dict, "params")
+		f.write(f"{method_name} {j} {vars(args) | param_dict}\n")
 
 		method = None
 		if args.method == "clustream":
@@ -228,8 +214,6 @@ def main(args):
 					if has_gen:
 						gen_data_step[i] = dps_to_np(method.offline_dataset)
 						gen_label_step[i] = np.array(method.offline_labels).reshape(-1, 1)
-						gen_data_comb = np.concatenate([gen_data_step[i], gen_label_step[i]], axis=1)
-						flow_logger.log_numpy(gen_data_comb, f"GenData_{i}")
 					for dp in dp_store:
 						if has_mcs:
 							pred, mc_id = method.predict_one(dp, return_mc=True)
@@ -243,8 +227,7 @@ def main(args):
 					assign_step[i] = copy(assign_store)
 
 					metrics, cm = getMetrics(y_store, pred_store)
-					flow_logger.log_results(metrics, i)
-					flow_logger.log_dict(cm, f"Confusion_Matrix_{i}")
+					f.write(f"\t{method_name} {j} {i} {metrics}\n")
 					if has_mcs:
 						mcs = []
 						if args.method == "clustream" or args.method == "opeclustream":
@@ -259,7 +242,6 @@ def main(args):
 							for mcid, mc in method.micro_clusters.items():
 								mcs.append([mcid, mc.center, mc.extent, mc.weight, mc.var_time, mc.var_x])
 								mc_store[mcid] = mc
-						flow_logger.log_numpy(mcs, f"MCs_{i}")
 						mc_step[i] = copy(mc_store)
 					dp_store = []
 					y_store = []
@@ -270,36 +252,15 @@ def main(args):
 				if is_last:
 					predictions = method.learn(dp_store)
 					metrics, cm = getMetrics(y_store, pred_store)
-					flow_logger.log_results(metrics, i)
-					flow_logger.log_dict(cm, f"Confusion_Matrix_{i}")
+					f.write(f"\t{method_name} {j} {i} {metrics}\n")
 
-		if has_mcs:
-			flow_logger.log_result(y_store_step, pred_store_step, assign_step)
-		else:
-			flow_logger.log_result(y_store_step, pred_store)
-		flow_logger.finalise_experiment()
 		if flex_offline:
 			for alg in offline_dict.keys():
 				k = 0
 				for alg_dict in offline_dict[alg]:
-					if socket.gethostname() == "PhilippPC23":
-						flow_logger = mlflow_logger.MLFlowLogger(experiment_name="SCOPE_Local")
-					elif args.method == "scope":
-						flow_logger = mlflow_logger.MLFlowLogger(experiment_name="SCOPE")
-					elif args.method == "circscope":
-						flow_logger = mlflow_logger.MLFlowLogger(experiment_name="CircSCOPE")
-					else:
-						flow_logger = mlflow_logger.MLFlowLogger(experiment_name="SCOPE_Competitors")
-
 					args.class_num = num_cls
 					alg_dict["n_clusters"] = args.class_num
-					mmc = param_dict["mmc"]
-					run_name = f"{args.ds}_{method_name}_{mmc}_{j}_{alg}_{k}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-					hp_dict = vars(args) | param_dict | alg_dict
-					# print(hp_dict)
-					run_id, output_path = flow_logger.init_experiment(run_name, hyper_parameters=hp_dict)
-
-					flow_logger.log_dict(param_dict | alg_dict, "params")
+					f.write(f"\t{method_name} {j} {alg} {k} {vars(args) | param_dict | alg_dict}\n")
 
 					steps = sorted(dp_store_step.keys())
 					off_pred_store_step = {}
@@ -351,18 +312,16 @@ def main(args):
 							cur_pred.append(cur_mc_clu[mc_id])
 
 						metrics, cm = getMetrics(cur_y, cur_pred)
+						f.write(f"\t\t{method_name} {j} {step} {alg} {k} {metrics}\n")
 
 						off_pred_store_step[step] = cur_pred
 
-						flow_logger.log_results(metrics, step)
-						flow_logger.log_dict(cm, f"Confusion_Matrix_{step}")
-
-					flow_logger.log_result(y_store_step, off_pred_store_step, assign_step)
 					k += 1
-
-					flow_logger.finalise_experiment()
+					#f.flush()
 
 		j += 1
+		#f.flush()
+	f.close()
 
 
 if __name__ == '__main__':
