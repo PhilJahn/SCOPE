@@ -187,31 +187,31 @@ class OPECluStream(CluStream):
 		gen_data, gen_labels = reconstruct_data(self.micro_clusters, self.offline_datascale,
 												self.micro_cluster_r_factor, self.generator)
 		gen_X = dps_to_np(gen_data)
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
-								  alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
 
 		clustering, self.centers = perform_clustering(gen_X, self.offline_algo, self.offline_args)
 		num_clu = len(np.unique(clustering))
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
-								  alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
 
 		for id, mc in self.micro_clusters.items():
 			is_mc = [i for i, x in enumerate(gen_labels) if x == id]
@@ -223,17 +223,17 @@ class OPECluStream(CluStream):
 		cluster_labels_gen = []
 		for l in gen_labels:
 			cluster_labels_gen.append(self.cluster_assignments[l])
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
-								  alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
 
 		self._offline_timestamp = self._timestamp
 
@@ -331,31 +331,31 @@ class CircSCOPEOffline(CircSCOPE):
 		gen_data, gen_labels = reconstruct_data(self.micro_clusters, self.offline_datascale,
 												1, self.generator)
 		gen_X = dps_to_np(gen_data)
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(),
-								  alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(),
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
 
 		clustering, self.centers = perform_clustering(gen_X, self.offline_algo, self.offline_args)
 		num_clu = len(np.unique(clustering))
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(),
-								  alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(),
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
 
 		for id, mc in self.micro_clusters.items():
 			is_mc = [i for i, x in enumerate(gen_labels) if x == id]
@@ -367,17 +367,17 @@ class CircSCOPEOffline(CircSCOPE):
 		cluster_labels_gen = []
 		for l in gen_labels:
 			cluster_labels_gen.append(self.cluster_assignments[l])
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(),
-								  alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(),
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
 
 		self._offline_timestamp = self._timestamp
 
@@ -477,33 +477,33 @@ class SCOPEOffline(SCOPE):
 		np.random.seed= self.seed
 		gen_data, gen_labels = self.reconstruct_data(self.micro_clusters, self.offline_datascale, self.generator)
 		gen_X = dps_to_np(gen_data)
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mcrange = dict_to_np(mc.extent)
-			mc_patch = ptc.Rectangle((float(mccenter[0]-mcrange[0]), float(mccenter[1]-mcrange[1])),2*mcrange[0], 2*mcrange[1] ,
-								  alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mcrange = dict_to_np(mc.extent)
+		# 	mc_patch = ptc.Rectangle((float(mccenter[0]-mcrange[0]), float(mccenter[1]-mcrange[1])),2*mcrange[0], 2*mcrange[1] ,
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
 
 		clustering, self.centers = perform_clustering(gen_X, self.offline_algo, self.offline_args)
 		num_clu = len(np.unique(clustering))
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mcrange = dict_to_np(mc.extent)
-			mc_patch = ptc.Rectangle((float(mccenter[0]-mcrange[0]), float(mccenter[1]-mcrange[1])),2*mcrange[0], 2*mcrange[1] ,
-								  alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mcrange = dict_to_np(mc.extent)
+		# 	mc_patch = ptc.Rectangle((float(mccenter[0]-mcrange[0]), float(mccenter[1]-mcrange[1])),2*mcrange[0], 2*mcrange[1] ,
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
 
 		for id, mc in self.micro_clusters.items():
 			is_mc = [i for i, x in enumerate(gen_labels) if x == id]
@@ -515,18 +515,18 @@ class SCOPEOffline(SCOPE):
 		cluster_labels_gen = []
 		for l in gen_labels:
 			cluster_labels_gen.append(self.cluster_assignments[l])
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mcrange = dict_to_np(mc.extent)
-			mc_patch = ptc.Rectangle((float(mccenter[0]-mcrange[0]), float(mccenter[1]-mcrange[1])),2*mcrange[0], 2*mcrange[1] ,
-								  alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mcrange = dict_to_np(mc.extent)
+		# 	mc_patch = ptc.Rectangle((float(mccenter[0]-mcrange[0]), float(mccenter[1]-mcrange[1])),2*mcrange[0], 2*mcrange[1] ,
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
 
 		self._offline_timestamp = self._timestamp
 
