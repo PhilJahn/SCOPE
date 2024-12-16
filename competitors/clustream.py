@@ -296,7 +296,7 @@ class CluStream(base.Clusterer):
 		self.centers = self._kmeans_mc.centers
 		self._offline_timestamp = self._timestamp
 
-	def predict_one(self, x, recluster=False, sklearn=False):
+	def predict_one(self, x, recluster=False, sklearn=False, return_mc = False):
 		if self._offline_timestamp != self._timestamp and recluster:
 			if not sklearn:
 				self.offline_processing()
@@ -311,13 +311,21 @@ class CluStream(base.Clusterer):
 		try:
 			if sklearn:
 				pred = self._kmeans.predict(dict_to_np(self._mc_centers[index]).reshape(1,-1))[0]
-				return pred
 			elif recluster:
-				return self._kmeans_mc.predict_one(self._mc_centers[index])
+				pred = self._kmeans_mc.predict_one(self._mc_centers[index])
 			else:
-				return self._kmeans_mc.predict_one(self.micro_clusters[index].center)
+				pred = self._kmeans_mc.predict_one(self.micro_clusters[index].center)
+			if return_mc:
+				return pred, index
+			else:
+				return pred
 		except (KeyError, AttributeError):
-			return 0
+			if return_mc:
+				return 0, index
+			else:
+				return 0
+
+
 
 	def set_mcs(self, mcs):
 		self.micro_clusters = mcs

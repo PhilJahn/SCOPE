@@ -112,6 +112,21 @@ class MLFlowLogger:
 			print(dictionary, file=f)
 		mlflow.log_artifact(local_path=str(filepath))
 
+	def log_result(self, y_store_step, pred_store_step, assign_step=None):
+		filepath = self.output_path.joinpath(f"Result.txt")
+		print(filepath, flush =True)
+		steps = sorted(y_store_step.keys())
+		with open(filepath, 'w+') as f:
+			for step in steps:
+				for l in range(len(y_store_step[step])):
+					y = y_store_step[step][l]
+					pred = pred_store_step[step][l]
+					if assign_step is not None:
+						assign = assign_step[step][l]
+						print(f"{y}, {pred}, {step}, {assign}", file=f)
+					else:
+						print(f"{y}, {pred}, {step}", file=f)
+		mlflow.log_artifact(local_path=str(filepath))
 
 	@staticmethod
 	def log_results(result: Dict[str, Any], step=None):

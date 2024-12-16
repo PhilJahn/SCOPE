@@ -85,10 +85,14 @@ class SCOPE(base.Clusterer):
 		threshold = self._timestamp - self.time_window
 
 		# Delete old micro-cluster if its relevance stamp is smaller than the threshold
+		del_id = -1
 		for i, mc in self.micro_clusters.items():
 			if mc.relevance_stamp(self.max_micro_clusters) < threshold:
-				print(i, "aged out")
-				self.micro_clusters.__delitem__(i)
+				del_id = i
+				break
+		print(del_id, "aged out")
+		if del_id != -1:
+			self.micro_clusters.__delitem__(del_id)
 
 	def _get_best_mc(self, x, self_id=-1, verbose=False):
 		in_volume = math.inf
