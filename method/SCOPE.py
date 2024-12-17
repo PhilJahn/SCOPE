@@ -5,7 +5,7 @@ import math
 from collections import defaultdict
 
 import numpy as np
-from river import base, cluster, stats, utils
+from river import base, stats, utils
 
 # altered from River repository (https://github.com/online-ml/river), BSD 3-Clause License
 # Copyright (c) 2020, the river developers
@@ -90,8 +90,8 @@ class SCOPE(base.Clusterer):
 			if mc.relevance_stamp(self.max_micro_clusters) < threshold:
 				del_id = i
 				break
-		print(del_id, "aged out")
 		if del_id != -1:
+			print(del_id, "aged out")
 			self.micro_clusters.__delitem__(del_id)
 
 	def _get_best_mc(self, x, self_id=-1, verbose=False):
@@ -131,7 +131,8 @@ class SCOPE(base.Clusterer):
 		if not self._initialized:
 
 			self.micro_clusters[insert_key] = SCOPEMicroCluster(
-				x=x,
+				min=x,
+				max=x,
 				w=w,
 				# When initialized, all micro clusters generated previously will have the timestamp reset to the current
 				# time stamp at the time of initialization (i.e. self.max_micro_cluster - 1). Thus, the timestamp is set
@@ -146,7 +147,8 @@ class SCOPE(base.Clusterer):
 			# TODO update empty_pos, for now just new key at end
 			self.max_key += 1
 			self.micro_clusters[insert_key] = SCOPEMicroCluster(
-				x=x,
+				min=x,
+				max=x,
 				w=w,
 				timestamp=self._timestamp,
 			)
@@ -175,7 +177,7 @@ class SCOPE(base.Clusterer):
 				best_id, best_dist = self._get_best_mc(emit_mc.center, emit_mc_id)
 				best_mc = self.micro_clusters[best_id]
 				if best_dist == 0:
-					best_mc.insert(emit_mc.x, w, emit_mc.timestamp)
+					best_mc.insert(emit_mc.min, w, emit_mc.timestamp)
 					print(emit_mc_id, f"MC insert: {emit_mc_id} -> {best_id} {best_mc}", flush=True)
 					self.micro_clusters.__delitem__(emit_mc_id)
 				else: # far away TODO either copy radius of closest neighbor or treat as large irrelevant space
@@ -199,6 +201,7 @@ class SCOPE(base.Clusterer):
 
 	def dissolve_one(self):
 		min_i, min_j = self.get_lowest_gain_pair()
+		print(min_i, min_j)
 		if min_i == min_j:
 			print(min_i, "Dissolution")
 			self.micro_clusters.__delitem__(min_i)
@@ -239,7 +242,7 @@ class SCOPE(base.Clusterer):
 						#	print(i, mc_a, j , mc_b)
 						#	raise Exception("")
 					if i == j and self.dissolve:
-						gain = self.d*mc_a.weight
+						gain = mc_a.weight
 						if gain < min_gain:
 							min_gain = gain
 							min_i = i
@@ -258,37 +261,23 @@ class SCOPE(base.Clusterer):
 			return self.calc_gain(mc_a, parent)
 
 	def is_child(self, mc_a:SCOPEMicroCluster, mc_b:SCOPEMicroCluster):
-		return mc_a.is_within(mc_b.get_max()) and mc_a.is_within(mc_b.get_min())
+		return mc_a.is_within(mc_b.max) and mc_a.is_within(mc_b.min)
 
 	def get_half_parent(self, mc_a:SCOPEMicroCluster, mc_b:SCOPEMicroCluster): # parent with only weights from mc_a
 		actual_parent = self.get_parent(mc_a, mc_b)
-		half_parent = SCOPEMicroCluster(x=actual_parent.center, w=mc_a.weight, timestamp=mc_a.timestamp, var_time=mc_a.var_time, r=actual_parent.r)
+		half_parent = SCOPEMicroCluster(min=actual_parent.min, max=actual_parent.max, w=mc_a.weight, timestamp=mc_a.timestamp, var_time=mc_a.var_time)
 		return half_parent
 
 	def get_parent(self, mc_a:SCOPEMicroCluster, mc_b:SCOPEMicroCluster):
-		parent = SCOPEMicroCluster(x=mc_a.x, w=mc_a.w, timestamp=mc_a.timestamp, var_time=copy.deepcopy(mc_a.var_time),
-		                           var_x=copy.deepcopy(mc_a.var_x))
-		#print(mc_a, parent)
+		parent = SCOPEMicroCluster(min=mc_a.min, max=mc_a.max, w=mc_a.w, timestamp=mc_a.timestamp, var_time=copy.deepcopy(mc_a.var_time))
 		parent += mc_b
-		expansion = 0
-		for i in parent.center.keys():
-			upper_a = mc_a.center[i] + mc_a.extent[i]
-			lower_a = mc_a.center[i] - mc_a.extent[i]
-			upper_b = mc_b.center[i] + mc_b.extent[i]
-			lower_b = mc_b.center[i] - mc_b.extent[i]
-			mid = parent.center[i]
-			dist = max(abs(upper_a-mid), abs(lower_a-mid), abs(upper_b-mid), abs(lower_b-mid))
-
-			parent.extent[i] = dist
-
-
 		return parent
 
 	def calc_gain(self, child:SCOPEMicroCluster, parent:SCOPEMicroCluster):
-		expansion = self._distance(child.get_min(), parent.get_min())
-		expansion += self._distance(child.get_max(), parent.get_max())
+		expansion = self._distance(child.min, parent.min)
+		expansion += self._distance(child.max, parent.max)
 
-		childsize = self._distance(child.get_max(), child.get_min())
+		childsize = self._distance(child.max, child.min)
 		return expansion#/parent.weight - childsize/child.weight
 
 
@@ -299,28 +288,18 @@ class SCOPEMicroCluster(base.Base):
 
 	def __init__(
 			self,
-			x: dict = defaultdict(float),
+			min: dict = defaultdict(float),
+			max: dict = defaultdict(float),
 			w: float | None = None,
 			timestamp: int | None = None,
 			var_time = None,
-			var_x = None
 	):
 		# Initialize with sample x
-		self.x = x
+		self.min = copy.copy(min)
+		self.max = copy.copy(max)
 		self.w = w
-		self.extent = {}
-		for k in x.keys():
-			self.extent[k] = 0
 		self.timestamp = timestamp
-		self.d = len(x.keys())
-		if var_x is None:
-			self.var_x = {}
-			for k in x:
-				v = stats.Var()
-				v.update(x[k], w)
-				self.var_x[k] = v
-		else:
-			self.var_x = var_x
+		self.d = len(min.keys())
 
 		if var_time is None:
 			self.var_time = stats.Var()
@@ -330,8 +309,11 @@ class SCOPEMicroCluster(base.Base):
 
 	@property
 	def center(self):
-		return {k: var.mean.get() for k, var in self.var_x.items()}
+		return {i: (self.max[i] + self.min[i])/2 for i in self.min.keys()}
 
+	@property
+	def extent(self):
+		return {i: (self.max[i] - self.min[i])/2 for i in self.min.keys()}
 
 	@property
 	def weight(self):
@@ -340,16 +322,16 @@ class SCOPEMicroCluster(base.Base):
 	# check if x is within MC
 	def is_within(self, x):
 		within = True
-		for i in self.extent.keys():
+		for i in self.min.keys():
 			if within:
-				within &= (x[i] < self.center[i] + self.extent[i] and x[i] > self.center[i] - self.extent[i])
+				within &= (x[i] <= self.max[i] and x[i] >= self.min[i])
 		return within
 
 	@property
 	def volume(self):
 		v = 1
-		for r in self.extent.values():
-			v *= 2*r
+		for i in self.min.keys():
+			v *= self.max[i] - self.min[i]
 		return v
 
 	@property
@@ -357,9 +339,8 @@ class SCOPEMicroCluster(base.Base):
 		return self.weight / self.volume
 
 	def insert(self, x, w, timestamp):
+		assert self.is_within(x)
 		self.var_time.update(timestamp, w)
-		for x_idx, x_val in x.items():
-			self.var_x[x_idx].update(x_val, w)
 
 	def relevance_stamp(self, max_mc):
 		mu_time = self.var_time.mean.get()
@@ -400,7 +381,18 @@ class SCOPEMicroCluster(base.Base):
 
 	def __iadd__(self, other: SCOPEMicroCluster):
 		self.var_time += other.var_time
-		self.var_x = {k: self.var_x[k] + other.var_x.get(k, stats.Var()) for k in self.var_x}
+		shared_keys = set(self.min.keys()).union(other.min.keys())
+		#print(self.min.keys(), other.min.keys(), shared_keys)
+		for i in shared_keys:
+			#print(self.min[i], other.min[i], min(self.min[i], other.min[i]))
+			self.min[i] = min(self.min[i], other.min[i])
+			#print(self.min[i])
+			#print(self.max[i], other.max[i], max(self.max[i], other.max[i]))
+			self.max[i] = max(self.max[i], other.max[i])
+			#print(self.max[i])
+		for i in set(other.min.keys()).difference(self.min.keys()):
+			self.min[i] = other.min[i]
+			self.max[i] = other.max[i]
 		return self
 
 	def __str__(self):
@@ -409,9 +401,8 @@ class SCOPEMicroCluster(base.Base):
 	def get_closest_point(self, dp):
 		closest = {}
 		for d in dp.keys():
-			mid = self.center[d]
-			low = mid - self.extent[d]
-			high = mid + self.extent[d]
+			low = self.min[d]
+			high = self.max[d]
 			if dp[d] < low:
 				closest[d] = low
 			elif dp[d] > high:
@@ -420,18 +411,6 @@ class SCOPEMicroCluster(base.Base):
 				closest[d] = dp[d]
 
 		return closest
-
-	def get_max(self):
-		max_dp = {}
-		for d in self.center.keys():
-			max_dp[d] = self.center[d] + self.extent[d]
-		return max_dp
-
-	def get_min(self):
-		min_dp = {}
-		for d in self.center.keys():
-			min_dp[d] = self.center[d] - self.extent[d]
-		return min_dp
 
 
 class SingletonQueue:

@@ -161,7 +161,7 @@ def main(args):
 		num_cls = len(np.unique(Y))
 
 		args.class_num = num_cls
-		f.write(f"{method_name} {j} {vars(args) | param_dict}\n")
+		f.write(f"{method_name} {j} |{vars(args) | param_dict}\n")
 
 		method = None
 		if args.method == "clustream":
@@ -227,7 +227,7 @@ def main(args):
 					assign_step[i] = copy(assign_store)
 
 					metrics, cm = getMetrics(y_store, pred_store)
-					f.write(f"\t{method_name} {j} {i} {metrics}\n")
+					f.write(f"\t{method_name} {j} {i} |{metrics}\n")
 					if has_mcs:
 						mcs = []
 						if args.method == "clustream" or args.method == "opeclustream":
@@ -252,7 +252,7 @@ def main(args):
 				if is_last:
 					predictions = method.learn(dp_store)
 					metrics, cm = getMetrics(y_store, pred_store)
-					f.write(f"\t{method_name} {j} {i} {metrics}\n")
+					f.write(f"\t{method_name} {j} {i} |{metrics}\n")
 
 		if flex_offline:
 			for alg in offline_dict.keys():
@@ -260,7 +260,7 @@ def main(args):
 				for alg_dict in offline_dict[alg]:
 					args.class_num = num_cls
 					alg_dict["n_clusters"] = args.class_num
-					f.write(f"\t{method_name} {j} {alg} {k} {vars(args) | param_dict | alg_dict}\n")
+					f.write(f"\t{method_name} {j} {alg} {k} |{vars(args) | param_dict | alg_dict}\n")
 
 					steps = sorted(dp_store_step.keys())
 					off_pred_store_step = {}
@@ -312,7 +312,7 @@ def main(args):
 							cur_pred.append(cur_mc_clu[mc_id])
 
 						metrics, cm = getMetrics(cur_y, cur_pred)
-						f.write(f"\t\t{method_name} {j} {step} {alg} {k} {metrics}\n")
+						f.write(f"\t\t{method_name} {j} {step} {alg} {k} |{metrics}\n")
 
 						off_pred_store_step[step] = cur_pred
 
