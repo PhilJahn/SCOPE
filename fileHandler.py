@@ -165,7 +165,7 @@ def main(args):
 	# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
 	setting = "1000000_100_1000"
-	dataset = "optdigits"
+	dataset = "pendigits"
 	metrics = ["accuracy", "ARI", "NMI"]
 	for f in onlyfiles:
 		if setting in f and dataset in f:

@@ -118,7 +118,7 @@ class SCOPE(base.Clusterer):
 
 	@staticmethod
 	def _distance(point_a, point_b):
-		return utils.math.minkowski_distance(point_a, point_b, 2)
+		return utils.math.minkowski_distance(point_a, point_b, 1)
 
 	def learn_one(self, x, w=1.0):
 		self._timestamp += 1

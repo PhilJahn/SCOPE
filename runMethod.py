@@ -10,6 +10,8 @@ from time import sleep
 import torch
 from sklearn.cluster import KMeans
 
+from competitors.EmCStream import EmcStream
+from competitors.MCMSTStream import MCMSTStream
 from evaluate import getMetrics
 import mlflow_logger
 from competitors.clustream import CluStream, CluStreamMicroCluster
@@ -84,7 +86,7 @@ def main(args):
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
 	parser.add_argument('--offline', default=1000, type=int, help='Timesteps for offline phase')
-	parser.add_argument('--method', default="opeclustream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="mcmststream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
@@ -127,7 +129,7 @@ def main(args):
 		needs_dict = True
 		use_one = True
 		has_gen = True
-	elif args.method == "scope":
+	elif args.method == "scope" or args.method == "scope2":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
 		param_vals["msmc"] = [3, 5, floor(args.sumlimit * 0.1),
@@ -145,6 +147,16 @@ def main(args):
 		needs_dict = True
 		use_one = True
 		has_gen = True
+	elif args.method == "emcstream":
+		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
+		param_vals["horizon"] = [20, 50, 80, 100, args.sumlimit]  # horizon, from paper
+		param_vals["ari_threshold"] = [1.0] # ari_threshold, from code
+		param_vals["ari_threshold_step"] = [0.001] # ari_threshold, from code
+	elif args.method == "mcmststream":
+		param_vals["W"] = [100, 1000, 2000] # use round(10^((log_10(upper) - log_10(lower)) / 2) * lower)
+		param_vals["N"] = [2, 5, 15]
+		param_vals["r"] = [0.001, 0.005, 0.01, 0.015, 0.05, 0.1, 0.25] # offline optimization
+		param_vals["n_micro"] = [2, 7, 25]
 
 	offline_dict = {}
 	if has_offline:
@@ -159,6 +171,7 @@ def main(args):
 
 		X, Y = load_data(args.ds, seed=0)
 		num_cls = len(np.unique(Y))
+		dim = len(X[0])
 
 		args.class_num = num_cls
 		f.write(f"{method_name} {j} |{vars(args) | param_dict}\n")
@@ -176,13 +189,18 @@ def main(args):
 			                      time_gap=param_dict["tg"], time_window=param_dict["tw"], sigma=param_dict["sigma"],
 			                      mu=param_dict["mu"],
 			                      seed=param_dict["seed"], offline_datascale=param_dict["gen"])
-		elif args.method == "scope":
+		elif args.method == "scope" or args.method == "scope2":
 			method = SCOPEOffline(n_macro_clusters=args.class_num, max_micro_clusters=param_dict["mmc"],
 			                      micro_cluster_r_factor=param_dict["mcrf"],
 			                      time_gap=param_dict["tg"], time_window=param_dict["tw"], sigma=param_dict["sigma"],
 			                      mu=param_dict["mu"],
 			                      seed=param_dict["seed"], dissolve=param_dict["dis"],
 			                      max_singletons=param_dict["msmc"], offline_datascale=param_dict["gen"])
+		elif args.method == "emcstream":
+			method = EmcStream(k=args.class_num, horizon=param_dict["horizon"], ari_threshold=param_dict["ari_threshold"],
+			                   ari_threshold_step=param_dict["ari_threshold_step"], seed=param_dict["seed"])
+		elif args.method == "mcmststream":
+			method = MCMSTStream(N=param_dict["N"], W=param_dict["W"], r=param_dict["r"], n_micro=param_dict["n_micro"], d=dim)
 		dp_store = []
 		pred_store = []
 		y_store = []
@@ -238,9 +256,9 @@ def main(args):
 							for mcid, mc in method.micro_clusters.items():
 								mcs.append([mcid, mc.center, mc.radius, mc.weight, mc.var_time, mc.var_x])
 								mc_store[mcid] = mc
-						elif args.method == "scope":
+						elif args.method == "scope" or args.method == "scope2":
 							for mcid, mc in method.micro_clusters.items():
-								mcs.append([mcid, mc.center, mc.extent, mc.weight, mc.var_time, mc.var_x])
+								mcs.append([mcid, mc.min, mc.max, mc.center, mc.extent, mc.weight, mc.var_time])
 								mc_store[mcid] = mc
 						mc_step[i] = copy(mc_store)
 					dp_store = []
@@ -250,7 +268,12 @@ def main(args):
 					mc_store = {}
 			else:
 				if is_last:
-					predictions = method.learn(dp_store)
+					if method_name == "emcstream":
+						method.add_label_store(y_store)
+					pred_store = method.learn(dp_store)
+					if method_name == "emcstream":
+						clustered_X, clustered_y = method.get_clustered_data()
+						y_store = clustered_y
 					metrics, cm = getMetrics(y_store, pred_store)
 					f.write(f"\t{method_name} {j} {i} |{metrics}\n")
 
