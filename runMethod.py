@@ -195,7 +195,7 @@ def main(args):
 		param_vals["threshold"] = [0.3, 0.8, 0.5]
 		param_vals["eps"] = [10]
 		param_vals["m"] = [2]
-		param_vals["batchsize"] = [100, 1000]
+		param_vals["batchsize"] = [1000, 100]
 		batch_eval = True
 	elif args.method == "dstream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
