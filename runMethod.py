@@ -107,6 +107,7 @@ def main(args):
 	use_one = False
 	has_gen = False
 	constraint = False
+	batch_eval = False
 
 	if args.method == "clustream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
@@ -195,6 +196,7 @@ def main(args):
 		param_vals["eps"] = [10]
 		param_vals["m"] = [2]
 		param_vals["batchsize"] = [100, 1000]
+		batch_eval = True
 	elif args.method == "dstream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["dense_threshold_parameter"] = [3, 1, 0.5]
@@ -405,8 +407,17 @@ def main(args):
 							for cmc in cmcs:
 								for point in cmc.storage:
 									pred_store[point.t] = clu.name
-					metrics, cm = getMetrics(y_store, pred_store)
-					f.write(f"\t{method_name} {j} {i} |{metrics}\n")
+					if batch_eval:
+						batchsize = param_dict["batchsize"]
+						for i in range(0, len(pred_store), batchsize):
+							end_batch = min(i + batchsize, len(pred_store))
+							pred_batch = pred_store[i:end_batch]
+							y_batch = y_store[i:end_batch]
+							metrics, cm = getMetrics(pred_batch, y_batch)
+							f.write(f"\t{method_name} {j} {end_batch} |{metrics}\n")
+					else:
+						metrics, cm = getMetrics(y_store, pred_store)
+						f.write(f"\t{method_name} {j} {i} |{metrics}\n")
 
 		if flex_offline:
 			for alg in offline_dict.keys():
