@@ -278,6 +278,8 @@ class SCOPE(base.Clusterer):
 		expansion += self._distance(child.max, parent.max)
 
 		childsize = self._distance(child.max, child.min)
+
+		expansion = self._distance(parent.max, parent.min)
 		return expansion#/parent.weight - childsize/child.weight
 
 
