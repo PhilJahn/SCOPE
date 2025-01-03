@@ -12,6 +12,12 @@ from sklearn.cluster import KMeans
 
 from competitors.EmCStream import EmcStream
 from competitors.MCMSTStream import MCMSTStream
+from competitors.MuDi import MuDiDataPoint, MudiHandler
+from competitors.dbstream import DBSTREAM
+from competitors.denstream import DenStream
+from competitors.dstream import DStreamClusterer
+from competitors.gbfuzzystream.MBStream import MBStreamHandler
+from competitors.streamkmeans import STREAMKMeans
 from evaluate import getMetrics
 import mlflow_logger
 from competitors.clustream import CluStream, CluStreamMicroCluster
@@ -21,8 +27,6 @@ from method.SCOPE import SCOPE
 from method.offlineHandler import SCOPEOffline, CircSCOPEOffline, OPECluStream, perform_clustering
 from utils import make_param_dicts, dps_to_np, dict_to_np
 import numpy as np
-
-
 
 
 def get_offline_dict():
@@ -71,7 +75,7 @@ def get_offline_dict():
 	offline_dict[meanshift] = meanshift_dicts
 
 	agglomerative = "agglomerative"
-	agglomerative_vals = {"linkage": ["ward",  "complete", "average", "single"]}
+	agglomerative_vals = {"linkage": ["ward", "complete", "average", "single"]}
 	agglomerative_dicts = make_param_dicts(agglomerative_vals)
 	offline_dict[agglomerative] = agglomerative_dicts
 
@@ -86,12 +90,14 @@ def main(args):
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
 	parser.add_argument('--offline', default=1000, type=int, help='Timesteps for offline phase')
-	parser.add_argument('--method', default="mcmststream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="gbfuzzystream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
 	args = parser.parse_args()
 	method_name = args.method
+
+	scope_list = ["scope", "scope2", "scope3"]
 
 	param_vals = {}
 	has_offline = False
@@ -100,6 +106,7 @@ def main(args):
 	needs_dict = False
 	use_one = False
 	has_gen = False
+	constraint = False
 
 	if args.method == "clustream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
@@ -114,7 +121,7 @@ def main(args):
 		has_mcs = True
 		needs_dict = True
 		use_one = True
-	if args.method == "opeclustream":
+	elif args.method == "opeclustream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
 		param_vals["mcrf"] = [2]  # micro_cluster_r_factor
@@ -129,7 +136,7 @@ def main(args):
 		needs_dict = True
 		use_one = True
 		has_gen = True
-	elif args.method == "scope" or args.method == "scope2":
+	elif args.method in scope_list:
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
 		param_vals["msmc"] = [3, 5, floor(args.sumlimit * 0.1),
@@ -150,23 +157,91 @@ def main(args):
 	elif args.method == "emcstream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["horizon"] = [20, 50, 80, 100, args.sumlimit]  # horizon, from paper
-		param_vals["ari_threshold"] = [1.0] # ari_threshold, from code
-		param_vals["ari_threshold_step"] = [0.001] # ari_threshold, from code
+		param_vals["ari_threshold"] = [1.0]  # ari_threshold, from code
+		param_vals["ari_threshold_step"] = [0.001]  # ari_threshold, from code
 	elif args.method == "mcmststream":
-		param_vals["W"] = [100, 1000, 2000] # use round(10^((log_10(upper) - log_10(lower)) / 2) * lower)
+		param_vals["W"] = [100, 1000, 2000]  # use round(10^((log_10(upper) - log_10(lower)) / 2) * lower)
 		param_vals["N"] = [2, 5, 15]
-		param_vals["r"] = [0.001, 0.005, 0.01, 0.015, 0.05, 0.1, 0.25] # offline optimization
+		param_vals["r"] = [0.001, 0.005, 0.01, 0.015, 0.05, 0.1, 0.25]  # offline optimization
 		param_vals["n_micro"] = [2, 7, 25]
+	elif args.method == "denstream":
+		param_vals["decaying_factor"] = [0.25, 0.125, 0.35, 1]  # decaying_factor
+		param_vals["beta"] = [0.75, 0.2, 0.35, 0.6]  # beta
+		param_vals["mu"] = [2, 10]  # mu
+		param_vals["epsilon"] = [0.02, 0.2, 0.1, 0.05, 0.03, 0.01]  # epsilon
+		param_vals["n_samples_init"] = [args.sumlimit]  # n_samples_init
+		param_vals["stream_speed"] = [100, 1000]  # stream speed
+		needs_dict = True
+		use_one = True
+		constraint = True
+	elif args.method == "dbstream":
+		param_vals["clustering_threshold"] = [1.0, 0.2, 0.1, 0.05, 0.03, 0.01]
+		param_vals["fading_factor"] = [0.01, 0.001, 0.0001]
+		param_vals["cleanup_interval"] = [2, 1000]
+		param_vals["intersection_factor"] = [0.3, 0.1, 0.2]
+		param_vals["minimum_weight"] = [1.0, 2, 3]
+		needs_dict = True
+		use_one = True
+	elif args.method == "streamkmeans":
+		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
+		param_vals["chunk_size"] = [10, 100, 1000]  # chunk_size
+		param_vals["sigma"] = [0.5]
+		param_vals["mu"] = [0.5]
+		needs_dict = True
+		use_one = True
+	elif args.method == "gbfuzzystream":
+		param_vals["lam"] = [0.2, 1, 2, 0.5, 1.4]
+		param_vals["threshold"] = [0.3, 0.8, 0.5]
+		param_vals["eps"] = [10]
+		param_vals["m"] = [2]
+		param_vals["batchsize"] = [100, 1000]
+	elif args.method == "dstream":
+		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
+		param_vals["dense_threshold_parameter"] = [3, 1, 0.5]
+		param_vals["sparse_threshold_parameter"] = [0.8, 0.5, 0.3]
+		param_vals["sporadic_threshold_parameter"] = [0.3, 0.1, 0.05]
+		param_vals["decay_factor"] = [0.998, 0.999]
+		param_vals["partitions_count"] = [5, 2, 10, 30]
+		param_vals["gap"] = [100, args.offline, 0]
+		use_one = True
+		has_offline = True
+		constraint = True
+	elif args.method == "mudistream":
+		X, Y = load_data(args.ds, seed=0)
+		num_cls = len(np.unique(Y))
+		dim = len(X[0])
+		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
+		param_vals["gridgran"] = [30, 20, 10, 2]
+		param_vals["alpha"] = [0.03, 0.2, 0.15, 0.16, 0.08]
+		param_vals["lamda"] = [0.125, 8, 0.5, 0.25, 2]
+		param_vals["minPts"] = [int(2 ** (dim * 3 / 4)), 2, 3, 5, 10, 50, 100]
+		constraint = True
 
 	offline_dict = {}
 	if has_offline:
 		if flex_offline:
 			offline_dict = get_offline_dict()
 
-	param_dicts = make_param_dicts(param_vals)
+	if constraint:
+		param_dicts_temp = make_param_dicts(param_vals)
+		param_dicts = []
+		for param_dict in param_dicts_temp:
+			if args.method == "denstream":
+				if param_dict["mu"] > 1 / param_dict["beta"]:
+					param_dicts.append(param_dict)
+			elif args.method == "dstream":
+				if param_dict["dense_threshold_parameter"] > param_dict["sparse_threshold_parameter"] > param_dict[
+					"sporadic_threshold_parameter"]:
+					param_dicts.append(param_dict)
+			elif args.method == "mudistream":
+				if param_dict["alpha"] + 2 ** (-param_dict["lamda"]) > 1:
+					param_dicts.append(param_dict)
+	else:
+		param_dicts = make_param_dicts(param_vals)
 	print(param_dicts)
 	j = 0
-	f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}.txt', 'w', newline='\n', buffering=1000)
+	f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}.txt', 'w', newline='\n',
+	         buffering=1000)
 	for param_dict in param_dicts:
 
 		X, Y = load_data(args.ds, seed=0)
@@ -189,7 +264,7 @@ def main(args):
 			                      time_gap=param_dict["tg"], time_window=param_dict["tw"], sigma=param_dict["sigma"],
 			                      mu=param_dict["mu"],
 			                      seed=param_dict["seed"], offline_datascale=param_dict["gen"])
-		elif args.method == "scope" or args.method == "scope2":
+		elif args.method in scope_list:
 			method = SCOPEOffline(n_macro_clusters=args.class_num, max_micro_clusters=param_dict["mmc"],
 			                      micro_cluster_r_factor=param_dict["mcrf"],
 			                      time_gap=param_dict["tg"], time_window=param_dict["tw"], sigma=param_dict["sigma"],
@@ -197,10 +272,56 @@ def main(args):
 			                      seed=param_dict["seed"], dissolve=param_dict["dis"],
 			                      max_singletons=param_dict["msmc"], offline_datascale=param_dict["gen"])
 		elif args.method == "emcstream":
-			method = EmcStream(k=args.class_num, horizon=param_dict["horizon"], ari_threshold=param_dict["ari_threshold"],
+			method = EmcStream(k=args.class_num, horizon=param_dict["horizon"],
+			                   ari_threshold=param_dict["ari_threshold"],
 			                   ari_threshold_step=param_dict["ari_threshold_step"], seed=param_dict["seed"])
 		elif args.method == "mcmststream":
-			method = MCMSTStream(N=param_dict["N"], W=param_dict["W"], r=param_dict["r"], n_micro=param_dict["n_micro"], d=dim)
+			method = MCMSTStream(N=param_dict["N"], W=param_dict["W"], r=param_dict["r"], n_micro=param_dict["n_micro"],
+			                     d=dim)
+		elif args.method == "denstream":
+			method = DenStream(decaying_factor=param_dict["decaying_factor"], beta=param_dict["beta"],
+			                   mu=param_dict["mu"],
+			                   epsilon=param_dict["epsilon"], n_samples_init=param_dict["n_samples_init"],
+			                   stream_speed=param_dict["stream_speed"])
+		elif args.method == "dbstream":
+			method = DBSTREAM(clustering_threshold=param_dict["clustering_threshold"],
+			                  fading_factor=param_dict["fading_factor"],
+			                  cleanup_interval=param_dict["cleanup_interval"],
+			                  intersection_factor=param_dict["intersection_factor"],
+			                  minimum_weight=param_dict["minimum_weight"])
+		elif args.method == "streamkmeans":
+			method = STREAMKMeans(n_clusters=args.class_num, chunk_size=param_dict["chunk_size"],
+			                      sigma=param_dict["sigma"], mu=param_dict["mu"], seed=param_dict["seed"])
+		elif args.method == "dstream":
+			domains_per_dimension = [(0, 1)] * dim
+			partitions_per_dimension = [param_dict["partitions_count"]] * dim
+			method = DStreamClusterer(initial_cluster_count=args.class_num, seed=param_dict["seed"],
+			                          dense_threshold_parameter=param_dict["dense_threshold_parameter"],
+			                          sparse_threshold_parameter=param_dict["sparse_threshold_parameter"],
+			                          sporadic_threshold_parameter=param_dict["sporadic_threshold_parameter"],
+			                          decay_factor=param_dict["decay_factor"],
+			                          gap=param_dict["gap"],
+			                          domains_per_dimension=domains_per_dimension,
+			                          partitions_per_dimension=partitions_per_dimension,
+			                          dimensions=dim)
+		elif args.method == "mudistream":
+			mini = 0
+			maxi = 1
+
+			method = MudiHandler(mini=mini, maxi=maxi,
+			                     dimension=dim,
+			                     lamda=param_dict["lamda"],
+			                     gridGranuality=param_dict["gridgran"],
+			                     alpha=param_dict["alpha"],
+			                     minPts=param_dict["minPts"],
+			                     seed=param_dict["seed"])
+		elif args.method == "gbfuzzystream":
+			method = MBStreamHandler(lam=param_dict["lam"],
+			                         batchsize=param_dict["batchsize"],
+			                         threshold=param_dict["threshold"],
+			                         m=param_dict["m"],
+			                         eps=param_dict["eps"])
+
 		dp_store = []
 		pred_store = []
 		y_store = []
@@ -219,6 +340,8 @@ def main(args):
 			y = Y[i]
 			if needs_dict:
 				dp = dict(enumerate(x))
+			elif args.method == "mudistream":
+				dp = [MuDiDataPoint(X[i].tolist(), i)]
 			else:
 				dp = x
 			dp_store.append(dp)
@@ -256,7 +379,7 @@ def main(args):
 							for mcid, mc in method.micro_clusters.items():
 								mcs.append([mcid, mc.center, mc.radius, mc.weight, mc.var_time, mc.var_x])
 								mc_store[mcid] = mc
-						elif args.method == "scope" or args.method == "scope2":
+						elif args.method in scope_list:
 							for mcid, mc in method.micro_clusters.items():
 								mcs.append([mcid, mc.min, mc.max, mc.center, mc.extent, mc.weight, mc.var_time])
 								mc_store[mcid] = mc
@@ -274,6 +397,14 @@ def main(args):
 					if method_name == "emcstream":
 						clustered_X, clustered_y = method.get_clustered_data()
 						y_store = clustered_y
+					elif method_name == "mudistream":
+						clusters = pred_store.copy()
+						pred_store = [-1] * len(X)
+						for clu in clusters:
+							cmcs = clu._cmcList
+							for cmc in cmcs:
+								for point in cmc.storage:
+									pred_store[point.t] = clu.name
 					metrics, cm = getMetrics(y_store, pred_store)
 					f.write(f"\t{method_name} {j} {i} |{metrics}\n")
 
@@ -316,9 +447,11 @@ def main(args):
 								cur_mc_centers = [mc.center for l, mc in cur_mcs.items()]
 								cur_mc_ids = [l for l, mc in cur_mcs.items()]
 								if alg == "kmeans":
-									_kmeans = KMeans(n_clusters=alg_dict["n_clusters"], random_state=alg_dict["alg_seed"])
+									_kmeans = KMeans(n_clusters=alg_dict["n_clusters"],
+									                 random_state=alg_dict["alg_seed"])
 									cur_mc_weight = [mc.weight for l, mc in cur_mcs.items()]
-									clustering = _kmeans.fit_predict(dps_to_np(cur_mc_centers), sample_weight=cur_mc_weight)
+									clustering = _kmeans.fit_predict(dps_to_np(cur_mc_centers),
+									                                 sample_weight=cur_mc_weight)
 								else:
 									cur_mc_centers_np = dps_to_np(cur_mc_centers)
 									clustering, _ = perform_clustering(cur_mc_centers_np, alg, alg_dict)
@@ -327,9 +460,8 @@ def main(args):
 							except:
 								cur_mc_ids = [l for l, mc in cur_mcs.items()]
 								for l in range(len(cur_mcs)):
-									cur_mc_clu[cur_mc_ids[l]] = l #assume full segementation
+									cur_mc_clu[cur_mc_ids[l]] = l  # assume full segementation
 								print(f"Clustering for {alg_dict} failed at {step}")
-
 
 						for mc_id in cur_assign:
 							cur_pred.append(cur_mc_clu[mc_id])
@@ -340,10 +472,10 @@ def main(args):
 						off_pred_store_step[step] = cur_pred
 
 					k += 1
-					#f.flush()
+		# f.flush()
 
 		j += 1
-		#f.flush()
+	# f.flush()
 	f.close()
 
 
