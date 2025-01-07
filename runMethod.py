@@ -90,7 +90,7 @@ def main(args):
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
 	parser.add_argument('--offline', default=1000, type=int, help='Timesteps for offline phase')
-	parser.add_argument('--method', default="gbfuzzystream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="gbfuzzystream1000", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
@@ -190,12 +190,21 @@ def main(args):
 		param_vals["mu"] = [0.5]
 		needs_dict = True
 		use_one = True
-	elif args.method == "gbfuzzystream":
+	elif args.method == "gbfuzzystream1000":
 		param_vals["lam"] = [0.2, 1, 2, 0.5, 1.4]
 		param_vals["threshold"] = [0.3, 0.8, 0.5]
 		param_vals["eps"] = [10]
 		param_vals["m"] = [2]
-		param_vals["batchsize"] = [1000, 100]
+		param_vals["batchsize"] = [1000]
+		param_vals["rand"] = [0, 1, 2, 3, 4]  # seed
+		batch_eval = True
+	elif args.method == "gbfuzzystream100":
+		param_vals["lam"] = [0.2, 1, 2, 0.5, 1.4]
+		param_vals["threshold"] = [0.3, 0.8, 0.5]
+		param_vals["eps"] = [10]
+		param_vals["m"] = [2]
+		param_vals["batchsize"] = [100]
+		param_vals["rand"] = [0, 1, 2, 3, 4]  # seed
 		batch_eval = True
 	elif args.method == "dstream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
@@ -317,7 +326,7 @@ def main(args):
 			                     alpha=param_dict["alpha"],
 			                     minPts=param_dict["minPts"],
 			                     seed=param_dict["seed"])
-		elif args.method == "gbfuzzystream":
+		elif args.method == "gbfuzzystream100" or args.method == "gbfuzzystream1000":
 			method = MBStreamHandler(lam=param_dict["lam"],
 			                         batchsize=param_dict["batchsize"],
 			                         threshold=param_dict["threshold"],
