@@ -1,6 +1,8 @@
 import ast
 import copy
 import sys
+import traceback
+
 import numpy as np
 from os import listdir
 from os.path import isfile, join
@@ -11,7 +13,6 @@ import dictdiffer
 
 def process_file(path, metrics):
 	reader = open(path)
-
 	param_dict = {}
 	result_dict = {}
 	seed_mapping = {}
@@ -21,6 +22,7 @@ def process_file(path, metrics):
 			# print(line)
 			line = line.replace("\t", "")
 			line = line.replace("\n", "")
+			#print(line)
 			if "|" not in line:
 				line = line.replace("{", "|{")
 			line_split = line.split("|")
@@ -48,6 +50,7 @@ def process_file(path, metrics):
 			else:
 				alg = "base"
 				alg_index = 0
+				#print("-----")
 			if param:
 				if method_name in seed_mapping.keys():
 					if alg in param_dict[method_name].keys():
@@ -60,10 +63,17 @@ def process_file(path, metrics):
 				if "alg_seed" in dictionary.keys():
 					if dictionary["alg_seed"] != 0:
 						dictionary["alg_seed"] = 0
+
+						if dictionary["seed"] != 0:
+							dictionary["seed"] = 0
+
 						for alg_index_2 in param_dict[method_name][alg].keys():
 							dictionary_2 = param_dict[method_name][alg][alg_index_2]
 							if len(list(dictdiffer.diff(dictionary, dictionary_2))) == 0:
+								print(alg_index, "is", alg_index_2)
 								seed_mapping[method_name][alg][alg_index] = alg_index_2
+							else:
+								print(alg_index, "is not", alg_index_2, list(dictdiffer.diff(dictionary, dictionary_2)))
 				alg_index = seed_mapping[method_name][alg][alg_index]
 				if method_name in param_dict.keys():
 					if alg in param_dict[method_name].keys():
@@ -75,6 +85,7 @@ def process_file(path, metrics):
 					param_dict[method_name] = {alg: {alg_index: dictionary}}
 			else:
 				sm = seed_mapping[method_name][alg][alg_index]
+				old_idx = alg_index
 				if sm != alg_index:
 					seed = f"{seed}_{alg_index}"
 					alg_index = sm
@@ -93,11 +104,12 @@ def process_file(path, metrics):
 					result_dict[method_name] = {alg: {alg_index: {t: {seed: dictionary}}}}
 
 			line = reader.readline()
-
 	finally:
 		#pprint(param_dict)
 		#pprint(result_dict)
 		reader.close()
+
+		#pprint(seed_mapping)
 
 		for method_name in result_dict.keys():
 			for alg_name in result_dict[method_name].keys():
@@ -158,6 +170,7 @@ def process_file(path, metrics):
 							best[metric] = metric_val
 				#print("base", method_name, alg_name, base)
 				print("best", method_name, alg_name, best)
+			pprint(result_dict)
 		return param_dict, result_dict
 
 def main(args):
