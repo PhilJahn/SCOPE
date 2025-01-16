@@ -11,10 +11,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as ptc
 
+from offline_methods.DCFcluster.src.DCFcluster import DCFcluster
 from offline_methods.dbhd_clustering.DBHDALGO import DBHD
+from offline_methods.SCAR.SpectralClusteringAcceleratedRobust import SCAR
+from offline_methods.spectacl.Spectacl import Spectacl
 from method.CircSCOPE import CircSCOPE
 from method.SCOPE import SCOPE
 from utils import dps_to_np, dict_to_np
+
+k_algos = ["kmeans", "spectral",  "agglomerative", "scar", "spectacl"]
 
 
 # obtain n uniformly sampled points within a d-sphere with a fixed radius around a given point. Assigns all points to
@@ -122,6 +127,28 @@ def perform_clustering(data, algorithm, args):
 
 		clustering = agglomerative.fit_predict(data, None)
 		return clustering, None
+	elif algorithm == "scar":
+		args = {"nn":"size_root", "alpha":0.5, "theta":20, "m":0.5, "laplacian":0, "n_iter": 50, "normalize":False, "weighted":False} | args
+
+		if args["nn"] == "size_root":
+			args["nn"] = round(len(data) ** 0.5)
+
+		scar = SCAR(k=args["n_clusters"], nn=args["nn"], alpha=args["alpha"], theta=args["theta"], m = args["m"], laplacian=args["laplacian"], n_iter=args["n_iter"], normalize=args["normalize"], weighted=args["weighted"], seed=args["alg_seed"])
+
+		clustering = scar.fit_predict(data)
+		return clustering, None
+	elif algorithm == "spectacl":
+		args = {"affinity":"radius_neighbors", "epsilon":1.0, "n_jobs":None, "normalize_adjacency":False} | args
+
+		spectacl = Spectacl( affinity=args["affinity"], n_clusters=args["n_clusters"], epsilon=args["epsilon"], n_jobs=args["n_jobs"], normalize_adjacency=args["normalize_adjacency"], seed=args["alg_seed"])
+		clustering = spectacl.fit_predict(data)
+		return clustering, None
+	elif algorithm == "dcf":
+		args = {"k": None, "beta": 0.4} | args
+
+		dcf_result = DCFcluster.train(X=np.array(data), k=args["k"], beta=args["beta"])
+		clustering = dcf_result.labels
+		return clustering, None
 	else:
 		raise NotImplementedError
 
@@ -154,7 +181,7 @@ class OPECluStream(CluStream):
 			self.offline_args = {}
 		else:
 			self.offline_args = offline_args
-		if self.offline_algo == "kmeans" or self.offline_algo == "spectral" or self.offline_algo == "agglomerative":
+		if self.offline_algo in k_algos:
 			self.offline_args["n_clusters"] = n_macro_clusters
 		self.offline_args["alg_seed"] = seed
 		self.offline_datascale = offline_datascale
@@ -275,7 +302,7 @@ class CircSCOPEOffline(CircSCOPE):
 			self.offline_args = {}
 		else:
 			self.offline_args = offline_args
-		if self.offline_algo == "kmeans" or self.offline_algo == "spectral" or self.offline_algo == "agglomerative":
+		if self.offline_algo in k_algos:
 			self.offline_args["n_clusters"] = n_macro_clusters
 		self.offline_args["alg_seed"] = seed
 		self.offline_datascale = offline_datascale
@@ -420,7 +447,7 @@ class SCOPEOffline(SCOPE):
 			self.offline_args = {}
 		else:
 			self.offline_args = offline_args
-		if self.offline_algo == "kmeans" or self.offline_algo == "spectral" or self.offline_algo == "agglomerative":
+		if self.offline_algo in k_algos:
 			self.offline_args["n_clusters"] = n_macro_clusters
 		self.offline_args["alg_seed"] = seed
 		self.offline_datascale = offline_datascale

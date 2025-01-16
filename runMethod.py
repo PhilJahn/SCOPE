@@ -17,6 +17,8 @@ from competitors.dbstream import DBSTREAM
 from competitors.denstream import DenStream
 from competitors.dstream import DStreamClusterer
 from competitors.gbfuzzystream.MBStream import MBStreamHandler
+
+from competitors.full_dataset_learner import full_dataset_leaner
 from competitors.streamkmeans import STREAMKMeans
 from evaluate import getMetrics
 import mlflow_logger
@@ -29,55 +31,79 @@ from utils import make_param_dicts, dps_to_np, dict_to_np
 import numpy as np
 
 
-def get_offline_dict():
+def get_offline_dict(args):
 	offline_dict = {}
-	kmeans = "kmeans"
-	kmeans_vals = {"alg_seed": [0, 1, 2, 3, 4]}
-	kmeans_dicts = make_param_dicts(kmeans_vals)
-	offline_dict[kmeans] = kmeans_dicts
+	if args.gpu:
+		dec = "dec"
+		dec_vals = {}
+		dec_dicts = make_param_dicts(dec_vals)
+		offline_dict[dec] = dec_dicts
+	else:
+		kmeans = "kmeans"
+		kmeans_vals = {"alg_seed": [0, 1, 2, 3, 4]}
+		kmeans_dicts = make_param_dicts(kmeans_vals)
+		offline_dict[kmeans] = kmeans_dicts
 
-	xmeans = "xmeans"
-	xmeans_vals = {"alg_seed": [0, 1, 2, 3, 4]}
-	xmeans_dicts = make_param_dicts(xmeans_vals)
-	offline_dict[xmeans] = xmeans_dicts
+		xmeans = "xmeans"
+		xmeans_vals = {"alg_seed": [0, 1, 2, 3, 4]}
+		xmeans_dicts = make_param_dicts(xmeans_vals)
+		offline_dict[xmeans] = xmeans_dicts
 
-	dbhd = "dbhd"
-	dbhd_vals = {"rho": [1.2, 0.5, 0.75, 1, 1.25, 1.5, 2], "beta": [0.1, 0.2, 0.3, 0.4, 0.5, 0.05, 0.01],
-	             "min_cluster_size": [5, 3, 2, 10, 25, 50, 100]}
-	dbhd_dicts = make_param_dicts(dbhd_vals)
-	offline_dict[dbhd] = dbhd_dicts
+		dbhd = "dbhd"
+		dbhd_vals = {"rho": [1.2, 0.5, 0.75, 1, 1.25, 1.5, 2], "beta": [0.1, 0.2, 0.3, 0.4, 0.5, 0.05, 0.01],
+		             "min_cluster_size": [5, 3, 2, 10, 25, 50, 100]}
+		dbhd_dicts = make_param_dicts(dbhd_vals)
+		offline_dict[dbhd] = dbhd_dicts
 
-	spectral = "spectral"
-	spectral_vals_rbf = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['rbf'], "gamma": [1, 0.5, 1.5, 2]}
-	spectral_vals_nn = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['nearest_neighbors'], "n_neighbors": [10, 5, 2, 20]}
-	spectral_dicts = make_param_dicts(spectral_vals_rbf)
-	spectral_dicts.extend(make_param_dicts(spectral_vals_nn))
-	offline_dict[spectral] = spectral_dicts
+		spectral = "spectral"
+		spectral_vals_rbf = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['rbf'], "gamma": [1, 0.5, 1.5, 2]}
+		spectral_vals_nn = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['nearest_neighbors'], "n_neighbors": [10, 5, 2, 20]}
+		spectral_dicts = make_param_dicts(spectral_vals_rbf)
+		spectral_dicts.extend(make_param_dicts(spectral_vals_nn))
+		offline_dict[spectral] = spectral_dicts
 
-	dbscan = "dbscan"
-	dbscan_vals = {"eps": [0.5, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100]}
-	dbscan_dicts = make_param_dicts(dbscan_vals)
-	offline_dict[dbscan] = dbscan_dicts
+		dbscan = "dbscan"
+		dbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100]}
+		dbscan_dicts = make_param_dicts(dbscan_vals)
+		offline_dict[dbscan] = dbscan_dicts
 
-	hdbscan = "hdbscan"
-	hdbscan_vals = {"min_cluster_size": [5, 3, 2, 10, 25, 50, 100]}
-	hdbscan_dicts = make_param_dicts(hdbscan_vals)
-	offline_dict[hdbscan] = hdbscan_dicts
+		hdbscan = "hdbscan"
+		hdbscan_vals = {"min_cluster_size": [5, 3, 2, 10, 25, 50, 100]}
+		hdbscan_dicts = make_param_dicts(hdbscan_vals)
+		offline_dict[hdbscan] = hdbscan_dicts
 
-	optics = "optics"
-	optics_vals = {"min_samples": [5, 3, 2, 10, 25, 50, 100], "xi": [0.05, 0.03, 0.01, 0.08, 0.1, 0.2]}
-	optics_dicts = make_param_dicts(optics_vals)
-	offline_dict[optics] = optics_dicts
+		optics = "optics"
+		optics_vals = {"min_samples": [5, 3, 2, 10, 25, 50, 100], "xi": [0.05, 0.03, 0.01, 0.08, 0.1, 0.2]}
+		optics_dicts = make_param_dicts(optics_vals)
+		offline_dict[optics] = optics_dicts
 
-	meanshift = "meanshift"
-	meanshift_vals = {"default": [1]}
-	meanshift_dicts = make_param_dicts(meanshift_vals)
-	offline_dict[meanshift] = meanshift_dicts
+		meanshift = "meanshift"
+		meanshift_vals = {"default": [1]}
+		meanshift_dicts = make_param_dicts(meanshift_vals)
+		offline_dict[meanshift] = meanshift_dicts
 
-	agglomerative = "agglomerative"
-	agglomerative_vals = {"linkage": ["ward", "complete", "average", "single"]}
-	agglomerative_dicts = make_param_dicts(agglomerative_vals)
-	offline_dict[agglomerative] = agglomerative_dicts
+		agglomerative = "agglomerative"
+		agglomerative_vals = {"linkage": ["ward", "complete", "average", "single"]}
+		agglomerative_dicts = make_param_dicts(agglomerative_vals)
+		offline_dict[agglomerative] = agglomerative_dicts
+
+		scar = "scar"
+		scar_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_neighbors": ["size_root", 10, 5, 2, 20], "theta": [20, 30, 100, 200, 500], "alpha": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
+		scar_dicts = make_param_dicts(scar_vals)
+		offline_dict[scar] = scar_dicts
+
+
+		spectacl = "spectacl"
+		spectacl_vals = {"alg_seed": [0, 1, 2, 3, 4], "epsilon": [1.0, 0.5, 0.25, 0.1, 0.05, 0.01]}
+		spectacl_dicts = make_param_dicts(spectacl_vals)
+		offline_dict[spectacl] = spectacl_dicts
+
+		offline_dict = {}
+
+		dcf = "dcf"
+		dcf_vals = {"k": [3, 5, 10, 15, 20, 25, 50, 100], "beta": [0.4, 0.3, 0.2, 0.1, 0.5, 0.6, 0.7, 0.8, 0.9]}
+		dcf_dicts = make_param_dicts(dcf_vals)
+		offline_dict[dcf] = dcf_dicts
 
 	return offline_dict
 
@@ -90,9 +116,10 @@ def main(args):
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
 	parser.add_argument('--offline', default=1000, type=int, help='Timesteps for offline phase')
-	parser.add_argument('--method', default="gbfuzzystream1000", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="full", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
+	parser.add_argument('--gpu', default=False, type=bool, help='GPU usgae')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
 	args = parser.parse_args()
 	method_name = args.method
@@ -227,11 +254,17 @@ def main(args):
 		param_vals["lamda"] = [0.125, 8, 0.5, 0.25, 2]
 		param_vals["minPts"] = [int(2 ** (dim * 3 / 4)), 2, 3, 5, 10, 50, 100]
 		constraint = True
+	elif args.method == "full":
+		has_offline = True
+		flex_offline = True
+		use_one = True
+		has_mcs = True
+		param_vals["full"] = [True]
 
 	offline_dict = {}
 	if has_offline:
 		if flex_offline:
-			offline_dict = get_offline_dict()
+			offline_dict = get_offline_dict(args)
 
 	if constraint:
 		param_dicts_temp = make_param_dicts(param_vals)
@@ -251,7 +284,7 @@ def main(args):
 		param_dicts = make_param_dicts(param_vals)
 	print(param_dicts)
 	j = 0
-	f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}.txt', 'w', newline='\n',
+	f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}.txt', 'w', newline='\n',
 	         buffering=1000)
 	for param_dict in param_dicts:
 
@@ -332,6 +365,8 @@ def main(args):
 			                         threshold=param_dict["threshold"],
 			                         m=param_dict["m"],
 			                         eps=param_dict["eps"])
+		elif args.method == "full":
+			method = full_dataset_leaner()
 
 		dp_store = []
 		pred_store = []
@@ -360,7 +395,7 @@ def main(args):
 			is_last = i == len(X) - 1
 			if use_one:
 				method.learn_one(dp)
-				if (i % args.offline == 0 and i > 0) or is_last:
+				if ((i+1) % args.offline == 0 and i > 0) or is_last:
 					if has_offline:
 						method.offline_processing()
 					if has_gen:
@@ -379,7 +414,7 @@ def main(args):
 					assign_step[i] = copy(assign_store)
 
 					metrics, cm = getMetrics(y_store, pred_store)
-					f.write(f"\t{method_name} {j} {i} |{metrics}\n")
+					f.write(f"\t{method_name} {j} {i+1} |{metrics}\n")
 					if has_mcs:
 						mcs = []
 						if args.method == "clustream" or args.method == "opeclustream":
@@ -426,7 +461,7 @@ def main(args):
 							f.write(f"\t{method_name} {j} {end_batch} |{metrics}\n")
 					else:
 						metrics, cm = getMetrics(y_store, pred_store)
-						f.write(f"\t{method_name} {j} {i} |{metrics}\n")
+						f.write(f"\t{method_name} {j} {i+1} |{metrics}\n")
 
 		if flex_offline:
 			for alg in offline_dict.keys():
@@ -437,6 +472,7 @@ def main(args):
 					f.write(f"\t{method_name} {j} {alg} {k} |{vars(args) | param_dict | alg_dict}\n")
 
 					steps = sorted(dp_store_step.keys())
+					#print(steps)
 					off_pred_store_step = {}
 					for step in steps:
 						# cur_dp = dp_store_step[step]
@@ -461,8 +497,7 @@ def main(args):
 								for i_mc in is_mc:
 									labels_mc[clustering[i_mc]] += 1
 								cur_mc_clu[id] = labels_mc.index(max(labels_mc))
-
-						else:
+						elif not method_name=="full":
 							try:
 								cur_mc_centers = [mc.center for l, mc in cur_mcs.items()]
 								cur_mc_ids = [l for l, mc in cur_mcs.items()]
@@ -481,13 +516,19 @@ def main(args):
 								cur_mc_ids = [l for l, mc in cur_mcs.items()]
 								for l in range(len(cur_mcs)):
 									cur_mc_clu[cur_mc_ids[l]] = l  # assume full segementation
-								print(f"Clustering for {alg_dict} failed at {step}")
+								print(f"Clustering for {alg_dict} failed at {step+1}")
 
-						for mc_id in cur_assign:
-							cur_pred.append(cur_mc_clu[mc_id])
+						if method_name == "full":
+							cur_data = dp_store_step[step]
+							#print(len(cur_data))
+							cur_pred, _ = perform_clustering(cur_data, alg, alg_dict)
+							#print(cur_pred)
+						else:
+							for mc_id in cur_assign:
+								cur_pred.append(cur_mc_clu[mc_id])
 
 						metrics, cm = getMetrics(cur_y, cur_pred)
-						f.write(f"\t\t{method_name} {j} {step} {alg} {k} |{metrics}\n")
+						f.write(f"\t\t{method_name} {j} {step+1} {alg} {k} |{metrics}\n")
 
 						off_pred_store_step[step] = cur_pred
 
