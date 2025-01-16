@@ -7,12 +7,11 @@ from numpy.random import PCG64
 from sklearn.cluster import KMeans, SpectralClustering, DBSCAN, OPTICS, MeanShift, HDBSCAN, AgglomerativeClustering
 
 from competitors.clustream import CluStream
-import river.cluster as rcluster
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as ptc
 
-from dbhd_clustering.DBHDALGO import DBHD
+from offline_methods.dbhd_clustering.DBHDALGO import DBHD
 from method.CircSCOPE import CircSCOPE
 from method.SCOPE import SCOPE
 from utils import dps_to_np, dict_to_np
