@@ -14,6 +14,7 @@ import matplotlib.patches as ptc
 from offline_methods.DCFcluster.src.DCFcluster import DCFcluster
 from offline_methods.dbhd_clustering.DBHDALGO import DBHD
 from offline_methods.SCAR.SpectralClusteringAcceleratedRobust import SCAR
+from offline_methods.mdbscan import MDBSCAN
 from offline_methods.spectacl.Spectacl import Spectacl
 from method.CircSCOPE import CircSCOPE
 from method.SCOPE import SCOPE
@@ -149,6 +150,10 @@ def perform_clustering(data, algorithm, args):
 		dcf_result = DCFcluster.train(X=np.array(data), k=args["k"], beta=args["beta"])
 		clustering = dcf_result.labels
 		return clustering, None
+	elif algorithm == "mdbscan":
+		args = {"eps":0.5, "min_samples": 5, "n_neighbors": 10, "t": 0.5} | args
+		clustering = MDBSCAN(np.array(data), eps=args["eps"], min_samples=args["min_samples"], n_neighbors=args["n_neighbors"], t=args["t"] )
+		return clustering,None
 	else:
 		raise NotImplementedError
 

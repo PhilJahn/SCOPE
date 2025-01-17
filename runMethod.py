@@ -98,12 +98,17 @@ def get_offline_dict(args):
 		spectacl_dicts = make_param_dicts(spectacl_vals)
 		offline_dict[spectacl] = spectacl_dicts
 
+		#dcf = "dcf"
+		#dcf_vals = {"k": [3, 5, 10, 15, 20, 25, 50, 100], "beta": [0.4, 0.3, 0.2, 0.1, 0.5, 0.6, 0.7, 0.8, 0.9]}
+		#dcf_dicts = make_param_dicts(dcf_vals)
+		#offline_dict[dcf] = dcf_dicts
+
 		offline_dict = {}
 
-		dcf = "dcf"
-		dcf_vals = {"k": [3, 5, 10, 15, 20, 25, 50, 100], "beta": [0.4, 0.3, 0.2, 0.1, 0.5, 0.6, 0.7, 0.8, 0.9]}
-		dcf_dicts = make_param_dicts(dcf_vals)
-		offline_dict[dcf] = dcf_dicts
+		mdbscan = "mdbscan"
+		mdbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100], "n_neighbors": [10, 5, 2, 20], "t": [0.1, 0.3, 0.5, 1, 2, 5, 10, 50, 100, 250]}
+		mdbscan_dicts = make_param_dicts(mdbscan_vals)
+		offline_dict[mdbscan] = mdbscan_dicts
 
 	return offline_dict
 
