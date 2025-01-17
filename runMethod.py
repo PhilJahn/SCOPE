@@ -92,7 +92,6 @@ def get_offline_dict(args):
 		scar_dicts = make_param_dicts(scar_vals)
 		offline_dict[scar] = scar_dicts
 
-
 		spectacl = "spectacl"
 		spectacl_vals = {"alg_seed": [0, 1, 2, 3, 4], "epsilon": [1.0, 0.5, 0.25, 0.1, 0.05, 0.01]}
 		spectacl_dicts = make_param_dicts(spectacl_vals)
@@ -106,7 +105,7 @@ def get_offline_dict(args):
 		offline_dict = {}
 
 		mdbscan = "mdbscan"
-		mdbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100], "n_neighbors": [10, 5, 2, 20], "t": [0.1, 0.3, 0.5, 1, 2, 5, 10, 50, 100, 250]}
+		mdbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100], "n_neighbors": [10, 5, 2, 20], "t": [2, 5, 10, 50, 100, 200]}
 		mdbscan_dicts = make_param_dicts(mdbscan_vals)
 		offline_dict[mdbscan] = mdbscan_dicts
 
