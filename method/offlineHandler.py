@@ -8,6 +8,9 @@ from clustpy.deep import DEC, DipEncoder
 from numpy.random import PCG64
 from sklearn.cluster import KMeans, SpectralClustering, DBSCAN, OPTICS, MeanShift, HDBSCAN, AgglomerativeClustering
 
+from offline_methods.SHADE.dcdist import DCTree_Clusterer
+#from offline_methods.SHADE.shade.shade import SHADE
+from offline_methods.DPC.DPC import DensityPeakCluster
 from competitors.clustream import CluStream
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,6 +21,7 @@ from offline_methods.SNNDPC import SNNDPC
 from offline_methods.dbhd_clustering.DBHDALGO import DBHD
 from offline_methods.SCAR.SpectralClusteringAcceleratedRobust import SCAR
 from offline_methods.mdbscan import MDBSCAN
+from offline_methods.rnndbscan import RNNDBSCAN
 from offline_methods.spectacl.Spectacl import Spectacl
 from method.CircSCOPE import CircSCOPE
 from method.SCOPE import SCOPE
@@ -249,6 +253,58 @@ def perform_clustering(data, algorithm, args):
 		                        pretrain_epochs =args["pretrain_epochs"], clustering_epochs= args["clustering_epochs"],
 		                        optimizer_class=args["optimizer_class"], loss_fn=args["loss_fn"], max_cluster_size_diff_factor=args["max_cluster_size_diff_factor"]).fit_predict(np.array(data), None)
 		return clustering, None
+	elif algorithm == "dpca":
+		args = {"distance_metric": 'euclidean',
+             "silence": True,
+             "gauss_cutoff": True,
+             "density_threshold": None,
+             "distance_threshold":  None,
+             "anormal": True} | args
+		dpc = DensityPeakCluster(distance_metric =args["distance_metric"], silence=args["silence"], gauss_cutoff=args["gauss_cutoff"],
+		                         density_threshold=args["density_threshold"], distance_threshold=args["distance_threshold"],
+		                         anormal=args["anormal"])
+		dpc.fit(np.array(data))
+		clustering = dpc.labels_
+		return clustering, None
+	elif algorithm == "rnndbscan":
+		args = {"n_neighbors": 5} | args
+		clustering = RNNDBSCAN(k=args["n_neighbors"]).fit_predict(data)
+		return clustering, None
+	# elif algorithm == "shade":
+	# 	if args["embedding_size"] > len(data[0]):
+	# 		return [-1]*len(data), None
+	# 	args = {"batch_size": 500,
+    #          "autoencoder":  None,
+    #          "min_points": 5,
+    #          "use_complete_dc_tree": False,
+    #          "use_matrix_dc_distance": True,
+    #          "increase_inter_cluster_distance": False,
+    #          "pretrain_epochs": 0,
+    #          "pretrain_optimizer_params": {"lr": 1e-3},
+    #          "clustering_epochs": 100,
+    #          "clustering_optimizer_params": {"lr": 1e-3},
+    #          "embedding_size": 10,
+    #          "optimizer_class": torch.optim.Adam,
+    #          "loss_fn": torch.nn.MSELoss(),
+    #          "custom_dataloaders": None,
+    #          "standardize": True,
+    #          "standardize_axis":  0,
+    #          "cluster_algorithm": DCTree_Clusterer,
+    #          "cluster_algorithm_params": {},
+    #          "degree_of_reconstruction":  1.0,
+    #          "degree_of_density_preservation": 1.0} | args
+	# 	clustering = SHADE(batch_size=args["batch_size"], autoencoder=args["autoencoder"], min_points=args["min_points"],
+	# 	                   use_complete_dc_tree=args["use_complete_dc_tree"], use_matrix_dc_distance=args["use_matrix_dc_distance"],
+	# 	                   increase_inter_cluster_distance=args["increase_inter_cluster_distance"], pretrain_epochs=args["pretrain_epochs"],
+	# 	                   pretrain_optimizer_params=args["pretrain_optimizer_params"], clustering_epochs=args["clustering_epochs"],
+	# 	                   clustering_optimizer_params=args["clustering_optimizer_params"], embedding_size=args["embedding_size"],
+	# 	                   optimizer_class=args["optimizer_class"], loss_fn=args["loss_fn"], custom_dataloaders=args["custom_dataloaders"],
+	# 	                   standardize=args["standardize"], standardize_axis=args["standardize_axis"], n_clusters=None,
+	# 	                   cluster_algorithm=args["cluster_algorithm"], cluster_algorithm_params=args["cluster_algorithm_params"],
+	# 	                   degree_of_reconstruction=args["degree_of_reconstruction"], degree_of_density_preservation=args["degree_of_density_preservation"],
+	# 	                   random_state=args["alg_seed"]
+	# 	                   )
+
 	else:
 		raise NotImplementedError
 

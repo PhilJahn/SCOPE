@@ -34,6 +34,11 @@ import numpy as np
 def get_offline_dict(args):
 	offline_dict = {}
 	if args.gpu:
+		#shade = "shade"
+		#shade_vals = {"alg_seed": [0, 1, 2, 3, 4], "min_points": [5, 3, 2, 10, 25, 50, 100], "embedding_size": [10, 5, 2], "increase_inter_cluster_distance": [False, True]}
+		#shade_dicts = make_param_dicts(shade_vals)
+		#offline_dict[shade] = shade_dicts
+
 		dec = "dec"
 		dec_vals = {"alg_seed": [0, 1, 2, 3, 4], "alpha": [1.0, 0.1, 0.25, 0.5, 0.75, 0.9], "embedding_size": [10, 5, 2], "use_reconstruction_loss":[True, False]}
 		dec_dicts = make_param_dicts(dec_vals)
@@ -44,33 +49,90 @@ def get_offline_dict(args):
 		dipenc_dicts = make_param_dicts(dipenc_vals)
 		offline_dict[dipenc] = dipenc_dicts
 	else:
-		kmeans = "kmeans"
-		kmeans_vals = {"alg_seed": [0, 1, 2, 3, 4]}
-		kmeans_dicts = make_param_dicts(kmeans_vals)
-		offline_dict[kmeans] = kmeans_dicts
 
-		dbhd = "dbhd"
-		dbhd_vals = {"rho": [1.2, 0.5, 0.75, 1, 1.25, 1.5, 2], "beta": [0.1, 0.2, 0.3, 0.4, 0.5, 0.05, 0.01],
-		             "min_cluster_size": [5, 3, 2, 10, 25, 50, 100]}
-		dbhd_dicts = make_param_dicts(dbhd_vals)
-		offline_dict[dbhd] = dbhd_dicts
+		if args.category == "all" or args.category == "kmeans" or args.category == "means":
+			kmeans = "kmeans"
+			kmeans_vals = {"alg_seed": [0, 1, 2, 3, 4]}
+			kmeans_dicts = make_param_dicts(kmeans_vals)
+			offline_dict[kmeans] = kmeans_dicts
 
-		spectral = "spectral"
-		spectral_vals_rbf = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['rbf'], "gamma": [1, 0.5, 1.5, 2]}
-		spectral_vals_nn = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['nearest_neighbors'], "n_neighbors": [10, 5, 2, 20]}
-		spectral_dicts = make_param_dicts(spectral_vals_rbf)
-		spectral_dicts.extend(make_param_dicts(spectral_vals_nn))
-		offline_dict[spectral] = spectral_dicts
+			subkmeans = "subkmeans"
+			subkmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "outliers": [True, False], "mdl_for_noisespace": [True, False]}
+			subkmeans_dicts = make_param_dicts(subkmeans_vals)
+			offline_dict[subkmeans] = subkmeans_dicts
 
-		dbscan = "dbscan"
-		dbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100]}
-		dbscan_dicts = make_param_dicts(dbscan_vals)
-		offline_dict[dbscan] = dbscan_dicts
+		if args.category == "all" or args.category == "xmeans" or args.category == "means":
+			xmeans = "xmeans"
+			xmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_split_trials": [10, 20], "check_global_score": [True], "allow_merging": [True, False]}
+			xmeans_dicts = make_param_dicts(xmeans_vals)
+			offline_dict[xmeans] = xmeans_dicts
 
-		hdbscan = "hdbscan"
-		hdbscan_vals = {"min_cluster_size": [5, 3, 2, 10, 25, 50, 100]}
-		hdbscan_dicts = make_param_dicts(hdbscan_vals)
-		offline_dict[hdbscan] = hdbscan_dicts
+
+			projdipmeans = "projdipmeans"
+			projdipmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "significance": [0.001, 0.01, 0.0001], "n_random_projections": [0,1,5], "n_split_trials": [10, 20], "pval_strategy":['table', 'function', 'bootstrap']}
+			projdipmeans_dicts = make_param_dicts(projdipmeans_vals)
+			offline_dict[projdipmeans] = projdipmeans_dicts
+
+		if args.category == "all" or args.category == "spectral":
+
+			spectral = "spectral"
+			spectral_vals_rbf = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['rbf'], "gamma": [1, 0.5, 1.5, 2]}
+			spectral_vals_nn = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['nearest_neighbors'], "n_neighbors": [10, 5, 2, 20]}
+			spectral_dicts = make_param_dicts(spectral_vals_rbf)
+			spectral_dicts.extend(make_param_dicts(spectral_vals_nn))
+			offline_dict[spectral] = spectral_dicts
+
+			scar = "scar"
+			scar_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_neighbors": ["size_root", 10, 5, 2, 20], "theta": [20, 30, 100, 200, 500], "alpha": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
+			scar_dicts = make_param_dicts(scar_vals)
+			offline_dict[scar] = scar_dicts
+
+			spectacl = "spectacl"
+			spectacl_vals = {"alg_seed": [0, 1, 2, 3, 4], "epsilon": [1.0, 0.5, 0.25, 0.1, 0.05, 0.01]}
+			spectacl_dicts = make_param_dicts(spectacl_vals)
+			offline_dict[spectacl] = spectacl_dicts
+
+		if args.category == "all" or args.category == "dbscan":
+
+			dbscan = "dbscan"
+			dbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100]}
+			dbscan_dicts = make_param_dicts(dbscan_vals)
+			offline_dict[dbscan] = dbscan_dicts
+
+			hdbscan = "hdbscan"
+			hdbscan_vals = {"min_cluster_size": [5, 3, 2, 10, 25, 50, 100]}
+			hdbscan_dicts = make_param_dicts(hdbscan_vals)
+			offline_dict[hdbscan] = hdbscan_dicts
+
+			rnndbscan = "rnndbscan"
+			rnndbscan_vals = {"n_neighbors": [10, 8, 5, 3, 2, 15, 20, 25, 50, 75, 100]}
+			rnndbscan_dicts = make_param_dicts(rnndbscan_vals)
+			offline_dict[rnndbscan] = rnndbscan_dicts
+
+			mdbscan = "mdbscan"
+			mdbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100],
+			                "n_neighbors": [10, 5, 2, 20], "t": [2, 5, 10, 50, 100, 200]}
+			mdbscan_dicts = make_param_dicts(mdbscan_vals)
+			offline_dict[mdbscan] = mdbscan_dicts
+
+		if args.category == "all" or args.category == "density":
+
+			dpca = "dpca"
+			dpca_vals = {"distance_threshold": [None, 0.5, 0.25, 0.1, 0.05, 0.01], "density_threshold": [None, 5, 3, 2, 10, 25, 50, 100],
+			             "anormal":[True, False], "gauss_cutoff": [True, False]}
+			dpca_dicts = make_param_dicts(dpca_vals)
+			offline_dict[dpca] = dpca_dicts
+
+			snndpc = "snndpc"
+			snndpc_vals = {"n_neighbors": [10, 5, 2, 20]}
+			snndpc_dicts = make_param_dicts(snndpc_vals)
+			offline_dict[snndpc] = snndpc_dicts
+
+			dbhd = "dbhd"
+			dbhd_vals = {"rho": [1.2, 0.5, 0.75, 1, 1.25, 1.5, 2], "beta": [0.1, 0.2, 0.3, 0.4, 0.5, 0.05, 0.01],
+			             "min_cluster_size": [5, 3, 2, 10, 25, 50, 100]}
+			dbhd_dicts = make_param_dicts(dbhd_vals)
+			offline_dict[dbhd] = dbhd_dicts
 
 #		optics = "optics"
 #		optics_vals = {"min_samples": [5, 3, 2, 10, 25, 50, 100], "xi": [0.05, 0.03, 0.01, 0.08, 0.1, 0.2]}
@@ -87,46 +149,17 @@ def get_offline_dict(args):
 #		agglomerative_dicts = make_param_dicts(agglomerative_vals)
 #		offline_dict[agglomerative] = agglomerative_dicts
 
-		scar = "scar"
-		scar_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_neighbors": ["size_root", 10, 5, 2, 20], "theta": [20, 30, 100, 200, 500], "alpha": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
-		scar_dicts = make_param_dicts(scar_vals)
-		offline_dict[scar] = scar_dicts
-
-		spectacl = "spectacl"
-		spectacl_vals = {"alg_seed": [0, 1, 2, 3, 4], "epsilon": [1.0, 0.5, 0.25, 0.1, 0.05, 0.01]}
-		spectacl_dicts = make_param_dicts(spectacl_vals)
-		offline_dict[spectacl] = spectacl_dicts
-
 		#dcf = "dcf"
 		#dcf_vals = {"k": [3, 5, 10, 15, 20, 25, 50, 100], "beta": [0.4, 0.3, 0.2, 0.1, 0.5, 0.6, 0.7, 0.8, 0.9]}
 		#dcf_dicts = make_param_dicts(dcf_vals)
 		#offline_dict[dcf] = dcf_dicts
 
-		mdbscan = "mdbscan"
-		mdbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100], "n_neighbors": [10, 5, 2, 20], "t": [2, 5, 10, 50, 100, 200]}
-		mdbscan_dicts = make_param_dicts(mdbscan_vals)
-		offline_dict[mdbscan] = mdbscan_dicts
+	if args.category == "test":
+		rnndbscan = "rnndbscan"
+		rnndbscan_vals = {"n_neighbors": [10, 9, 8, 7, 6, 5, 4, 3, 2, 15, 20, 25, 50, 75, 100]}
+		rnndbscan_dicts = make_param_dicts(rnndbscan_vals)
+		offline_dict[rnndbscan] = rnndbscan_dicts
 
-		subkmeans = "subkmeans"
-		subkmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "outliers": [True, False], "mdl_for_noisespace": [True, False]}
-		subkmeans_dicts = make_param_dicts(subkmeans_vals)
-		offline_dict[subkmeans] = subkmeans_dicts
-
-
-		xmeans = "xmeans"
-		xmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_split_trials": [10, 20], "check_global_score": [True], "allow_merging": [True, False]}
-		xmeans_dicts = make_param_dicts(xmeans_vals)
-		offline_dict[xmeans] = xmeans_dicts
-
-		snndpc = "snndpc"
-		snndpc_vals = {"n_neighbors": [10, 5, 2, 20]}
-		snndpc_dicts = make_param_dicts(snndpc_vals)
-		offline_dict[snndpc] = snndpc_dicts
-
-		projdipmeans = "projdipmeans"
-		projdipmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "significance": [0.001, 0.01, 0.0001], "n_random_projections": [0,1,5], "n_split_trials": [10, 20], "pval_strategy":['table', 'function', 'bootstrap']}
-		projdipmeans_dicts = make_param_dicts(projdipmeans_vals)
-		offline_dict[projdipmeans] = projdipmeans_dicts
 
 	return offline_dict
 
@@ -140,7 +173,8 @@ def main(args):
 	parser.add_argument('--method', default="full", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
-	parser.add_argument('--gpu', default=True, type=bool, help='GPU usgae')
+	parser.add_argument('--gpu', default=False, type=bool, help='GPU usage')
+	parser.add_argument('--category', default="test", type=str, help='Offline algorithm category')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
 	args = parser.parse_args()
 	method_name = args.method
@@ -160,9 +194,9 @@ def main(args):
 	if args.method == "clustream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
-		param_vals["mcrf"] = [2]  # micro_cluster_r_factor
+		param_vals["mcrf"] = [2, 1.5, 3]  # micro_cluster_r_factor
 		param_vals["tg"] = [args.offline]  # time_gap
-		param_vals["tw"] = [1000]  # time window
+		param_vals["tw"] = [1000, 10000, 10000000]  # time window
 		param_vals["sigma"] = [0.5]
 		param_vals["mu"] = [0.5]
 		has_offline = True
@@ -173,9 +207,9 @@ def main(args):
 	elif args.method == "opeclustream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
-		param_vals["mcrf"] = [2]  # micro_cluster_r_factor
+		param_vals["mcrf"] = [2, 1.5, 3]  # micro_cluster_r_factor
 		param_vals["tg"] = [args.offline]  # time_gap
-		param_vals["tw"] = [1000]  # time window
+		param_vals["tw"] = [1000, 10000, 10000000]  # time window
 		param_vals["sigma"] = [0.5]
 		param_vals["mu"] = [0.5]
 		param_vals["gen"] = [args.gennum]
