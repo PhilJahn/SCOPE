@@ -35,19 +35,19 @@ def get_offline_dict(args):
 	offline_dict = {}
 	if args.gpu:
 		dec = "dec"
-		dec_vals = {}
+		dec_vals = {"alg_seed": [0, 1, 2, 3, 4], "alpha": [1.0, 0.1, 0.25, 0.5, 0.75, 0.9], "embedding_size": [10, 5, 2], "use_reconstruction_loss":[True, False]}
 		dec_dicts = make_param_dicts(dec_vals)
 		offline_dict[dec] = dec_dicts
+
+		dipenc = "dipencoder"
+		dipenc_vals = {"alg_seed": [0, 1, 2, 3, 4], "embedding_size": [10, 5, 2], "max_cluster_size_diff_factor": [3, 2, 5, 10]}
+		dipenc_dicts = make_param_dicts(dipenc_vals)
+		offline_dict[dipenc] = dipenc_dicts
 	else:
 		kmeans = "kmeans"
 		kmeans_vals = {"alg_seed": [0, 1, 2, 3, 4]}
 		kmeans_dicts = make_param_dicts(kmeans_vals)
 		offline_dict[kmeans] = kmeans_dicts
-
-		xmeans = "xmeans"
-		xmeans_vals = {"alg_seed": [0, 1, 2, 3, 4]}
-		xmeans_dicts = make_param_dicts(xmeans_vals)
-		offline_dict[xmeans] = xmeans_dicts
 
 		dbhd = "dbhd"
 		dbhd_vals = {"rho": [1.2, 0.5, 0.75, 1, 1.25, 1.5, 2], "beta": [0.1, 0.2, 0.3, 0.4, 0.5, 0.05, 0.01],
@@ -72,20 +72,20 @@ def get_offline_dict(args):
 		hdbscan_dicts = make_param_dicts(hdbscan_vals)
 		offline_dict[hdbscan] = hdbscan_dicts
 
-		optics = "optics"
-		optics_vals = {"min_samples": [5, 3, 2, 10, 25, 50, 100], "xi": [0.05, 0.03, 0.01, 0.08, 0.1, 0.2]}
-		optics_dicts = make_param_dicts(optics_vals)
-		offline_dict[optics] = optics_dicts
+#		optics = "optics"
+#		optics_vals = {"min_samples": [5, 3, 2, 10, 25, 50, 100], "xi": [0.05, 0.03, 0.01, 0.08, 0.1, 0.2]}
+#		optics_dicts = make_param_dicts(optics_vals)
+#		offline_dict[optics] = optics_dicts
 
-		meanshift = "meanshift"
-		meanshift_vals = {"default": [1]}
-		meanshift_dicts = make_param_dicts(meanshift_vals)
-		offline_dict[meanshift] = meanshift_dicts
+#		meanshift = "meanshift"
+#		meanshift_vals = {"default": [1]}
+#		meanshift_dicts = make_param_dicts(meanshift_vals)
+#		offline_dict[meanshift] = meanshift_dicts
 
-		agglomerative = "agglomerative"
-		agglomerative_vals = {"linkage": ["ward", "complete", "average", "single"]}
-		agglomerative_dicts = make_param_dicts(agglomerative_vals)
-		offline_dict[agglomerative] = agglomerative_dicts
+#		agglomerative = "agglomerative"
+#		agglomerative_vals = {"linkage": ["ward", "complete", "average", "single"]}
+#		agglomerative_dicts = make_param_dicts(agglomerative_vals)
+#		offline_dict[agglomerative] = agglomerative_dicts
 
 		scar = "scar"
 		scar_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_neighbors": ["size_root", 10, 5, 2, 20], "theta": [20, 30, 100, 200, 500], "alpha": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
@@ -102,19 +102,36 @@ def get_offline_dict(args):
 		#dcf_dicts = make_param_dicts(dcf_vals)
 		#offline_dict[dcf] = dcf_dicts
 
-		offline_dict = {}
-
 		mdbscan = "mdbscan"
 		mdbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100], "n_neighbors": [10, 5, 2, 20], "t": [2, 5, 10, 50, 100, 200]}
 		mdbscan_dicts = make_param_dicts(mdbscan_vals)
 		offline_dict[mdbscan] = mdbscan_dicts
 
+		subkmeans = "subkmeans"
+		subkmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "outliers": [True, False], "mdl_for_noisespace": [True, False]}
+		subkmeans_dicts = make_param_dicts(subkmeans_vals)
+		offline_dict[subkmeans] = subkmeans_dicts
+
+
+		xmeans = "xmeans"
+		xmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_split_trials": [10, 20], "check_global_score": [True], "allow_merging": [True, False]}
+		xmeans_dicts = make_param_dicts(xmeans_vals)
+		offline_dict[xmeans] = xmeans_dicts
+
+		snndpc = "snndpc"
+		snndpc_vals = {"n_neighbors": [10, 5, 2, 20]}
+		snndpc_dicts = make_param_dicts(snndpc_vals)
+		offline_dict[snndpc] = snndpc_dicts
+
+		projdipmeans = "projdipmeans"
+		projdipmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "significance": [0.001, 0.01, 0.0001], "n_random_projections": [0,1,5], "n_split_trials": [10, 20], "pval_strategy":['table', 'function', 'bootstrap']}
+		projdipmeans_dicts = make_param_dicts(projdipmeans_vals)
+		offline_dict[projdipmeans] = projdipmeans_dicts
+
 	return offline_dict
 
 
 def main(args):
-	device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
 	# print(args, flush=True)
 
 	parser = argparse.ArgumentParser()
@@ -123,7 +140,7 @@ def main(args):
 	parser.add_argument('--method', default="full", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
-	parser.add_argument('--gpu', default=False, type=bool, help='GPU usgae')
+	parser.add_argument('--gpu', default=True, type=bool, help='GPU usgae')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
 	args = parser.parse_args()
 	method_name = args.method
