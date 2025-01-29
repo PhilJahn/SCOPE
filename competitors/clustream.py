@@ -171,7 +171,7 @@ class CluStream(base.Clusterer):
 		self.micro_clusters: dict[int, CluStreamMicroCluster] = {}
 
 		self._timestamp = -1
-		self._offline_timestamp = -1
+		self._offline_timestamp = -2
 		self._initialized = False
 
 		self._mc_centers: dict[int, defaultdict] = {}

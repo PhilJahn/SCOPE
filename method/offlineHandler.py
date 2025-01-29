@@ -7,9 +7,9 @@ from clustpy.partition import XMeans, SubKmeans, ProjectedDipMeans
 from clustpy.deep import DEC, DipEncoder
 from numpy.random import PCG64
 from sklearn.cluster import KMeans, SpectralClustering, DBSCAN, OPTICS, MeanShift, HDBSCAN, AgglomerativeClustering
-
+from sklearn.neighbors import KDTree
 from offline_methods.SHADE.dcdist import DCTree_Clusterer
-#from offline_methods.SHADE.shade.shade import SHADE
+from offline_methods.SHADE.shade.shade import SHADE
 from offline_methods.DPC.DPC import DensityPeakCluster
 from competitors.clustream import CluStream
 import numpy as np
@@ -24,7 +24,7 @@ from offline_methods.mdbscan import MDBSCAN
 from offline_methods.rnndbscan import RNNDBSCAN
 from offline_methods.spectacl.Spectacl import Spectacl
 from method.CircSCOPE import CircSCOPE
-from method.SCOPE import SCOPE
+#from method.SCOPE import SCOPE
 from utils import dps_to_np, dict_to_np
 
 k_algos = ["kmeans", "spectral", "agglomerative", "scar", "spectacl", "subkmeans"]
@@ -53,7 +53,7 @@ def random_ball_num(center, radius, d, n, clunum, generator):
 	return dps, y
 
 
-def reconstruct_data(micro_clusters, num, radius_mult, generator):
+def reconstruct_data(micro_clusters, num, radius_mult, generator, use_centroid=False):
 	new_ds = []
 	new_labels = []
 	weight_sum = 0
@@ -64,11 +64,17 @@ def reconstruct_data(micro_clusters, num, radius_mult, generator):
 	for id, mc in micro_clusters.items():
 		mc_num = math.ceil(mc.weight / ratio)
 		# print(mc.weight, ratio, mc_num)
-		new_dps, label = random_ball_num(mc.center, mc.radius(radius_mult), len(mc.center.keys()), mc_num, id,
-		                                 generator)
-		for j in range(mc_num):
-			new_ds.append(new_dps[j])
-		new_labels.extend(label)
+		if use_centroid:
+			mc_num = mc_num - 1
+		if mc_num > 0:
+			new_dps, label = random_ball_num(mc.center, mc.radius(radius_mult), len(mc.center.keys()), mc_num, id,
+			                                 generator)
+			for j in range(mc_num):
+				new_ds.append(new_dps[j])
+			new_labels.extend(label)
+		if use_centroid:
+			new_ds.append(mc.center)
+			new_labels.extend(id)
 	return new_ds, new_labels
 
 
@@ -222,35 +228,36 @@ def perform_clustering(data, algorithm, args):
 
 		args = {"embedding_size": 10, "alpha": 1.0,
              "batch_size": 256,
-             "pretrain_learning_rate":  1e-3,
-             "clustering_learning_rate": 1e-4,
+            "pretrain_optimizer_params": {"lr": 1e-3},
+		"clustering_optimizer_params": {"lr": 1e-4},
              "pretrain_epochs": 100,
              "clustering_epochs": 150,
              "optimizer_class": torch.optim.Adam,
              "loss_fn": torch.nn.MSELoss(),
-			"use_reconstruction_loss": False} | args
+			"augmentation_invariance": False, "cluster_loss_weight":1} | args
 		clustering = DEC(n_clusters=args["n_clusters"], random_state=args["alg_seed"], embedding_size=args["embedding_size"],
-		                 batch_size=args["batch_size"], pretrain_learning_rate=args["pretrain_learning_rate"],
-		                 clustering_learning_rate = args["clustering_learning_rate"], pretrain_epochs =args["pretrain_epochs"],
+		                 batch_size=args["batch_size"], pretrain_optimizer_params=args["pretrain_optimizer_params"],
+		                 clustering_optimizer_params = args["clustering_optimizer_params"], pretrain_epochs =args["pretrain_epochs"],
 		                 clustering_epochs= args["clustering_epochs"], optimizer_class=args["optimizer_class"],
-		                 loss_fn=args["loss_fn"], use_reconstruction_loss=args["use_reconstruction_loss"]
+		                 loss_fn=args["loss_fn"], augmentation_invariance=args["augmentation_invariance"], cluster_loss_weight =args["cluster_loss_weight"]
 		                 ).fit_predict(np.array(data), None)
 		return clustering, None
 	elif algorithm == "dipencoder":
 		if args["embedding_size"] > len(data[0]):
 			return [-1]*len(data), None
 		args = {"embedding_size": 10, "pretrain_batch_size":256, "batch_size": None,
-             "pretrain_learning_rate":  1e-3,
-             "clustering_learning_rate": 1e-4,
+             "pretrain_optimizer_params": {"lr": 1e-3},
+             "clustering_optimizer_params": {"lr": 1e-4},
              "pretrain_epochs": 100,
              "clustering_epochs": 100,
              "optimizer_class": torch.optim.Adam,
              "loss_fn": torch.nn.MSELoss(),
-			"use_reconstruction_loss": False, "max_cluster_size_diff_factor":3} | args
+			"reconstruction_loss_weight": None, "max_cluster_size_diff_factor":3} | args
 		clustering = DipEncoder(n_clusters=args["n_clusters"], random_state=args["alg_seed"], embedding_size=args["embedding_size"],
-		                        batch_size=args["batch_size"], pretrain_learning_rate=args["pretrain_learning_rate"],
-		                        pretrain_batch_size=args["pretrain_batch_size"], clustering_learning_rate = args["clustering_learning_rate"],
+		                        batch_size=args["batch_size"], pretrain_optimizer_params=args["pretrain_optimizer_params"],
+		                        clustering_optimizer_params = args["clustering_optimizer_params"],
 		                        pretrain_epochs =args["pretrain_epochs"], clustering_epochs= args["clustering_epochs"],
+		                        reconstruction_loss_weight =args["reconstruction_loss_weight"],
 		                        optimizer_class=args["optimizer_class"], loss_fn=args["loss_fn"], max_cluster_size_diff_factor=args["max_cluster_size_diff_factor"]).fit_predict(np.array(data), None)
 		return clustering, None
 	elif algorithm == "dpca":
@@ -270,40 +277,41 @@ def perform_clustering(data, algorithm, args):
 		args = {"n_neighbors": 5} | args
 		clustering = RNNDBSCAN(k=args["n_neighbors"]).fit_predict(data)
 		return clustering, None
-	# elif algorithm == "shade":
-	# 	if args["embedding_size"] > len(data[0]):
-	# 		return [-1]*len(data), None
-	# 	args = {"batch_size": 500,
-    #          "autoencoder":  None,
-    #          "min_points": 5,
-    #          "use_complete_dc_tree": False,
-    #          "use_matrix_dc_distance": True,
-    #          "increase_inter_cluster_distance": False,
-    #          "pretrain_epochs": 0,
-    #          "pretrain_optimizer_params": {"lr": 1e-3},
-    #          "clustering_epochs": 100,
-    #          "clustering_optimizer_params": {"lr": 1e-3},
-    #          "embedding_size": 10,
-    #          "optimizer_class": torch.optim.Adam,
-    #          "loss_fn": torch.nn.MSELoss(),
-    #          "custom_dataloaders": None,
-    #          "standardize": True,
-    #          "standardize_axis":  0,
-    #          "cluster_algorithm": DCTree_Clusterer,
-    #          "cluster_algorithm_params": {},
-    #          "degree_of_reconstruction":  1.0,
-    #          "degree_of_density_preservation": 1.0} | args
-	# 	clustering = SHADE(batch_size=args["batch_size"], autoencoder=args["autoencoder"], min_points=args["min_points"],
-	# 	                   use_complete_dc_tree=args["use_complete_dc_tree"], use_matrix_dc_distance=args["use_matrix_dc_distance"],
-	# 	                   increase_inter_cluster_distance=args["increase_inter_cluster_distance"], pretrain_epochs=args["pretrain_epochs"],
-	# 	                   pretrain_optimizer_params=args["pretrain_optimizer_params"], clustering_epochs=args["clustering_epochs"],
-	# 	                   clustering_optimizer_params=args["clustering_optimizer_params"], embedding_size=args["embedding_size"],
-	# 	                   optimizer_class=args["optimizer_class"], loss_fn=args["loss_fn"], custom_dataloaders=args["custom_dataloaders"],
-	# 	                   standardize=args["standardize"], standardize_axis=args["standardize_axis"], n_clusters=None,
-	# 	                   cluster_algorithm=args["cluster_algorithm"], cluster_algorithm_params=args["cluster_algorithm_params"],
-	# 	                   degree_of_reconstruction=args["degree_of_reconstruction"], degree_of_density_preservation=args["degree_of_density_preservation"],
-	# 	                   random_state=args["alg_seed"]
-	# 	                   )
+	elif algorithm == "shade":
+		if args["embedding_size"] > len(data[0]):
+			return [-1]*len(data), None
+		args = {"batch_size": 500,
+             "autoencoder":  None,
+             "min_points": 5,
+             "use_complete_dc_tree": False,
+             "use_matrix_dc_distance": True,
+             "increase_inter_cluster_distance": False,
+             "pretrain_epochs": 0,
+             "pretrain_optimizer_params": {"lr": 1e-3},
+             "clustering_epochs": 100,
+             "clustering_optimizer_params": {"lr": 1e-3},
+             "embedding_size": 10,
+             "optimizer_class": torch.optim.Adam,
+             "loss_fn": torch.nn.MSELoss(),
+             "custom_dataloaders": None,
+             "standardize": True,
+             "standardize_axis":  0,
+             "cluster_algorithm": DCTree_Clusterer,
+             "cluster_algorithm_params": {},
+             "degree_of_reconstruction":  1.0,
+             "degree_of_density_preservation": 1.0} | args
+		clustering = SHADE(batch_size=args["batch_size"], autoencoder=args["autoencoder"], min_points=args["min_points"],
+		                   use_complete_dc_tree=args["use_complete_dc_tree"], use_matrix_dc_distance=args["use_matrix_dc_distance"],
+		                   increase_inter_cluster_distance=args["increase_inter_cluster_distance"], pretrain_epochs=args["pretrain_epochs"],
+		                   pretrain_optimizer_params=args["pretrain_optimizer_params"], clustering_epochs=args["clustering_epochs"],
+		                   clustering_optimizer_params=args["clustering_optimizer_params"], embedding_size=args["embedding_size"],
+		                   optimizer_class=args["optimizer_class"], loss_fn=args["loss_fn"], custom_dataloaders=args["custom_dataloaders"],
+		                   standardize=args["standardize"], standardize_axis=args["standardize_axis"], n_clusters=None,
+		                   cluster_algorithm=args["cluster_algorithm"], cluster_algorithm_params=args["cluster_algorithm_params"],
+		                   degree_of_reconstruction=args["degree_of_reconstruction"], degree_of_density_preservation=args["degree_of_density_preservation"],
+		                   random_state=args["alg_seed"]
+		                   ).fit_predict(np.array(data), None)
+		return clustering, None
 
 	else:
 		raise NotImplementedError
@@ -423,6 +431,122 @@ class OPECluStream(CluStream):
 		if self._offline_timestamp != self._timestamp:
 			self.offline_processing()
 		index, _ = self._get_closest_mc(x)
+
+		if return_mc:
+			return self.cluster_assignments[index], index
+		else:
+			return self.cluster_assignments[index]
+
+
+class SCOPE_CluStream(CluStream):
+
+	def __init__(
+			self,
+			n_macro_clusters: int = 5,
+			max_micro_clusters: int = 100,
+			micro_cluster_r_factor: int = 2,
+			time_window: int = 1000,
+			time_gap: int = 100,
+			seed: int | None = None,
+			offline_algo: str = "kmeans",
+			offline_args=None,
+			offline_datascale: int = 1000,
+			**kwargs,
+	):
+		super().__init__(n_macro_clusters, max_micro_clusters, micro_cluster_r_factor, time_window, time_gap, seed,
+		                 **kwargs)
+
+		self.generator = np.random.Generator(PCG64(seed))
+		self.cluster_assignments = {}
+		self.offline_algo = offline_algo
+		if offline_args is None:
+			self.offline_args = {}
+		else:
+			self.offline_args = offline_args
+		if self.offline_algo in k_algos:
+			self.offline_args["n_clusters"] = n_macro_clusters
+		self.offline_args["alg_seed"] = seed
+		self.offline_datascale = offline_datascale
+
+		self.offline_dataset = []
+		self.offline_labels = []
+		self.kdtree = None
+
+
+
+	def display_store(self):
+		X = dps_to_np(self.datastore)
+
+		mc_assigns = []
+		for dp in self.datastore:
+			closest_mc_id, _ = self._get_closest_mc(dp)
+			mc_assigns.append(closest_mc_id)
+
+		plt.figure(figsize=(10, 10))
+		plt.scatter(X[:, 0], X[:, 1], c=mc_assigns)
+		for id, mc in self.micro_clusters.items():
+			mccenter = dict_to_np(mc.center)
+			mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+			                      alpha=0.2, color="lightgrey")
+			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+			plt.gca().add_patch(mc_patch)
+		plt.ylim(-0.1, 1.1)
+		plt.xlim(-0.1, 1.1)
+		plt.show()
+
+	def offline_processing(self):
+		gen_data, gen_labels = reconstruct_data(self.micro_clusters, self.offline_datascale,
+		                                        self.micro_cluster_r_factor, self.generator, use_centroid=True)
+		gen_X = dps_to_np(gen_data)
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
+
+		clustering, self.centers = perform_clustering(gen_X, self.offline_algo, self.offline_args)
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
+
+		self.cluster_assignments = clustering
+		# plt.figure(figsize=(10, 10))
+		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
+		# for id, mc in self.micro_clusters.items():
+		# 	mccenter = dict_to_np(mc.center)
+		# 	mc_patch = ptc.Circle((float(mccenter[0]), float(mccenter[1])), mc.radius(self.micro_cluster_r_factor),
+		# 						  alpha=0.2, color="lightgrey")
+		# 	plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+		# 	plt.gca().add_patch(mc_patch)
+		# plt.ylim(-0.1, 1.1)
+		# plt.xlim(-0.1, 1.1)
+		# plt.show()
+
+		self._offline_timestamp = self._timestamp
+
+		self.offline_dataset = gen_data
+		self.offline_labels = gen_labels
+
+	def predict_one(self, x, recluster=False, sklearn=None, return_mc=False):
+		if self._offline_timestamp != self._timestamp:
+			self.offline_processing()
+			self.kdtree = KDTree(self.offline_dataset)
+
+		index = self.kdtree.query(x, 1, return_distance=False)
 
 		if return_mc:
 			return self.cluster_assignments[index], index
@@ -578,190 +702,190 @@ class CircSCOPEOffline(CircSCOPE):
 			return self.cluster_assignments[index]
 
 
-class SCOPEOffline(SCOPE):
-
-	def __init__(
-			self,
-			n_macro_clusters: int = 5,
-			max_micro_clusters: int = 100,
-			singleton_micro_clusters: int = 50,
-			micro_cluster_r_factor: int = 2,
-			time_window: int = 1000,
-			time_gap: int = 100,
-			seed: int | None = None,
-			offline_algo: str = "kmeans",
-			offline_args=None,
-			offline_datascale: int = 1000,
-			**kwargs,
-	):
-		super().__init__(n_macro_clusters=n_macro_clusters, max_micro_clusters=max_micro_clusters,
-		                 singleton_micro_clusters=singleton_micro_clusters,
-		                 micro_cluster_r_factor=micro_cluster_r_factor, time_window=time_window, time_gap=time_gap,
-		                 seed=seed,
-		                 **kwargs)
-
-		self.generator = np.random.Generator(PCG64(seed))
-		self.cluster_assignments = {}
-		self.offline_algo = offline_algo
-		if offline_args is None:
-			self.offline_args = {}
-		else:
-			self.offline_args = offline_args
-		if self.offline_algo in k_algos:
-			self.offline_args["n_clusters"] = n_macro_clusters
-		self.offline_args["alg_seed"] = seed
-		self.offline_datascale = offline_datascale
-
-		self.offline_dataset = []
-		self.offline_labels = []
-
-	def display_store(self):
-		X = dps_to_np(self.datastore)
-
-		# print(X)
-
-		mc_assigns = []
-		i = 0
-		for dp in self.datastore:
-			closest_mc_id, dist = self._get_best_mc(dp)
-			mc_assigns.append(closest_mc_id)
-			print(i, dp, dist, closest_mc_id, self.micro_clusters[closest_mc_id])
-			i += 1
-
-		plt.figure(figsize=(10, 10))
-		plt.scatter(X[:, 0], X[:, 1], c=mc_assigns)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mcrange = dict_to_np(mc.extent)
-			mc_patch = ptc.Rectangle((float(mccenter[0] - mcrange[0]), float(mccenter[1] - mcrange[1])), 2 * mcrange[0],
-			                         2 * mcrange[1],
-			                         alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
-
-		plt.figure(figsize=(30, 30))
-		plt.scatter(X[:, 0], X[:, 1], c=mc_assigns)
-		for i in range(len(X)):
-			plt.text(X[i, 0], X[i, 1], f"{i}: {mc_assigns[i]}")
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mcrange = dict_to_np(mc.extent)
-			mc_patch = ptc.Rectangle((float(mccenter[0] - mcrange[0]), float(mccenter[1] - mcrange[1])), 2 * mcrange[0],
-			                         2 * mcrange[1],
-			                         alpha=0.2, color="lightgrey")
-			plt.gca().add_patch(mc_patch)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=1)
-			plt.text(float(mccenter[0]), float(mccenter[1]), str(id), c="pink")
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
-
-	def offline_processing(self):
-		np.random.seed = self.seed
-		gen_data, gen_labels = self.reconstruct_data(self.micro_clusters, self.offline_datascale, self.generator)
-		gen_X = dps_to_np(gen_data)
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mcrange = dict_to_np(mc.extent)
-			mc_patch = ptc.Rectangle((float(mccenter[0] - mcrange[0]), float(mccenter[1] - mcrange[1])), 2 * mcrange[0],
-			                         2 * mcrange[1],
-			                         alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
-
-		clustering, self.centers = perform_clustering(gen_X, self.offline_algo, self.offline_args)
-		num_clu = len(np.unique(clustering))
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mcrange = dict_to_np(mc.extent)
-			mc_patch = ptc.Rectangle((float(mccenter[0] - mcrange[0]), float(mccenter[1] - mcrange[1])), 2 * mcrange[0],
-			                         2 * mcrange[1],
-			                         alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
-
-		for id, mc in self.micro_clusters.items():
-			is_mc = [i for i, x in enumerate(gen_labels) if x == id]
-			labels_mc = [0] * num_clu
-			for i_mc in is_mc:
-				labels_mc[clustering[i_mc]] += 1
-			self.cluster_assignments[id] = labels_mc.index(max(labels_mc))
-
-		cluster_labels_gen = []
-		for l in gen_labels:
-			cluster_labels_gen.append(self.cluster_assignments[l])
-		plt.figure(figsize=(10, 10))
-		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
-		for id, mc in self.micro_clusters.items():
-			mccenter = dict_to_np(mc.center)
-			mcrange = dict_to_np(mc.extent)
-			mc_patch = ptc.Rectangle((float(mccenter[0] - mcrange[0]), float(mccenter[1] - mcrange[1])), 2 * mcrange[0],
-			                         2 * mcrange[1],
-			                         alpha=0.2, color="lightgrey")
-			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
-			plt.gca().add_patch(mc_patch)
-		plt.ylim(-0.1, 1.1)
-		plt.xlim(-0.1, 1.1)
-		plt.show()
-
-		self._offline_timestamp = self._timestamp
-
-		self.offline_dataset = gen_data
-		self.offline_labels = gen_labels
-
-	def predict_one(self, x, recluster=False, sklearn=None, return_mc=False):
-		if self._offline_timestamp != self._timestamp:
-			self.offline_processing()
-		index, _ = self._get_best_mc(x)
-
-		if return_mc:
-			return self.cluster_assignments[index], index
-		else:
-			return self.cluster_assignments[index]
-
-	def generate_in_box(self, center, ranges, num, clunum):
-		uniform_data = self.generator.uniform(low=-1, high=1, size=(num, len(center.keys())))
-		dps = []
-		for j in range(num):
-			x_dict = {}
-			i = 0
-			for attr in center.keys():
-				x_dict[attr] = uniform_data[j, i] * ranges[attr] + center[attr]
-				i += 1
-			dps.append(x_dict)
-
-		y = [clunum] * num
-		return dps, y
-
-	def reconstruct_data(self, micro_clusters, num, radius_mult):
-		new_ds = []
-		new_labels = []
-		weight_sum = 0
-		for _, mc in micro_clusters.items():
-			weight_sum += mc.weight
-		ratio = weight_sum / num
-
-		for id, mc in micro_clusters.items():
-			mc_num = math.ceil(mc.weight / ratio)
-			# print(mc.weight, ratio, mc_num)
-
-			new_dps, label = self.generate_in_box(mc.center, mc.extent, mc_num, id)
-			for j in range(mc_num):
-				new_ds.append(new_dps[j])
-			new_labels.extend(label)
-		return new_ds, new_labels
+# class SCOPEOffline(SCOPE):
+#
+# 	def __init__(
+# 			self,
+# 			n_macro_clusters: int = 5,
+# 			max_micro_clusters: int = 100,
+# 			singleton_micro_clusters: int = 50,
+# 			micro_cluster_r_factor: int = 2,
+# 			time_window: int = 1000,
+# 			time_gap: int = 100,
+# 			seed: int | None = None,
+# 			offline_algo: str = "kmeans",
+# 			offline_args=None,
+# 			offline_datascale: int = 1000,
+# 			**kwargs,
+# 	):
+# 		super().__init__(n_macro_clusters=n_macro_clusters, max_micro_clusters=max_micro_clusters,
+# 		                 singleton_micro_clusters=singleton_micro_clusters,
+# 		                 micro_cluster_r_factor=micro_cluster_r_factor, time_window=time_window, time_gap=time_gap,
+# 		                 seed=seed,
+# 		                 **kwargs)
+#
+# 		self.generator = np.random.Generator(PCG64(seed))
+# 		self.cluster_assignments = {}
+# 		self.offline_algo = offline_algo
+# 		if offline_args is None:
+# 			self.offline_args = {}
+# 		else:
+# 			self.offline_args = offline_args
+# 		if self.offline_algo in k_algos:
+# 			self.offline_args["n_clusters"] = n_macro_clusters
+# 		self.offline_args["alg_seed"] = seed
+# 		self.offline_datascale = offline_datascale
+#
+# 		self.offline_dataset = []
+# 		self.offline_labels = []
+#
+# 	def display_store(self):
+# 		X = dps_to_np(self.datastore)
+#
+# 		# print(X)
+#
+# 		mc_assigns = []
+# 		i = 0
+# 		for dp in self.datastore:
+# 			closest_mc_id, dist = self._get_best_mc(dp)
+# 			mc_assigns.append(closest_mc_id)
+# 			print(i, dp, dist, closest_mc_id, self.micro_clusters[closest_mc_id])
+# 			i += 1
+#
+# 		plt.figure(figsize=(10, 10))
+# 		plt.scatter(X[:, 0], X[:, 1], c=mc_assigns)
+# 		for id, mc in self.micro_clusters.items():
+# 			mccenter = dict_to_np(mc.center)
+# 			mcrange = dict_to_np(mc.extent)
+# 			mc_patch = ptc.Rectangle((float(mccenter[0] - mcrange[0]), float(mccenter[1] - mcrange[1])), 2 * mcrange[0],
+# 			                         2 * mcrange[1],
+# 			                         alpha=0.2, color="lightgrey")
+# 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+# 			plt.gca().add_patch(mc_patch)
+# 		plt.ylim(-0.1, 1.1)
+# 		plt.xlim(-0.1, 1.1)
+# 		plt.show()
+#
+# 		plt.figure(figsize=(30, 30))
+# 		plt.scatter(X[:, 0], X[:, 1], c=mc_assigns)
+# 		for i in range(len(X)):
+# 			plt.text(X[i, 0], X[i, 1], f"{i}: {mc_assigns[i]}")
+# 		for id, mc in self.micro_clusters.items():
+# 			mccenter = dict_to_np(mc.center)
+# 			mcrange = dict_to_np(mc.extent)
+# 			mc_patch = ptc.Rectangle((float(mccenter[0] - mcrange[0]), float(mccenter[1] - mcrange[1])), 2 * mcrange[0],
+# 			                         2 * mcrange[1],
+# 			                         alpha=0.2, color="lightgrey")
+# 			plt.gca().add_patch(mc_patch)
+# 		for id, mc in self.micro_clusters.items():
+# 			mccenter = dict_to_np(mc.center)
+# 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=1)
+# 			plt.text(float(mccenter[0]), float(mccenter[1]), str(id), c="pink")
+# 		plt.ylim(-0.1, 1.1)
+# 		plt.xlim(-0.1, 1.1)
+# 		plt.show()
+#
+# 	def offline_processing(self):
+# 		np.random.seed = self.seed
+# 		gen_data, gen_labels = self.reconstruct_data(self.micro_clusters, self.offline_datascale, self.generator)
+# 		gen_X = dps_to_np(gen_data)
+# 		plt.figure(figsize=(10, 10))
+# 		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
+# 		for id, mc in self.micro_clusters.items():
+# 			mccenter = dict_to_np(mc.center)
+# 			mcrange = dict_to_np(mc.extent)
+# 			mc_patch = ptc.Rectangle((float(mccenter[0] - mcrange[0]), float(mccenter[1] - mcrange[1])), 2 * mcrange[0],
+# 			                         2 * mcrange[1],
+# 			                         alpha=0.2, color="lightgrey")
+# 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+# 			plt.gca().add_patch(mc_patch)
+# 		plt.ylim(-0.1, 1.1)
+# 		plt.xlim(-0.1, 1.1)
+# 		plt.show()
+#
+# 		clustering, self.centers = perform_clustering(gen_X, self.offline_algo, self.offline_args)
+# 		num_clu = len(np.unique(clustering))
+# 		plt.figure(figsize=(10, 10))
+# 		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=clustering)
+# 		for id, mc in self.micro_clusters.items():
+# 			mccenter = dict_to_np(mc.center)
+# 			mcrange = dict_to_np(mc.extent)
+# 			mc_patch = ptc.Rectangle((float(mccenter[0] - mcrange[0]), float(mccenter[1] - mcrange[1])), 2 * mcrange[0],
+# 			                         2 * mcrange[1],
+# 			                         alpha=0.2, color="lightgrey")
+# 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+# 			plt.gca().add_patch(mc_patch)
+# 		plt.ylim(-0.1, 1.1)
+# 		plt.xlim(-0.1, 1.1)
+# 		plt.show()
+#
+# 		for id, mc in self.micro_clusters.items():
+# 			is_mc = [i for i, x in enumerate(gen_labels) if x == id]
+# 			labels_mc = [0] * num_clu
+# 			for i_mc in is_mc:
+# 				labels_mc[clustering[i_mc]] += 1
+# 			self.cluster_assignments[id] = labels_mc.index(max(labels_mc))
+#
+# 		cluster_labels_gen = []
+# 		for l in gen_labels:
+# 			cluster_labels_gen.append(self.cluster_assignments[l])
+# 		plt.figure(figsize=(10, 10))
+# 		plt.scatter(gen_X[:, 0], gen_X[:, 1], c=cluster_labels_gen)
+# 		for id, mc in self.micro_clusters.items():
+# 			mccenter = dict_to_np(mc.center)
+# 			mcrange = dict_to_np(mc.extent)
+# 			mc_patch = ptc.Rectangle((float(mccenter[0] - mcrange[0]), float(mccenter[1] - mcrange[1])), 2 * mcrange[0],
+# 			                         2 * mcrange[1],
+# 			                         alpha=0.2, color="lightgrey")
+# 			plt.scatter(float(mccenter[0]), float(mccenter[1]), c="black", alpha=0.5)
+# 			plt.gca().add_patch(mc_patch)
+# 		plt.ylim(-0.1, 1.1)
+# 		plt.xlim(-0.1, 1.1)
+# 		plt.show()
+#
+# 		self._offline_timestamp = self._timestamp
+#
+# 		self.offline_dataset = gen_data
+# 		self.offline_labels = gen_labels
+#
+# 	def predict_one(self, x, recluster=False, sklearn=None, return_mc=False):
+# 		if self._offline_timestamp != self._timestamp:
+# 			self.offline_processing()
+# 		index, _ = self._get_best_mc(x)
+#
+# 		if return_mc:
+# 			return self.cluster_assignments[index], index
+# 		else:
+# 			return self.cluster_assignments[index]
+#
+# 	def generate_in_box(self, center, ranges, num, clunum):
+# 		uniform_data = self.generator.uniform(low=-1, high=1, size=(num, len(center.keys())))
+# 		dps = []
+# 		for j in range(num):
+# 			x_dict = {}
+# 			i = 0
+# 			for attr in center.keys():
+# 				x_dict[attr] = uniform_data[j, i] * ranges[attr] + center[attr]
+# 				i += 1
+# 			dps.append(x_dict)
+#
+# 		y = [clunum] * num
+# 		return dps, y
+#
+# 	def reconstruct_data(self, micro_clusters, num, radius_mult):
+# 		new_ds = []
+# 		new_labels = []
+# 		weight_sum = 0
+# 		for _, mc in micro_clusters.items():
+# 			weight_sum += mc.weight
+# 		ratio = weight_sum / num
+#
+# 		for id, mc in micro_clusters.items():
+# 			mc_num = math.ceil(mc.weight / ratio)
+# 			# print(mc.weight, ratio, mc_num)
+#
+# 			new_dps, label = self.generate_in_box(mc.center, mc.extent, mc_num, id)
+# 			for j in range(mc_num):
+# 				new_ds.append(new_dps[j])
+# 			new_labels.extend(label)
+# 		return new_ds, new_labels

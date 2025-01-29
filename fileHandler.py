@@ -28,6 +28,7 @@ def process_file(path, metrics):
 			line_split = line.split("|")
 			method = line_split[0].split(" ")
 			method_name = method[0]
+			#print(line)
 			# https://stackoverflow.com/questions/988228/convert-a-string-representation-of-a-dictionary-to-a-dictionary
 			dictionary = ast.literal_eval(line_split[1])
 			seed = method[1]
@@ -64,16 +65,17 @@ def process_file(path, metrics):
 					if dictionary["alg_seed"] != 0:
 						dictionary["alg_seed"] = 0
 
-						if dictionary["seed"] != 0:
-							dictionary["seed"] = 0
+						if "seed" in dictionary.keys():
+							if dictionary["seed"] != 0:
+								dictionary["seed"] = 0
 
 						for alg_index_2 in param_dict[method_name][alg].keys():
 							dictionary_2 = param_dict[method_name][alg][alg_index_2]
 							if len(list(dictdiffer.diff(dictionary, dictionary_2))) == 0:
-								print(alg_index, "is", alg_index_2)
+								#print(alg_index, "is", alg_index_2)
 								seed_mapping[method_name][alg][alg_index] = alg_index_2
-							else:
-								print(alg_index, "is not", alg_index_2, list(dictdiffer.diff(dictionary, dictionary_2)))
+							#else:
+								#print(alg_index, "is not", alg_index_2, list(dictdiffer.diff(dictionary, dictionary_2)))
 				alg_index = seed_mapping[method_name][alg][alg_index]
 				if method_name in param_dict.keys():
 					if alg in param_dict[method_name].keys():
@@ -104,6 +106,8 @@ def process_file(path, metrics):
 					result_dict[method_name] = {alg: {alg_index: {t: {seed: dictionary}}}}
 
 			line = reader.readline()
+	except Exception:
+		print(traceback.format_exc())
 	finally:
 		#pprint(param_dict)
 		#pprint(result_dict)
@@ -170,19 +174,21 @@ def process_file(path, metrics):
 							best[metric] = metric_val
 				#print("base", method_name, alg_name, base)
 				print("best", method_name, alg_name, best)
-			pprint(result_dict)
+			#pprint(result_dict)
 		return param_dict, result_dict
 
 def main(args):
 	result_dir = "run_logs/"
 	# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
-	setting = "1000000_100_1000"
-	dataset = "pendigits"
+	setting = "full_10000_100_1000"
+	dataset = "complex9"
 	metrics = ["accuracy", "ARI", "NMI"]
 	for f in onlyfiles:
 		if setting in f and dataset in f:
+			print(f)
 			f_params, f_results = process_file(result_dir + f, metrics)
+			print()
 
 
 

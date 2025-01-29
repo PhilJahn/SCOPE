@@ -25,8 +25,8 @@ import mlflow_logger
 from competitors.clustream import CluStream, CluStreamMicroCluster
 from datahandler import load_data
 from method.CircSCOPE import CircSCOPE
-from method.SCOPE import SCOPE
-from method.offlineHandler import SCOPEOffline, CircSCOPEOffline, OPECluStream, perform_clustering
+#from method.SCOPE import SCOPE
+from method.offlineHandler import CircSCOPEOffline, OPECluStream, perform_clustering, SCOPE_CluStream #, SCOPE_Offline
 from utils import make_param_dicts, dps_to_np, dict_to_np
 import numpy as np
 
@@ -34,10 +34,10 @@ import numpy as np
 def get_offline_dict(args):
 	offline_dict = {}
 	if args.gpu:
-		#shade = "shade"
-		#shade_vals = {"alg_seed": [0, 1, 2, 3, 4], "min_points": [5, 3, 2, 10, 25, 50, 100], "embedding_size": [10, 5, 2], "increase_inter_cluster_distance": [False, True]}
-		#shade_dicts = make_param_dicts(shade_vals)
-		#offline_dict[shade] = shade_dicts
+		shade = "shade"
+		shade_vals = {"alg_seed": [0, 1, 2, 3, 4], "min_points": [5, 3, 2, 10, 25, 50, 100], "embedding_size": [10, 5, 2], "increase_inter_cluster_distance": [False, True]}
+		shade_dicts = make_param_dicts(shade_vals)
+		offline_dict[shade] = shade_dicts
 
 		dec = "dec"
 		dec_vals = {"alg_seed": [0, 1, 2, 3, 4], "alpha": [1.0, 0.1, 0.25, 0.5, 0.75, 0.9], "embedding_size": [10, 5, 2], "use_reconstruction_loss":[True, False]}
@@ -92,7 +92,7 @@ def get_offline_dict(args):
 			spectacl_dicts = make_param_dicts(spectacl_vals)
 			offline_dict[spectacl] = spectacl_dicts
 
-		if args.category == "all" or args.category == "dbscan":
+		if args.category == "all" or args.category == "dbscan" or args.category == "density_all":
 
 			dbscan = "dbscan"
 			dbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100]}
@@ -115,7 +115,7 @@ def get_offline_dict(args):
 			mdbscan_dicts = make_param_dicts(mdbscan_vals)
 			offline_dict[mdbscan] = mdbscan_dicts
 
-		if args.category == "all" or args.category == "density":
+		if args.category == "all" or args.category == "density" or args.category == "density_all":
 
 			dpca = "dpca"
 			dpca_vals = {"distance_threshold": [None, 0.5, 0.25, 0.1, 0.05, 0.01], "density_threshold": [None, 5, 3, 2, 10, 25, 50, 100],
@@ -154,13 +154,6 @@ def get_offline_dict(args):
 		#dcf_dicts = make_param_dicts(dcf_vals)
 		#offline_dict[dcf] = dcf_dicts
 
-	if args.category == "test":
-		rnndbscan = "rnndbscan"
-		rnndbscan_vals = {"n_neighbors": [10, 9, 8, 7, 6, 5, 4, 3, 2, 15, 20, 25, 50, 75, 100]}
-		rnndbscan_dicts = make_param_dicts(rnndbscan_vals)
-		offline_dict[rnndbscan] = rnndbscan_dicts
-
-
 	return offline_dict
 
 
@@ -168,14 +161,15 @@ def main(args):
 	# print(args, flush=True)
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
-	parser.add_argument('--offline', default=1000, type=int, help='Timesteps for offline phase')
+	parser.add_argument('--ds', default="densired", type=str, help='Used stream data set')
+	parser.add_argument('--offline', default=10000, type=int, help='Timesteps for offline phase')
 	parser.add_argument('--method', default="full", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
 	parser.add_argument('--gpu', default=False, type=bool, help='GPU usage')
-	parser.add_argument('--category', default="test", type=str, help='Offline algorithm category')
+	parser.add_argument('--category', default="all", type=str, help='Offline algorithm category')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
+	parser.add_argument('--startindex', int=0, type=str, help='Start index for parameter configuration')
 	args = parser.parse_args()
 	method_name = args.method
 
@@ -204,7 +198,7 @@ def main(args):
 		has_mcs = True
 		needs_dict = True
 		use_one = True
-	elif args.method == "opeclustream":
+	elif args.method == "opeclustream" or args.method == "scope_clustream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
 		param_vals["mcrf"] = [2, 1.5, 3]  # micro_cluster_r_factor
@@ -239,7 +233,7 @@ def main(args):
 		has_gen = True
 	elif args.method == "emcstream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
-		param_vals["horizon"] = [20, 50, 80, 100, args.sumlimit]  # horizon, from paper
+		param_vals["horizon"] = [20, 50, 80, 100, args.sumlimit, 1000]  # horizon, from paper
 		param_vals["ari_threshold"] = [1.0]  # ari_threshold, from code
 		param_vals["ari_threshold_step"] = [0.001]  # ari_threshold, from code
 	elif args.method == "mcmststream":
@@ -339,9 +333,18 @@ def main(args):
 		param_dicts = make_param_dicts(param_vals)
 	print(param_dicts)
 	j = 0
-	f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}.txt', 'w', newline='\n',
-	         buffering=1000)
+	if args.category == "all" and args.startindex == 0:
+		f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}.txt', 'w', newline='\n',
+		         buffering=1000)
+	else:
+		f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{args.category}_{args.startindex}.txt', 'w',
+		         newline='\n', buffering=1000)
+
+	param_index = -1
 	for param_dict in param_dicts:
+		param_index += 1
+		if param_index < args.start_index:
+			continue
 
 		X, Y = load_data(args.ds, seed=0)
 		num_cls = len(np.unique(Y))
@@ -363,13 +366,19 @@ def main(args):
 			                      time_gap=param_dict["tg"], time_window=param_dict["tw"], sigma=param_dict["sigma"],
 			                      mu=param_dict["mu"],
 			                      seed=param_dict["seed"], offline_datascale=param_dict["gen"])
-		elif args.method in scope_list:
-			method = SCOPEOffline(n_macro_clusters=args.class_num, max_micro_clusters=param_dict["mmc"],
+		elif args.method == "scope_clustream":
+			method = SCOPE_CluStream(n_macro_clusters=args.class_num, max_micro_clusters=param_dict["mmc"],
 			                      micro_cluster_r_factor=param_dict["mcrf"],
 			                      time_gap=param_dict["tg"], time_window=param_dict["tw"], sigma=param_dict["sigma"],
 			                      mu=param_dict["mu"],
-			                      seed=param_dict["seed"], dissolve=param_dict["dis"],
-			                      max_singletons=param_dict["msmc"], offline_datascale=param_dict["gen"])
+			                      seed=param_dict["seed"], offline_datascale=param_dict["gen"])
+		# elif args.method in scope_list:
+		# 	method = SCOPEOffline(n_macro_clusters=args.class_num, max_micro_clusters=param_dict["mmc"],
+		# 	                      micro_cluster_r_factor=param_dict["mcrf"],
+		# 	                      time_gap=param_dict["tg"], time_window=param_dict["tw"], sigma=param_dict["sigma"],
+		# 	                      mu=param_dict["mu"],
+		# 	                      seed=param_dict["seed"], dissolve=param_dict["dis"],
+		# 	                      max_singletons=param_dict["msmc"], offline_datascale=param_dict["gen"])
 		elif args.method == "emcstream":
 			method = EmcStream(k=args.class_num, horizon=param_dict["horizon"],
 			                   ari_threshold=param_dict["ari_threshold"],
@@ -457,7 +466,10 @@ def main(args):
 						gen_data_step[i] = dps_to_np(method.offline_dataset)
 						gen_label_step[i] = np.array(method.offline_labels).reshape(-1, 1)
 					for dp in dp_store:
-						if has_mcs:
+						if method_name == "scope_clustream":
+							pred, gen_id = method.predict_one(dp, return_mc=True)
+							assign_store.append(gen_id)
+						elif has_mcs:
 							pred, mc_id = method.predict_one(dp, return_mc=True)
 							assign_store.append(mc_id)
 						else:
@@ -545,13 +557,17 @@ def main(args):
 							clustering, _ = perform_clustering(cur_gen_data, alg, alg_dict)
 							# print(clustering, flush=True)
 							num_clu = len(np.unique(clustering))
-							for id in np.unique(cur_assign):
-								# print(id)
-								is_mc = [l for l, x in enumerate(cur_gen_label) if x == id]
-								labels_mc = [0] * num_clu
-								for i_mc in is_mc:
-									labels_mc[clustering[i_mc]] += 1
-								cur_mc_clu[id] = labels_mc.index(max(labels_mc))
+							if method_name == "scope_clustream":
+								for id in np.unique(cur_assign):
+									cur_mc_clu[id] = clustering[id]
+							else:
+								for id in np.unique(cur_assign):
+									# print(id)
+									is_mc = [l for l, x in enumerate(cur_gen_label) if x == id]
+									labels_mc = [0] * num_clu
+									for i_mc in is_mc:
+										labels_mc[clustering[i_mc]] += 1
+									cur_mc_clu[id] = labels_mc.index(max(labels_mc))
 						elif not method_name=="full":
 							try:
 								cur_mc_centers = [mc.center for l, mc in cur_mcs.items()]
