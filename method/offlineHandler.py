@@ -74,7 +74,7 @@ def reconstruct_data(micro_clusters, num, radius_mult, generator, use_centroid=F
 			new_labels.extend(label)
 		if use_centroid:
 			new_ds.append(mc.center)
-			new_labels.extend(id)
+			new_labels.append(id)
 	return new_ds, new_labels
 
 
