@@ -544,10 +544,9 @@ class SCOPE_CluStream(CluStream):
 	def predict_one(self, x, recluster=False, sklearn=None, return_mc=False):
 		if self._offline_timestamp != self._timestamp:
 			self.offline_processing()
-			self.kdtree = KDTree(self.offline_dataset)
+			self.kdtree = KDTree(dps_to_np(self.offline_dataset))
 
-		index = self.kdtree.query(x, 1, return_distance=False)
-
+		index = self.kdtree.query(dict_to_np(x).reshape(1, -1), 1, return_distance=False)[0][0]
 		if return_mc:
 			return self.cluster_assignments[index], index
 		else:
