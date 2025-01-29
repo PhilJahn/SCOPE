@@ -161,15 +161,15 @@ def main(args):
 	# print(args, flush=True)
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--ds', default="densired", type=str, help='Used stream data set')
+	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
 	parser.add_argument('--offline', default=10000, type=int, help='Timesteps for offline phase')
-	parser.add_argument('--method', default="full", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="scope_clustream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
 	parser.add_argument('--gpu', default=False, type=bool, help='GPU usage')
 	parser.add_argument('--category', default="all", type=str, help='Offline algorithm category')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
-	parser.add_argument('--startindex', int=0, type=str, help='Start index for parameter configuration')
+	parser.add_argument('--startindex', default=0, type=int, help='Start index for parameter configuration')
 	args = parser.parse_args()
 	method_name = args.method
 
