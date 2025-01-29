@@ -167,7 +167,7 @@ def main(args):
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
 	parser.add_argument('--gpu', default=False, type=bool, help='GPU usage')
-	parser.add_argument('--category', default="kmeans", type=str, help='Offline algorithm category')
+	parser.add_argument('--category', default="all", type=str, help='Offline algorithm category')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
 	parser.add_argument('--startindex', default=0, type=int, help='Start index for parameter configuration')
 	args = parser.parse_args()
@@ -557,7 +557,7 @@ def main(args):
 							try:
 								clustering, _ = perform_clustering(cur_gen_data, alg, alg_dict)
 							except:
-								clustering = []
+								clustering = [-1]*len(cur_gen_data)
 								print(f"Clustering for {alg_dict} failed at {step+1}")
 								for l in range(len(cur_gen_data)):
 									clustering[l] = l
