@@ -184,7 +184,7 @@ def main(args):
 	has_gen = False
 	constraint = False
 	batch_eval = False
-
+	dataset_length = 10000000
 	if args.method == "clustream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
@@ -297,6 +297,7 @@ def main(args):
 		X, Y = load_data(args.ds, seed=0)
 		num_cls = len(np.unique(Y))
 		dim = len(X[0])
+		dataset_length = len(X)
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["gridgran"] = [30, 20, 10, 2]
 		param_vals["alpha"] = [0.03, 0.2, 0.15, 0.16, 0.08]
@@ -328,7 +329,8 @@ def main(args):
 					param_dicts.append(param_dict)
 			elif args.method == "mudistream":
 				if param_dict["alpha"] + 2 ** (-param_dict["lamda"]) > 1:
-					param_dicts.append(param_dict)
+					if param_dict["minPts"] <= dataset_length:
+						param_dicts.append(param_dict)
 	else:
 		param_dicts = make_param_dicts(param_vals)
 	print(param_dicts)
