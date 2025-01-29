@@ -167,7 +167,7 @@ def main(args):
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
 	parser.add_argument('--gpu', default=False, type=bool, help='GPU usage')
-	parser.add_argument('--category', default="all", type=str, help='Offline algorithm category')
+	parser.add_argument('--category', default="kmeans", type=str, help='Offline algorithm category')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
 	parser.add_argument('--startindex', default=0, type=int, help='Start index for parameter configuration')
 	args = parser.parse_args()
@@ -343,7 +343,7 @@ def main(args):
 	param_index = -1
 	for param_dict in param_dicts:
 		param_index += 1
-		if param_index < args.start_index:
+		if param_index < args.startindex:
 			continue
 
 		X, Y = load_data(args.ds, seed=0)
