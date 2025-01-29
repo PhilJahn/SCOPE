@@ -163,7 +163,7 @@ def main(args):
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
 	parser.add_argument('--offline', default=10000, type=int, help='Timesteps for offline phase')
-	parser.add_argument('--method', default="scope_clustream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="opeclustream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
 	parser.add_argument('--gpu', default=False, type=bool, help='GPU usage')
@@ -554,8 +554,14 @@ def main(args):
 						if has_gen:
 							cur_gen_data = gen_data_step[step]
 							cur_gen_label = gen_label_step[step]
-							clustering, _ = perform_clustering(cur_gen_data, alg, alg_dict)
-							# print(clustering, flush=True)
+							try:
+								clustering, _ = perform_clustering(cur_gen_data, alg, alg_dict)
+							except:
+								clustering = []
+								print(f"Clustering for {alg_dict} failed at {step+1}")
+								for l in range(len(cur_gen_data)):
+									clustering[l] = l
+								# print(clustering, flush=True)
 							num_clu = len(np.unique(clustering))
 							if method_name == "scope_clustream":
 								for id in np.unique(cur_assign):
