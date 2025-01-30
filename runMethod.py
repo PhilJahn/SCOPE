@@ -170,6 +170,7 @@ def main(args):
 	parser.add_argument('--category', default="all", type=str, help='Offline algorithm category')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
 	parser.add_argument('--startindex', default=0, type=int, help='Start index for parameter configuration')
+	parser.add_argument('--endindex', default=100000000, type=int, help='End index for parameter configuration')
 	args = parser.parse_args()
 	method_name = args.method
 
@@ -346,6 +347,8 @@ def main(args):
 	for param_dict in param_dicts:
 		param_index += 1
 		if param_index < args.startindex:
+			continue
+		if param_index > args.endindex:
 			continue
 
 		X, Y = load_data(args.ds, seed=0)
