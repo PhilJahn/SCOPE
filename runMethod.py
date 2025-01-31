@@ -174,6 +174,8 @@ def main(args):
 	args = parser.parse_args()
 	method_name = args.method
 
+	print(args, flush=True)
+
 	scope_list = ["scope", "scope2", "scope3"]
 
 	param_vals = {}
@@ -190,7 +192,7 @@ def main(args):
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
 		param_vals["mcrf"] = [2, 1.5, 3]  # micro_cluster_r_factor
-		param_vals["tg"] = [args.offline]  # time_gap
+		param_vals["tg"] = [1000000000000]  # time_gap
 		param_vals["tw"] = [1000, 10000, 10000000]  # time window
 		param_vals["sigma"] = [0.5]
 		param_vals["mu"] = [0.5]
@@ -347,8 +349,10 @@ def main(args):
 	for param_dict in param_dicts:
 		param_index += 1
 		if param_index < args.startindex:
+			j += 1
 			continue
 		if param_index > args.endindex:
+			j += 1
 			continue
 
 		X, Y = load_data(args.ds, seed=0)

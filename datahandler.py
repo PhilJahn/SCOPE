@@ -37,7 +37,7 @@ def read_file(dsname):
 	label = []
 	for line in file:
 		# print(line)
-		if (line.startswith("@") or line.startswith("%") or "class" in line or len(line.strip()) == 0):
+		if (line.startswith("@") or line.startswith("%") or "class" in line or "duration" in line or len(line.strip()) == 0):
 			pass
 		else:
 			j = line.split(",")
@@ -139,6 +139,8 @@ def read_mnist():
 		if line.startswith("label") or len(line.strip()) == 0:
 			pass
 		else:
+			if line == "128.3,93.3,2":
+				line = "128.3,93.3"
 			j = line.split(",")
 			if ("?" in j):
 				continue

@@ -297,6 +297,7 @@ class CluStream(base.Clusterer):
 		self._offline_timestamp = self._timestamp
 
 	def predict_one(self, x, recluster=False, sklearn=False, return_mc = False):
+		#print(self._offline_timestamp, self._timestamp)
 		if self._offline_timestamp != self._timestamp and recluster:
 			if not sklearn:
 				self.offline_processing()
@@ -307,6 +308,7 @@ class CluStream(base.Clusterer):
 				mc_weight = [mc.weight for i, mc in self.micro_clusters.items()]
 				self._kmeans.fit_predict(dps_to_np(mc_centers), sample_weight=mc_weight)
 				self.centers = self._kmeans.cluster_centers_
+				self._offline_timestamp = self._timestamp
 		index, _ = self._get_closest_mc(x)
 		try:
 			if sklearn:
