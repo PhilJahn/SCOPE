@@ -181,7 +181,7 @@ def main(args):
 	result_dir = "run_logs/"
 	# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
-	setting = "full_10000_100_1000"
+	setting = "10000_100_1000_False_kmeans"
 	dataset = "complex9"
 	metrics = ["accuracy", "ARI", "NMI"]
 	for f in onlyfiles:

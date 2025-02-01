@@ -161,11 +161,39 @@ def read_mnist():
 			x.append(k)
 	return np.array(x), np.array(label).reshape(1, len(label))[0]
 
+def read_subset(dsname):
+	X_file_name = "./data/rand_subset/X_"
+	y_file_name = "./data/rand_subset/y_"
+	suffix = ""
+	if "covertype" in dsname:
+		suffix = "covertype_subset_11620"
+	elif "kddcup" in dsname:
+		suffix = "kddcup_subset_4940"
+	elif "powersupply" in dsname:
+		suffix = "powersupply_subset_5986"
+	elif "gassensor" in dsname:
+		suffix = "gassensor_subset_6955"
+	elif "rotatinghyperplane" in dsname:
+		suffix = "rotatinghyperplane_subset_10000"
+	elif "movingrbf" in dsname:
+		suffix = "movingrbf_subset_10000"
+	elif "rbf3" in dsname:
+		suffix = "rbf3_subset_8000"
+	elif "starlight" in dsname:
+		suffix = "starlight_subset_4618"
+	for i in range(5):
+		if f"_{i}" in dsname:
+			suffix += f"_{i}.npy"
+	X_file_name += suffix
+	y_file_name += suffix
+	X = np.load(X_file_name)
+	y = np.load(y_file_name)
+	return X,y
+
+
 
 static_list = {"mnist", "optdigits", "pendigits", "densired", "complex9", "diamond9"}
 def load_data(dsname, seed = 0):
-	#np.random.seed(seed)
-
 	generator = np.random.Generator(PCG64(seed))
 	scaler = MinMaxScaler()
 	if dsname == "mnist":
@@ -174,6 +202,8 @@ def load_data(dsname, seed = 0):
 	elif dsname == "movingrbf" or dsname == "rotatinghyperplane":
 		X, y = read_synth_drift(dsname)
 		X = scaler.fit_transform(X)
+	elif "subset" in dsname: #no need to scale subsampled data
+		X, y = read_subset(dsname)
 	else:
 		X, y = read_file(dsname)
 		X = scaler.fit_transform(X)
