@@ -1,0 +1,1 @@
+{'ari_threshold': 1.0, 'ari_threshold_step': 0.001, 'horizon': 100};-;-;-;-

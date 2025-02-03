@@ -1,0 +1,1 @@
+{'beta': 0.75, 'decaying_factor': 0.25, 'epsilon': 0.02, 'mu': 2.0, 'n_samples_init': 1000, 'stream_speed': 100};-;-;-;-

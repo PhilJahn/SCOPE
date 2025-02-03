@@ -1,0 +1,4 @@
+{'beta': 0.75, 'decaying_factor': 0.25, 'epsilon': 0.02, 'mu': 2.0, 'n_samples_init': 1000, 'stream_speed': 100};-;-;-;-
+{'beta': 0.2668785210699, 'decaying_factor': 0.6585082259029, 'epsilon': 0.0019505655425, 'mu': 11.4519959303877, 'n_samples_init': 750, 'stream_speed': 10};0.0;174;0.0;{'accuracy': 0.5809874404504113, 'ARI': 0.0, 'NMI': 0.0}
+{'beta': 0.2668785210699, 'decaying_factor': 0.6585082259029, 'epsilon': 0.0019505655425, 'mu': 11.4519959303877, 'n_samples_init': 750, 'stream_speed': 10};0.0;180;0.0;{'accuracy': 0.5734084019055868, 'ARI': 0.0, 'NMI': 0.0}
+{'beta': 0.2668785210699, 'decaying_factor': 0.6585082259029, 'epsilon': 0.0019505655425, 'mu': 11.4519959303877, 'n_samples_init': 750, 'stream_speed': 10};0.0;180;0.0;{'accuracy': 0.5768731052403638, 'ARI': 0.0, 'NMI': 0.0}
