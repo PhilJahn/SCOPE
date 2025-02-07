@@ -36,7 +36,8 @@ from utils import dps_to_np
 # Use SMAC to find the best configuration/hyperparameters
 # smac = HyperparameterOptimizationFacade(scenario, train)
 # incumbent = smac.optimize()
-
+global data_name
+data_name = None
 global data_dim
 data_dim = 0
 global data_length
@@ -63,32 +64,37 @@ def get_clustering_learn_one(clustering_method):
 	i = 0
 	is_clustream = type(clustering_method) == CluStream
 	is_dstream = type(clustering_method) == DStreamClusterer
+	assignments = []
+	mcs = []
+	cur_prediction = []
 	for dp in dps:
 		is_last = i == len(X) - 1
 		if not is_dstream:
 			dp = dict(enumerate(dp))
 		dp_store.append(dp)
 		clustering_method.learn_one(dp)
-		if (i + 1) % offline_timing == 0 or is_last:
-			cur_prediction = []
-			if is_dstream:
-				clustering_method.offline_processing()
-			for dp_2 in dp_store:
+		if not is_clustream and not is_dstream:
+			label = clustering_method.predict_one(dp)
+			prediction.append(label)
+		else:
+			if (i + 1) % offline_timing == 0 or is_last:
 				if is_clustream:
-					label = clustering_method.predict_one(dp_2, recluster=True, sklearn=True)
-				else:
-					label = clustering_method.predict_one(dp_2)
-				cur_prediction.append(label)
-
-			#            plt.figure(figsize=(10, 10))
-			#            plt.scatter(dps_to_np(dp_store)[:, 0], dps_to_np(dp_store)[:, 1], c=cur_prediction)
-			#            plt.ylim(-0.1, 1.1)
-			#            plt.xlim(-0.1, 1.1)
-			#            plt.show()
-			dp_store = []
-			prediction.extend(cur_prediction)
+					for mcid, mc in clustering_method.micro_clusters.items():
+						mcs.append([i, mcid, mc.center, mc.radius(r_factor=1), mc.weight, mc.var_time, mc.var_x])
+				if is_dstream:
+					clustering_method.offline_processing()
+				cur_prediction = []
+				for dp_2 in dp_store:
+					if is_clustream:
+						label, assign = clustering_method.predict_one(dp_2, recluster=True, sklearn=True,return_mc=True)
+						assignments.append(assign)
+					else:
+						label = clustering_method.predict_one(dp_2)
+					cur_prediction.append(label)
+				dp_store = []
+				prediction.extend(cur_prediction)
 		i += 1
-	nmis = []
+	amis = []
 	aris = []
 	accs = []
 	for i in range(0, len(prediction), offline_timing):
@@ -96,21 +102,24 @@ def get_clustering_learn_one(clustering_method):
 		length = end - i
 		# print(i, end, length)
 		metrics, _ = getMetrics(y[i:end], prediction[i:end])
-		nmis.extend([metrics["NMI"]] * length)
+		amis.extend([metrics["AMI"]] * length)
 		aris.extend([metrics["ARI"]] * length)
 		accs.extend([metrics["accuracy"]] * length)
-	# print(len(nmis))
-	nmi = float(np.mean(nmis))
+	# print(len(amis))
+	ami = float(np.mean(amis))
 	ari = float(np.mean(aris))
 	acc = float(np.mean(accs))
 
 	global cur_best_score
 	global best_performance
-	if nmi + ari > cur_best_score:
-		cur_best_score = nmi + ari
-		best_performance = {"accuracy":acc, "ARI": ari, "NMI": nmi}
+	if ami + ari > cur_best_score:
+		cur_best_score = ami + ari
+		best_performance = {"accuracy":acc, "ARI": ari, "AMI": ami}
+		#if is_clustream:
+		#	np.save(f"param_data/assign_{data_name}", assignments)
+		#	np.save(f"param_data/mcs_{data_name}", mcs)
 
-	return nmi + ari
+	return ami + ari
 
 
 def get_clustering(method, config=None):
@@ -120,7 +129,7 @@ def get_clustering(method, config=None):
 
 	dps_np = np.array(dps)
 
-	nmis = []
+	amis = []
 	aris = []
 	accs = []
 	y_store = copy.copy(y)
@@ -146,30 +155,30 @@ def get_clustering(method, config=None):
 			y_batch = y[i:end_batch]
 			length = end_batch - i
 			metrics, _ = getMetrics(pred_batch, y_batch)
-			nmis.extend([metrics["NMI"]] * length)
+			amis.extend([metrics["AMI"]] * length)
 			aris.extend([metrics["ARI"]] * length)
 			accs.extend([metrics["accuracy"]] * length)
 	else:
 		metrics, _ = getMetrics(y_store, pred_store)
-		nmis.extend([metrics["NMI"]] * len(y_store))
+		amis.extend([metrics["AMI"]] * len(y_store))
 		aris.extend([metrics["ARI"]] * len(y_store))
 		accs.extend([metrics["accuracy"]] * len(y_store))
 
-	nmi = float(np.mean(nmis))
+	ami = float(np.mean(amis))
 	ari = float(np.mean(aris))
 	acc = float(np.mean(accs))
 
 	global cur_best_score
 	global best_performance
-	if nmi + ari > cur_best_score:
-		cur_best_score = nmi + ari
-		best_performance = {"accuracy":acc, "ARI": ari, "NMI": nmi}
+	if ami + ari > cur_best_score:
+		cur_best_score = ami + ari
+		best_performance = {"accuracy":acc, "ARI": ari, "AMI": ami}
 
-	return nmi + ari
+	return ami + ari
 
 
 def eval_clustering(clustering):
-	nmis = []
+	amis = []
 	aris = []
 	accs = []
 	for i in range(0, len(clustering), offline_timing):
@@ -177,26 +186,27 @@ def eval_clustering(clustering):
 		length = end - i
 		# print(i, end, length)
 		metrics, _ = getMetrics(y[i:end], clustering[i:end])
-		nmis.extend([metrics["NMI"]] * length)
+		amis.extend([metrics["AMI"]] * length)
 		aris.extend([metrics["ARI"]] * length)
 		accs.extend([metrics["accuracy"]] * length)
-	# print(len(nmis))
-	nmi = float(np.mean(nmis))
+	# print(len(amis))
+	ami = float(np.mean(amis))
 	ari = float(np.mean(aris))
 	acc = float(np.mean(accs))
 
 	global cur_best_score
 	global best_performance
-	if nmi + ari > cur_best_score:
-		cur_best_score = nmi + ari
-		best_performance = {"accuracy":acc, "ARI": ari, "NMI": nmi}
+	if ami + ari > cur_best_score:
+		cur_best_score = ami + ari
+		best_performance = {"accuracy":acc, "ARI": ari, "AMI": ami}
 
-	return nmi + ari
+	return ami + ari
 
 
 def train_clustream(config: Configuration, seed: int = 0) -> float:
 	# print(data_dim, class_num, data_length, mc_num, offline_timing)
-
+	#global offline_timing
+	#offline_timing = config["time_window"]
 	clustering_method = CluStream(n_macro_clusters=class_num, seed=seed, max_micro_clusters=mc_num, time_gap=100000000,
 	                              micro_cluster_r_factor=config["mc_r_factor"], time_window=config["time_window"])
 	score = get_clustering_learn_one(clustering_method)
@@ -317,7 +327,7 @@ def train_gbfuzzystream(config: Configuration, seed: int = 0) -> float:
 configspaces = {}
 clustream_space = ConfigurationSpace()
 clustream_timewindow = Categorical("time_window",
-                                   [100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000],
+                                   [1000, 1500, 2000, 2500, 5000, 10000],
                                    default=1000)
 clustream_mc_r_factor = Float("mc_r_factor", (1.0, 5.0), default=2.0)
 clustream_space.add([clustream_timewindow, clustream_mc_r_factor])
@@ -397,7 +407,7 @@ configspaces["dstream"] = dstream_space
 
 gbfuzzystream_space = ConfigurationSpace()
 gbfuzzystream_lam = Float("lam",(0.1, 5), default=1)
-gbfuzzystream_batchsize=Categorical("batchsize",[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000], default=1000)
+gbfuzzystream_batchsize=Categorical("batchsize",[1000], default=1000)
 gbfuzzystream_threshold=Float("threshold",(0.1, 0.8),default=0.3)
 gbfuzzystream_m=Constant("m", 2)
 gbfuzzystream_eps=Constant("eps", 10)
@@ -417,10 +427,10 @@ trainmethods["gbfuzzystream"] = train_gbfuzzystream
 
 # 86400 * 5
 def run_parameter_estimation(method, time_budget, seed):
-	print("Checksum:", np.sum(labels))
-
-	scenario = Scenario(configspaces[method], deterministic=True, use_default_config=True, cputime_limit=time_budget,
-	                    n_trials=100000, seed=seed)
+	print("Checksum:", np.sum(labels), " Time Budget:", time_budget)
+	det = not method in ["dstream", "clustream", "mudistream", "emcstream", "streamkmeans"]
+	scenario = Scenario(configspaces[method], deterministic=det, use_default_config=True, walltime_limit=time_budget,
+	                    n_trials=100000, seed=seed, name=f"{data_name}_{method}_{time_budget}_{seed}")
 	smac = HyperparameterOptimizationFacade(scenario, trainmethods[method], overwrite=True)
 	incumbent = smac.optimize()
 	run_num = len(smac.runhistory.items())
@@ -432,26 +442,44 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="powersupply", type=str, help='Used stream data set')
-	parser.add_argument('--method', default="gbfuzzystream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--use_full', default=0, type=int, help='Use full datset')
 	args = parser.parse_args()
 	print(args, flush=True)
 
 	method = args.method
 	dataset = args.ds
+	args.use_full = args.use_full == 1
 
-	if method not in clustream_methods and method not in offline_methods:
-		time_budget = 18000 # 5 hours
+	#if method not in clustream_methods and method not in offline_methods:
+	#	time_budget = 18000 # 5 hours
+	#else:
+	#	time_budget = 3600
+
+
+	if args.use_full:
+		seed_num = 1
+		time_budget = 86400
+		f = open(f'param_logs/params_{dataset}_{method}_full.txt', 'w', buffering=1)
 	else:
-		time_budget = 3600
-
-
-	f = open(f'param_logs/params_{dataset}_{method}.txt', 'w', buffering=1)
+		seed_num = 5
+		time_budget = 18000
+		f = open(f'param_logs/params_{dataset}_{method}.txt', 'w', buffering=1)
+	if args.method in clustream_methods:
+		time_budget = time_budget/5
+	elif args.method in offline_methods:
+		time_budget = 4*time_budget/5
 	f.write(f"{configspaces[method].get_default_configuration().get_dictionary()};-;-;-;-\n")
-	for run in range(5):
+
+	data_name = dataset
+	for run in range(seed_num):
+		run_index = run
+
 		cur_best_score = -1
 		best_performance = -1
-		datasubset = dataset + "_subset_" + str(run)
-		X, y = load_data(datasubset)
+		if not args.use_full:
+			data_name = dataset + "_subset_" + str(run)
+		X, y = load_data(data_name)
 		uniques = np.unique(y, return_counts=False)
 		data_dim = len(X[0])
 		data_length = len(y)

@@ -10,6 +10,7 @@ from time import sleep
 import torch
 from sklearn.cluster import KMeans
 
+import utils
 from competitors.EmCStream import EmcStream
 from competitors.MCMSTStream import MCMSTStream
 from competitors.MuDi import MuDiDataPoint, MudiHandler
@@ -118,7 +119,7 @@ def get_offline_dict(args):
 		if args.category == "all" or args.category == "density" or args.category == "density_all":
 
 			dpca = "dpca"
-			dpca_vals = {"distance_threshold": [None, 0.5, 0.25, 0.1, 0.05, 0.01], "density_threshold": [None, 5, 3, 2, 10, 25, 50, 100],
+			dpca_vals = {"dc": [None, 0.5, 0.1, 0, 0.75, 0.9, 1], "distance_threshold": [None, 0.5, 0.25, 0.1, 0.05, 0.01], "density_threshold": [None, 5, 3, 2, 10, 25, 50, 100],
 			             "anormal":[True, False], "gauss_cutoff": [True, False]}
 			dpca_dicts = make_param_dicts(dpca_vals)
 			offline_dict[dpca] = dpca_dicts
@@ -161,18 +162,21 @@ def main(args):
 	# print(args, flush=True)
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
+	parser.add_argument('--ds', default="powersupply", type=str, help='Used stream data set')
 	parser.add_argument('--offline', default=10000, type=int, help='Timesteps for offline phase')
-	parser.add_argument('--method', default="opeclustream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="gbfuzzystream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
-	parser.add_argument('--gpu', default=False, type=bool, help='GPU usage')
+	parser.add_argument('--gpu', default=0, type=int, help='GPU usage')
 	parser.add_argument('--category', default="all", type=str, help='Offline algorithm category')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
 	parser.add_argument('--startindex', default=0, type=int, help='Start index for parameter configuration')
 	parser.add_argument('--endindex', default=100000000, type=int, help='End index for parameter configuration')
+	parser.add_argument('--automl', default=0, type=int, help='Use AutoML parameters rather than grid search')
 	args = parser.parse_args()
 	method_name = args.method
+	args.gpu = args.gpu == 1
+	args.automl = args.automl == 1
 
 	print(args, flush=True)
 
@@ -269,7 +273,7 @@ def main(args):
 		param_vals["mu"] = [0.5]
 		needs_dict = True
 		use_one = True
-	elif args.method == "gbfuzzystream1000":
+	elif args.method == "gbfuzzystream1000" or args.method == "gbfuzzystream":
 		param_vals["lam"] = [0.2, 1, 2, 0.5, 1.4]
 		param_vals["threshold"] = [0.3, 0.8, 0.5]
 		param_vals["eps"] = [10]
@@ -336,7 +340,6 @@ def main(args):
 						param_dicts.append(param_dict)
 	else:
 		param_dicts = make_param_dicts(param_vals)
-	print(param_dicts)
 	j = 0
 	if args.category == "all" and args.startindex == 0:
 		f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}.txt', 'w', newline='\n',
@@ -344,6 +347,11 @@ def main(args):
 	else:
 		f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{args.category}_{args.startindex}.txt', 'w',
 		         newline='\n', buffering=1000)
+
+	if args.automl:
+		param_dicts = utils.load_parameters(args.ds, args.method)
+
+	print(param_dicts)
 
 	param_index = -1
 	for param_dict in param_dicts:
@@ -432,7 +440,7 @@ def main(args):
 			                     alpha=param_dict["alpha"],
 			                     minPts=param_dict["minPts"],
 			                     seed=param_dict["seed"])
-		elif args.method == "gbfuzzystream100" or args.method == "gbfuzzystream1000":
+		elif args.method == "gbfuzzystream" or args.method == "gbfuzzystream100" or args.method == "gbfuzzystream1000":
 			method = MBStreamHandler(lam=param_dict["lam"],
 			                         batchsize=param_dict["batchsize"],
 			                         threshold=param_dict["threshold"],

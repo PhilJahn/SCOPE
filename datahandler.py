@@ -184,6 +184,8 @@ def read_subset(dsname):
 	for i in range(5):
 		if f"_{i}" in dsname:
 			suffix += f"_{i}.npy"
+	if "_default" in dsname:
+		suffix += f"_0.npy"
 	X_file_name += suffix
 	y_file_name += suffix
 	X = np.load(X_file_name)
@@ -194,16 +196,18 @@ def read_subset(dsname):
 
 static_list = {"mnist", "optdigits", "pendigits", "densired", "complex9", "diamond9"}
 def load_data(dsname, seed = 0):
+
+	print(dsname)
 	generator = np.random.Generator(PCG64(seed))
 	scaler = MinMaxScaler()
-	if dsname == "mnist":
+	if "subset" in dsname:  # no need to scale subsampled data
+		X, y = read_subset(dsname)
+	elif dsname == "mnist":
 		X, y = read_mnist()
 		X = X/255
 	elif dsname == "movingrbf" or dsname == "rotatinghyperplane":
 		X, y = read_synth_drift(dsname)
 		X = scaler.fit_transform(X)
-	elif "subset" in dsname: #no need to scale subsampled data
-		X, y = read_subset(dsname)
 	else:
 		X, y = read_file(dsname)
 		X = scaler.fit_transform(X)

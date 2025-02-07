@@ -6,6 +6,7 @@ import torch
 from clustpy.partition import XMeans, SubKmeans, ProjectedDipMeans
 from clustpy.deep import DEC, DipEncoder
 from numpy.random import PCG64
+from scipy.spatial import distance
 from sklearn.cluster import KMeans, SpectralClustering, DBSCAN, OPTICS, MeanShift, HDBSCAN, AgglomerativeClustering
 from sklearn.neighbors import KDTree
 from offline_methods.SHADE.dcdist import DCTree_Clusterer
@@ -38,6 +39,7 @@ def random_ball_num(center, radius, d, n, clunum, generator):
 	d = int(d)
 	n = int(n)
 	dps = []
+
 	for _ in range(n):
 		u = generator.normal(0, 1, d + 2)  # an array of (d+2) normally distributed random variables
 		norm = np.sum(u ** 2) ** (0.5)
@@ -52,30 +54,127 @@ def random_ball_num(center, radius, d, n, clunum, generator):
 	y = [clunum] * n
 	return dps, y
 
+class DataReconstructor:
 
-def reconstruct_data(micro_clusters, num, radius_mult, generator, use_centroid=False):
-	new_ds = []
-	new_labels = []
-	weight_sum = 0
-	for _, mc in micro_clusters.items():
-		weight_sum += mc.weight
-	ratio = weight_sum / num
+	def __init__(self, radii=None, num_tries=1000):
+		if radii is None:
+			radii = [0, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 1]
+		self.weight_scale_factor = {0:0, 1:0}
+		self.min1 = np.inf
+		self.max0 = 1
+		self.mins = [np.inf] * len(radii)
+		self.maxs = [1] * len(radii)
+		self.radii = radii
+		self.num_tries = num_tries
 
-	for id, mc in micro_clusters.items():
-		mc_num = math.ceil(mc.weight / ratio)
-		# print(mc.weight, ratio, mc_num)
-		if use_centroid:
-			mc_num = mc_num - 1
-		if mc_num > 0:
-			new_dps, label = random_ball_num(mc.center, mc.radius(radius_mult), len(mc.center.keys()), mc_num, id,
-			                                 generator)
-			for j in range(mc_num):
-				new_ds.append(new_dps[j])
-			new_labels.extend(label)
-		if use_centroid:
-			new_ds.append(mc.center)
-			new_labels.append(id)
-	return new_ds, new_labels
+	def calc_weight_scale(self, mc_num, mc_dim):
+		if mc_num > self.min1:
+			print("n", mc_num, "d", mc_dim, "->", 1, "(skipped due to lower bound)")
+			return 1
+		if mc_num < self.max0:
+			print("n", mc_num, "d", mc_dim, "->", 0, "(skipped due to upper bound)")
+			return 0
+		for r in range(len(self.radii)):
+			if mc_num < self.maxs[r] and mc_num > self.mins[r]:
+				print("n", mc_num, "d", mc_dim, "->", self.radii[r], f"(skipped due to {self.mins[r]} and {self.maxs[r]})")
+				return self.radii[r]
+
+		min_radius = -1
+		min_dist = np.inf
+		min_radius_index = -1
+		center = {}
+		for m in range(mc_dim):
+			center[m] = 0
+		s0 = 0
+		r = 0
+		for radius in self.radii:
+			radius_dists = []
+			for s in range(self.num_tries):
+				generator = np.random.Generator(PCG64(s+s0))
+				dps_real, _ = random_ball_num(center=center, d=mc_dim, radius=1, n=1, clunum=0,
+				                              generator=generator)
+				dps_real = dps_to_np(dps_real)
+				if radius > 0:
+					dps_other, _ = random_ball_num(center=center, d=mc_dim, radius=radius, n=mc_num, clunum=0,
+					                               generator=generator)
+					dps_other = dps_to_np(dps_other)
+					min_dist_seed = np.inf
+					for i in range(mc_num):
+						min_dist_seed = min(min_dist_seed, distance.euclidean(dps_real[0], dps_other[i]))
+				else:
+					min_dist_seed = distance.euclidean(dps_real[0], dict_to_np(center)) # no need to do generation for radius 0
+				radius_dists.append(min_dist_seed)
+			s0 += self.num_tries
+			dist = np.mean(radius_dists)
+			if dist < min_dist:
+				min_dist = dist
+				min_radius = radius
+				min_radius_index = r
+			r+= 1
+		if min_radius == 1:
+			if mc_num < self.min1:
+				self.min1 = mc_num
+		elif min_radius == 0:
+			if mc_num > self.max0:
+				self.max0 = mc_num
+		else:
+			self.mins[min_radius_index] = min(self.mins[min_radius_index], mc_num)
+			self.maxs[min_radius_index] = max(self.maxs[min_radius_index], mc_num)
+
+		print("n", mc_num, "d", mc_dim, "->", min_radius)
+		return min_radius
+
+	def reconstruct_data(self,micro_clusters, num, radius_mult, generator, use_centroid=False, mc_import = False, weight_scale = False):
+		if mc_import:
+			micro_clusters_dict = {}
+			i = 0
+			for mc in micro_clusters:
+				micro_clusters_dict[i] = mc
+				i+=1
+		else:
+			micro_clusters_dict =micro_clusters
+
+		new_ds = []
+		new_labels = []
+		weight_sum = 0
+		for _, mc in micro_clusters_dict.items():
+			if not mc_import:
+				weight_sum += mc.weight
+			else:
+				weight_sum += mc[4]
+		ratio = weight_sum / num
+		for id, mc in micro_clusters_dict.items():
+			if not mc_import:
+				mc_weight = mc.weight
+				mc_center = mc.center
+				mc_radius = mc.radius(radius_mult)
+				mc_dim = len(mc_center.keys())
+			else:
+				mc_weight = mc[4]
+				mc_center = mc[2]
+				mc_radius = mc[3] * radius_mult
+				mc_dim = len(mc_center)
+
+			mc_num = math.ceil(mc_weight / ratio)
+			if weight_scale:
+				if not mc_num-1 in self.weight_scale_factor.keys():
+					self.weight_scale_factor[mc_num-1] = self.calc_weight_scale(mc_num-1, mc_dim)
+				mc_radius = mc_radius * self.weight_scale_factor[mc_num-1]
+
+			# print(mc.weight, ratio, mc_num)
+			if use_centroid:
+				mc_num = mc_num - 1
+			if mc_num > 0:
+				new_dps, label = random_ball_num(mc_center, mc_radius, mc_dim, mc_num, id,
+				                                 generator)
+				for j in range(mc_num):
+					new_ds.append(new_dps[j])
+				new_labels.extend(label)
+			if use_centroid:
+				new_ds.append(mc_center)
+				new_labels.append(id)
+		return new_ds, new_labels
+
 
 
 def perform_clustering(data, algorithm, args):
@@ -89,6 +188,14 @@ def perform_clustering(data, algorithm, args):
              "check_global_score": True,
              "allow_merging": False,
              "n_split_trials": 10} | args
+		if args["check_global_score"] == 1:
+			args["check_global_score"] = True
+		elif args["check_global_score"] == 0:
+			args["check_global_score"] = False
+		if args["allow_merging"] == 1:
+			args["allow_merging"] = True
+		elif args["allow_merging"] == 0:
+			args["allow_merging"] = False
 		xmeans = XMeans(random_state=args["alg_seed"], n_clusters_init=args["n_clusters_init"], allow_merging=args["allow_merging"], check_global_score=args["check_global_score"], n_split_trials=args["n_split_trials"], max_n_clusters=args["max_n_clusters"])
 		clustering = xmeans.fit_predict(np.array(data), None)
 		return clustering, xmeans.cluster_centers_
@@ -121,6 +228,10 @@ def perform_clustering(data, algorithm, args):
 		args = {"min_cluster_size": 5, "min_samples": None, "cluster_selection_epsilon": 0.0, "max_cluster_size": None,
 		        "metric": 'euclidean', "metric_params": None, "alpha": 1.0, "algorithm": 'auto', "leaf_size": 40,
 		        "cluster_selection_method": 'eom', "allow_single_cluster": False} | args
+		if args["allow_single_cluster"] == 1:
+			args["allow_single_cluster"] = True
+		elif args["allow_single_cluster"] == 0:
+			args["allow_single_cluster"] = False
 		hdbscan = HDBSCAN(min_cluster_size=args["min_cluster_size"], min_samples=args["min_samples"],
 		                  cluster_selection_epsilon=args["cluster_selection_epsilon"],
 		                  max_cluster_size=args["max_cluster_size"], metric=args["metric"],
@@ -134,6 +245,10 @@ def perform_clustering(data, algorithm, args):
 		        "cluster_method": "xi", "eps": None, "xi": 0.05, "predecessor_correction": True,
 		        "min_cluster_size": None,
 		        "algorithm": "auto", "leaf_size": 3} | args
+		if args["predecessor_correction"] == 1:
+			args["predecessor_correction"] = True
+		elif args["predecessor_correction"] == 0:
+			args["predecessor_correction"] = False
 		optics = OPTICS(min_samples=args["min_samples"], max_eps=args["max_eps"], metric=args["metric"], p=args["p"],
 		                metric_params=args["metric_params"], cluster_method=args["cluster_method"], eps=args["eps"],
 		                xi=args["xi"], predecessor_correction=args["predecessor_correction"],
@@ -144,7 +259,14 @@ def perform_clustering(data, algorithm, args):
 	elif algorithm == "meanshift":
 		args = {"bandwidth": None, "seeds": None, "bin_seeding": False, "min_bin_freq": 1, "cluster_all": True,
 		        "n_jobs": None, "max_iter": 300} | args
-
+		if args["bin_seeding"] == 1:
+			args["bin_seeding"] = True
+		elif args["bin_seeding"] == 0:
+			args["bin_seeding"] = False
+		if args["cluster_all"] == 1:
+			args["cluster_all"] = True
+		elif args["cluster_all"] == 0:
+			args["cluster_all"] = False
 		meanshift = MeanShift(bandwidth=args["bandwidth"], seeds=args["seeds"], bin_seeding=args["bin_seeding"],
 		                      min_bin_freq=args["min_bin_freq"], cluster_all=args["cluster_all"], n_jobs=args["n_jobs"],
 		                      max_iter=args["max_iter"])
@@ -153,7 +275,10 @@ def perform_clustering(data, algorithm, args):
 	elif algorithm == "agglomerative":
 		args = {"memory": None, "connectivity": None, "compute_full_tree": 'auto', "linkage": 'ward',
 		        "distance_threshold": None, "compute_distances": False} | args
-
+		if args["compute_distances"] == 1:
+			args["compute_distances"] = True
+		elif args["compute_distances"] == 0:
+			args["compute_distances"] = False
 		agglomerative = AgglomerativeClustering(n_clusters=args["n_clusters"], memory=args["memory"],
 		                                        connectivity=args["connectivity"],
 		                                        compute_full_tree=args["compute_full_tree"], linkage=args["linkage"],
@@ -165,7 +290,14 @@ def perform_clustering(data, algorithm, args):
 	elif algorithm == "scar":
 		args = {"nn": "size_root", "alpha": 0.5, "theta": 20, "m": 0.5, "laplacian": 0, "n_iter": 50,
 		        "normalize": False, "weighted": False} | args
-
+		if args["normalize"] == 1:
+			args["normalize"] = True
+		elif args["normalize"] == 0:
+			args["normalize"] = False
+		if args["weighted"] == 1:
+			args["weighted"] = True
+		elif args["weighted"] == 0:
+			args["weighted"] = False
 		if args["nn"] == "size_root":
 			args["nn"] = round(len(data) ** 0.5)
 
@@ -173,11 +305,14 @@ def perform_clustering(data, algorithm, args):
 		            laplacian=args["laplacian"], n_iter=args["n_iter"], normalize=args["normalize"],
 		            weighted=args["weighted"], seed=args["alg_seed"])
 
-		clustering = scar.fit_predict(data)
+		clustering = scar.fit_predict(np.array(data))
 		return clustering, None
 	elif algorithm == "spectacl":
 		args = {"affinity": "radius_neighbors", "epsilon": 1.0, "n_jobs": None, "normalize_adjacency": False} | args
-
+		if args["normalize_adjacency"] == 1:
+			args["normalize_adjacency"] = True
+		elif args["normalize_adjacency"] == 0:
+			args["normalize_adjacency"] = False
 		spectacl = Spectacl(affinity=args["affinity"], n_clusters=args["n_clusters"], epsilon=args["epsilon"],
 		                    n_jobs=args["n_jobs"], normalize_adjacency=args["normalize_adjacency"],
 		                    seed=args["alg_seed"])
@@ -198,6 +333,14 @@ def perform_clustering(data, algorithm, args):
 		args = {"V": None, "m": None, "cluster_centers": None, "mdl_for_noisespace": False,
 		        "outliers": False, "max_iter": 300, "n_init": 1, "cost_type": "default",
 		        "threshold_negative_eigenvalue": -1e-7, "max_distance": None} | args
+		if args["mdl_for_noisespace"] == 1:
+			args["mdl_for_noisespace"] = True
+		elif args["mdl_for_noisespace"] == 0:
+			args["mdl_for_noisespace"] = False
+		if args["outliers"] == 1:
+			args["outliers"] = True
+		elif args["outliers"] == 0:
+			args["outliers"] = False
 		clustering = SubKmeans(n_clusters=args["n_clusters"], random_state=args["alg_seed"], V=args["V"], m=args["m"],
 		                       cluster_centers=args["cluster_centers"], mdl_for_noisespace=args["mdl_for_noisespace"],
 		                       outliers=args["outliers"], max_iter=args["max_iter"], cost_type=args["cost_type"],
@@ -235,6 +378,10 @@ def perform_clustering(data, algorithm, args):
              "optimizer_class": torch.optim.Adam,
              "loss_fn": torch.nn.MSELoss(),
 			"augmentation_invariance": False, "cluster_loss_weight":1} | args
+		if args["augmentation_invariance"] == 1:
+			args["augmentation_invariance"] = True
+		elif args["augmentation_invariance"] == 0:
+			args["augmentation_invariance"] = False
 		clustering = DEC(n_clusters=args["n_clusters"], random_state=args["alg_seed"], embedding_size=args["embedding_size"],
 		                 batch_size=args["batch_size"], pretrain_optimizer_params=args["pretrain_optimizer_params"],
 		                 clustering_optimizer_params = args["clustering_optimizer_params"], pretrain_epochs =args["pretrain_epochs"],
@@ -261,13 +408,31 @@ def perform_clustering(data, algorithm, args):
 		                        optimizer_class=args["optimizer_class"], loss_fn=args["loss_fn"], max_cluster_size_diff_factor=args["max_cluster_size_diff_factor"]).fit_predict(np.array(data), None)
 		return clustering, None
 	elif algorithm == "dpca":
-		args = {"distance_metric": 'euclidean',
+		args = {"dc":None, "distance_metric": 'euclidean',
              "silence": True,
              "gauss_cutoff": True,
              "density_threshold": None,
              "distance_threshold":  None,
              "anormal": True} | args
-		dpc = DensityPeakCluster(distance_metric =args["distance_metric"], silence=args["silence"], gauss_cutoff=args["gauss_cutoff"],
+		if args["silence"] == 1:
+			args["silence"] = True
+		elif args["silence"] == 0:
+			args["silence"] = False
+		if args["gauss_cutoff"] == 1:
+			args["gauss_cutoff"] = True
+		elif args["gauss_cutoff"] == 0:
+			args["gauss_cutoff"] = False
+		if args["anormal"] == 1:
+			args["anormal"] = True
+		elif args["anormal"] == 0:
+			args["anormal"] = False
+		if args["distance_threshold"] < 0:
+			args["distance_threshold"] = None
+		if args["density_threshold"] < 0:
+			args["density_threshold"] = None
+		if args["dc"] < 0:
+			args["dc"] = None
+		dpc = DensityPeakCluster(dc = args["dc"], distance_metric =args["distance_metric"], silence=args["silence"], gauss_cutoff=args["gauss_cutoff"],
 		                         density_threshold=args["density_threshold"], distance_threshold=args["distance_threshold"],
 		                         anormal=args["anormal"])
 		dpc.fit(np.array(data))
@@ -300,6 +465,22 @@ def perform_clustering(data, algorithm, args):
              "cluster_algorithm_params": {},
              "degree_of_reconstruction":  1.0,
              "degree_of_density_preservation": 1.0} | args
+		if args["use_complete_dc_tree"] == 1:
+			args["use_complete_dc_tree"] = True
+		elif args["use_complete_dc_tree"] == 0:
+			args["use_complete_dc_tree"] = False
+		if args["use_matrix_dc_distance"] == 1:
+			args["use_matrix_dc_distance"] = True
+		elif args["use_matrix_dc_distance"] == 0:
+			args["use_matrix_dc_distance"] = False
+		if args["increase_inter_cluster_distance"] == 1:
+			args["increase_inter_cluster_distance"] = True
+		elif args["increase_inter_cluster_distance"] == 0:
+			args["increase_inter_cluster_distance"] = False
+		if args["standardize"] == 1:
+			args["standardize"] = True
+		elif args["standardize"] == 0:
+			args["standardize"] = False
 		clustering = SHADE(batch_size=args["batch_size"], autoencoder=args["autoencoder"], min_points=args["min_points"],
 		                   use_complete_dc_tree=args["use_complete_dc_tree"], use_matrix_dc_distance=args["use_matrix_dc_distance"],
 		                   increase_inter_cluster_distance=args["increase_inter_cluster_distance"], pretrain_epochs=args["pretrain_epochs"],
@@ -349,6 +530,7 @@ class OPECluStream(CluStream):
 
 		self.offline_dataset = []
 		self.offline_labels = []
+		self.data_reconstructor = DataReconstructor()
 
 	def display_store(self):
 		X = dps_to_np(self.datastore)
@@ -371,7 +553,7 @@ class OPECluStream(CluStream):
 		plt.show()
 
 	def offline_processing(self):
-		gen_data, gen_labels = reconstruct_data(self.micro_clusters, self.offline_datascale,
+		gen_data, gen_labels = self.data_reconstructor.reconstruct_data(self.micro_clusters, self.offline_datascale,
 		                                        self.micro_cluster_r_factor, self.generator)
 		gen_X = dps_to_np(gen_data)
 		# plt.figure(figsize=(10, 10))
@@ -471,7 +653,7 @@ class SCOPE_CluStream(CluStream):
 		self.offline_dataset = []
 		self.offline_labels = []
 		self.kdtree = None
-
+		self.data_reconstructor = DataReconstructor()
 
 
 	def display_store(self):
@@ -495,8 +677,8 @@ class SCOPE_CluStream(CluStream):
 		plt.show()
 
 	def offline_processing(self):
-		gen_data, gen_labels = reconstruct_data(self.micro_clusters, self.offline_datascale,
-		                                        self.micro_cluster_r_factor, self.generator, use_centroid=True)
+		gen_data, gen_labels = self.data_reconstructor.reconstruct_data(self.micro_clusters, self.offline_datascale,
+		                                        self.micro_cluster_r_factor, self.generator, use_centroid=True, weight_scale=True)
 		gen_X = dps_to_np(gen_data)
 		# plt.figure(figsize=(10, 10))
 		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
@@ -588,6 +770,7 @@ class CircSCOPEOffline(CircSCOPE):
 
 		self.offline_dataset = []
 		self.offline_labels = []
+		self.data_reconstructor = DataReconstructor()
 
 	def display_store(self):
 		X = dps_to_np(self.datastore)
@@ -633,8 +816,8 @@ class CircSCOPEOffline(CircSCOPE):
 
 	def offline_processing(self):
 		np.random.seed = self.seed
-		gen_data, gen_labels = reconstruct_data(self.micro_clusters, self.offline_datascale,
-		                                        1, self.generator)
+		gen_data, gen_labels = self.data_reconstructor.reconstruct_data(self.micro_clusters, self.offline_datascale,
+		                                        1, self.generator, weight_scale=True)
 		gen_X = dps_to_np(gen_data)
 		# plt.figure(figsize=(10, 10))
 		# plt.scatter(gen_X[:, 0], gen_X[:, 1], c=gen_labels)
