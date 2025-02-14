@@ -1,0 +1,2 @@
+{'anormal': 1, 'dc': -0.1, 'density_threshold': -0.1, 'distance_metric': 'euclidean', 'distance_threshold': -0.1, 'gauss_cutoff': 1};-;-;-;-
+{'anormal': 0, 'dc': 0.317227660707, 'density_threshold': 0.4305587550909, 'distance_metric': 'cosine', 'distance_threshold': 0.0288120766298, 'gauss_cutoff': 1};0.07984317805625962;4621;0.07984317805625972;{'accuracy': 0.05360000000000001, 'ARI': 0.008250103346478127, 'AMI': 0.07159307470978159}

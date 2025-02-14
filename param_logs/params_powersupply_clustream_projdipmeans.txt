@@ -1,0 +1,6 @@
+{'allow_merging': 'table', 'n_random_projections': 0, 'n_split_trials': 10, 'significance': 0.001};-;-;-;-
+{'allow_merging': 'table', 'n_random_projections': 3, 'n_split_trials': 7, 'significance': 0.0002651871488};0.0;4131;0.0;{'accuracy': 0.0547945205479452, 'ARI': 0.0, 'AMI': 0.0}
+{'allow_merging': 'table', 'n_random_projections': 3, 'n_split_trials': 7, 'significance': 0.0002651871488};0.0;4288;0.0;{'accuracy': 0.0547945205479452, 'ARI': 0.0, 'AMI': 0.0}
+{'allow_merging': 'table', 'n_random_projections': 3, 'n_split_trials': 7, 'significance': 0.0002651871488};0.0;4491;0.0;{'accuracy': 0.05395923822251921, 'ARI': 0.0, 'AMI': 0.0}
+{'allow_merging': 'table', 'n_random_projections': 3, 'n_split_trials': 7, 'significance': 0.0002651871488};0.0;4515;0.0;{'accuracy': 0.053625125292348814, 'ARI': 0.0, 'AMI': 0.0}
+{'allow_merging': 'table', 'n_random_projections': 3, 'n_split_trials': 7, 'significance': 0.0002651871488};0.0;4395;0.0;{'accuracy': 0.054460407617774806, 'ARI': 0.0, 'AMI': 0.0}
