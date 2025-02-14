@@ -27,7 +27,7 @@ import mlflow_logger
 from competitors.clustream import CluStream, CluStreamMicroCluster
 from datahandler import load_data
 from method.CircSCOPE import CircSCOPE
-#from method.SCOPE import SCOPE
+# from method.SCOPE import SCOPE
 from method.offlineHandler import OPECluStream, perform_clustering, \
 	WCluStream, SCOPE  # , SCOPE_Offline
 from utils import make_param_dicts, dps_to_np, dict_to_np
@@ -38,17 +38,20 @@ def get_offline_dict(args):
 	offline_dict = {}
 	if args.gpu:
 		shade = "shade"
-		shade_vals = {"alg_seed": [0, 1, 2, 3, 4], "min_points": [5, 3, 2, 10, 25, 50, 100], "embedding_size": [10, 5, 2], "increase_inter_cluster_distance": [False, True]}
+		shade_vals = {"alg_seed": [0, 1, 2, 3, 4], "min_points": [5, 3, 2, 10, 25, 50, 100],
+		              "embedding_size": [10, 5, 2], "increase_inter_cluster_distance": [False, True]}
 		shade_dicts = make_param_dicts(shade_vals)
 		offline_dict[shade] = shade_dicts
 
 		dec = "dec"
-		dec_vals = {"alg_seed": [0, 1, 2, 3, 4], "alpha": [1.0, 0.1, 0.25, 0.5, 0.75, 0.9], "embedding_size": [10, 5, 2], "use_reconstruction_loss":[True, False]}
+		dec_vals = {"alg_seed": [0, 1, 2, 3, 4], "alpha": [1.0, 0.1, 0.25, 0.5, 0.75, 0.9],
+		            "embedding_size": [10, 5, 2], "use_reconstruction_loss": [True, False]}
 		dec_dicts = make_param_dicts(dec_vals)
 		offline_dict[dec] = dec_dicts
 
 		dipenc = "dipencoder"
-		dipenc_vals = {"alg_seed": [0, 1, 2, 3, 4], "embedding_size": [10, 5, 2], "max_cluster_size_diff_factor": [3, 2, 5, 10]}
+		dipenc_vals = {"alg_seed": [0, 1, 2, 3, 4], "embedding_size": [10, 5, 2],
+		               "max_cluster_size_diff_factor": [3, 2, 5, 10]}
 		dipenc_dicts = make_param_dicts(dipenc_vals)
 		offline_dict[dipenc] = dipenc_dicts
 	else:
@@ -60,33 +63,37 @@ def get_offline_dict(args):
 			offline_dict[kmeans] = kmeans_dicts
 
 			subkmeans = "subkmeans"
-			subkmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "outliers": [True, False], "mdl_for_noisespace": [True, False]}
+			subkmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "outliers": [True, False],
+			                  "mdl_for_noisespace": [True, False]}
 			subkmeans_dicts = make_param_dicts(subkmeans_vals)
 			offline_dict[subkmeans] = subkmeans_dicts
 
 		if args.category == "all" or args.category == "kestmeans" or args.category == "means":
 			xmeans = "xmeans"
-			xmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_split_trials": [10, 20], "check_global_score": [True], "allow_merging": [True, False]}
+			xmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_split_trials": [10, 20], "check_global_score": [True],
+			               "allow_merging": [True, False]}
 			xmeans_dicts = make_param_dicts(xmeans_vals)
 			offline_dict[xmeans] = xmeans_dicts
 
-
 			projdipmeans = "projdipmeans"
-			projdipmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "significance": [0.001, 0.01, 0.0001], "n_random_projections": [0,1,5], "n_split_trials": [10, 20], "pval_strategy":['table', 'function', 'bootstrap']}
+			projdipmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "significance": [0.001, 0.01, 0.0001],
+			                     "n_random_projections": [0, 1, 5], "n_split_trials": [10, 20],
+			                     "pval_strategy": ['table', 'function', 'bootstrap']}
 			projdipmeans_dicts = make_param_dicts(projdipmeans_vals)
 			offline_dict[projdipmeans] = projdipmeans_dicts
 
 		if args.category == "all" or args.category == "spectral":
-
 			spectral = "spectral"
 			spectral_vals_rbf = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['rbf'], "gamma": [1, 0.5, 1.5, 2]}
-			spectral_vals_nn = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['nearest_neighbors'], "n_neighbors": [10, 5, 2, 20]}
+			spectral_vals_nn = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['nearest_neighbors'],
+			                    "n_neighbors": [10, 5, 2, 20]}
 			spectral_dicts = make_param_dicts(spectral_vals_rbf)
 			spectral_dicts.extend(make_param_dicts(spectral_vals_nn))
 			offline_dict[spectral] = spectral_dicts
 
 			scar = "scar"
-			scar_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_neighbors": ["size_root", 10, 5, 2, 20], "theta": [20, 30, 100, 200, 500], "alpha": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
+			scar_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_neighbors": ["size_root", 10, 5, 2, 20],
+			             "theta": [20, 30, 100, 200, 500], "alpha": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
 			scar_dicts = make_param_dicts(scar_vals)
 			offline_dict[scar] = scar_dicts
 
@@ -96,7 +103,6 @@ def get_offline_dict(args):
 			offline_dict[spectacl] = spectacl_dicts
 
 		if args.category == "all" or args.category == "denscon" or args.category == "density_all":
-
 			dbscan = "dbscan"
 			dbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100]}
 			dbscan_dicts = make_param_dicts(dbscan_vals)
@@ -119,10 +125,11 @@ def get_offline_dict(args):
 			offline_dict[mdbscan] = mdbscan_dicts
 
 		if args.category == "all" or args.category == "density" or args.category == "density_all":
-
 			dpca = "dpca"
-			dpca_vals = {"dc": [None, 0.5, 0.1, 0, 0.75, 0.9, 1], "distance_threshold": [None, 0.5, 0.25, 0.1, 0.05, 0.01], "density_threshold": [None, 5, 3, 2, 10, 25, 50, 100],
-			             "anormal":[True, False], "gauss_cutoff": [True, False]}
+			dpca_vals = {"dc": [None, 0.5, 0.1, 0, 0.75, 0.9, 1],
+			             "distance_threshold": [None, 0.5, 0.25, 0.1, 0.05, 0.01],
+			             "density_threshold": [None, 5, 3, 2, 10, 25, 50, 100],
+			             "anormal": [True, False], "gauss_cutoff": [True, False]}
 			dpca_dicts = make_param_dicts(dpca_vals)
 			offline_dict[dpca] = dpca_dicts
 
@@ -137,25 +144,25 @@ def get_offline_dict(args):
 			dbhd_dicts = make_param_dicts(dbhd_vals)
 			offline_dict[dbhd] = dbhd_dicts
 
-#		optics = "optics"
-#		optics_vals = {"min_samples": [5, 3, 2, 10, 25, 50, 100], "xi": [0.05, 0.03, 0.01, 0.08, 0.1, 0.2]}
-#		optics_dicts = make_param_dicts(optics_vals)
-#		offline_dict[optics] = optics_dicts
+	#		optics = "optics"
+	#		optics_vals = {"min_samples": [5, 3, 2, 10, 25, 50, 100], "xi": [0.05, 0.03, 0.01, 0.08, 0.1, 0.2]}
+	#		optics_dicts = make_param_dicts(optics_vals)
+	#		offline_dict[optics] = optics_dicts
 
-#		meanshift = "meanshift"
-#		meanshift_vals = {"default": [1]}
-#		meanshift_dicts = make_param_dicts(meanshift_vals)
-#		offline_dict[meanshift] = meanshift_dicts
+	#		meanshift = "meanshift"
+	#		meanshift_vals = {"default": [1]}
+	#		meanshift_dicts = make_param_dicts(meanshift_vals)
+	#		offline_dict[meanshift] = meanshift_dicts
 
-#		agglomerative = "agglomerative"
-#		agglomerative_vals = {"linkage": ["ward", "complete", "average", "single"]}
-#		agglomerative_dicts = make_param_dicts(agglomerative_vals)
-#		offline_dict[agglomerative] = agglomerative_dicts
+	#		agglomerative = "agglomerative"
+	#		agglomerative_vals = {"linkage": ["ward", "complete", "average", "single"]}
+	#		agglomerative_dicts = make_param_dicts(agglomerative_vals)
+	#		offline_dict[agglomerative] = agglomerative_dicts
 
-		#dcf = "dcf"
-		#dcf_vals = {"k": [3, 5, 10, 15, 20, 25, 50, 100], "beta": [0.4, 0.3, 0.2, 0.1, 0.5, 0.6, 0.7, 0.8, 0.9]}
-		#dcf_dicts = make_param_dicts(dcf_vals)
-		#offline_dict[dcf] = dcf_dicts
+	# dcf = "dcf"
+	# dcf_vals = {"k": [3, 5, 10, 15, 20, 25, 50, 100], "beta": [0.4, 0.3, 0.2, 0.1, 0.5, 0.6, 0.7, 0.8, 0.9]}
+	# dcf_dicts = make_param_dicts(dcf_vals)
+	# offline_dict[dcf] = dcf_dicts
 
 	return offline_dict
 
@@ -196,7 +203,7 @@ def main(args):
 	constraint = False
 	batch_eval = False
 	dataset_length = 10000000
-	if args.method == "clustream" or args.method == "clustream_no_offline" or  args.method == "clustream_no_offline_fixed":
+	if args.method == "clustream" or args.method == "clustream_no_offline" or args.method == "clustream_no_offline_fixed":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
 		param_vals["mc_r_factor"] = [2, 1.5, 3]  # micro_cluster_r_factor
@@ -342,19 +349,23 @@ def main(args):
 		param_dicts = make_param_dicts(param_vals)
 	j = 0
 	if args.category == "all" and args.startindex == 0:
-		f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}.txt', 'w', newline='\n',
+		f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}.txt', 'w',
+		         newline='\n',
 		         buffering=1000)
 	else:
-		f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{args.category}_{args.startindex}.txt', 'w',
-		         newline='\n', buffering=1000)
+		f = open(
+			f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{args.category}_{args.startindex}.txt',
+			'w',
+			newline='\n', buffering=1000)
 	offline_dicts = {}
 	for j in range(len(param_dicts)):
 		offline_dicts[j] = offline_dict
-		#print(offline_dict)
+	# print(offline_dict)
 	if args.automl:
 		param_dicts = utils.load_parameters(args.ds, args.method, args.used_full)
 		if args.method in ["clustream", "wclustream", "scope", "scope_full"]:
-			if args.category not in ["all", "density_all", "density", "denscon", "spectral", "means", "kestmeans", "nkestmeans"]:
+			if args.category not in ["all", "density_all", "density", "denscon", "spectral", "means", "kestmeans",
+			                         "nkestmeans"]:
 				offlinemethods = [args.category]
 			else:
 				offlinemethods = []
@@ -382,7 +393,7 @@ def main(args):
 						offlinemethods.append("wkmeans")
 					offlinemethods.append("subkmeans")
 			offline_dicts = utils.load_offline_parameters(args.ds, args.method, offlinemethods, args.used_full)
-	#pprint(offline_dicts)
+	# pprint(offline_dicts)
 
 	param_index = -1
 	j = 0
@@ -403,31 +414,41 @@ def main(args):
 		f.write(f"{method_name} {j} |{vars(args) | param_dict}\n")
 
 		method = None
-		if args.method == "clustream" or args.method == "clustream_no_offline" or  args.method == "clustream_no_offline_fixed":
-			param_dict = {"n_macro_clusters": args.class_num, "mmc":args.sumlimit, "time_gap":100000000, "mu":0.5, "sigma":0.5} | param_dict
+		if args.method == "clustream" or args.method == "clustream_no_offline" or args.method == "clustream_no_offline_fixed":
+			param_dict = {"n_macro_clusters": args.class_num, "mmc": args.sumlimit, "time_gap": 100000000, "mu": 0.5,
+			              "sigma": 0.5} | param_dict
 			method = CluStream(n_macro_clusters=param_dict["n_macro_clusters"], max_micro_clusters=param_dict["mmc"],
 			                   micro_cluster_r_factor=param_dict["mc_r_factor"],
-			                   time_gap=param_dict["time_gap"], time_window=param_dict["time_window"], sigma=param_dict["sigma"],
+			                   time_gap=param_dict["time_gap"], time_window=param_dict["time_window"],
+			                   sigma=param_dict["sigma"],
 			                   mu=param_dict["mu"],
 			                   seed=param_dict["seed"])
 		elif args.method == "wclustream":
-			param_dict = {"n_macro_clusters": args.class_num, "mmc":args.sumlimit, "time_gap":100000000, "mu":0.5, "sigma":0.5} | param_dict
+			param_dict = {"n_macro_clusters": args.class_num, "mmc": args.sumlimit, "time_gap": 100000000, "mu": 0.5,
+			              "sigma": 0.5} | param_dict
 			method = WCluStream(n_macro_clusters=param_dict["n_macro_clusters"], max_micro_clusters=param_dict["mmc"],
-			                   micro_cluster_r_factor=param_dict["mc_r_factor"],
-			                   time_gap=param_dict["time_gap"], time_window=param_dict["time_window"], sigma=param_dict["sigma"],
-			                   mu=param_dict["mu"], seed=param_dict["seed"])
+			                    micro_cluster_r_factor=param_dict["mc_r_factor"],
+			                    time_gap=param_dict["time_gap"], time_window=param_dict["time_window"],
+			                    sigma=param_dict["sigma"],
+			                    mu=param_dict["mu"], seed=param_dict["seed"])
 		elif args.method == "scope":
-			param_dict = {"n_macro_clusters": args.class_num, "mmc":args.sumlimit, "time_gap":100000000, "mu":0.5, "sigma":0.5, "offline_datascale":args.gennum} | param_dict
+			param_dict = {"n_macro_clusters": args.class_num, "mmc": args.sumlimit, "time_gap": 100000000, "mu": 0.5,
+			              "sigma": 0.5, "offline_datascale": args.gennum} | param_dict
 			method = SCOPE(n_macro_clusters=param_dict["n_macro_clusters"], max_micro_clusters=param_dict["mmc"],
-			                   micro_cluster_r_factor=param_dict["mc_r_factor"],
-			                   time_gap=param_dict["time_gap"], time_window=param_dict["time_window"], sigma=param_dict["sigma"],
-			                   mu=param_dict["mu"], seed=param_dict["seed"], offline_datascale=param_dict["offline_datascale"], weight_scale=True)
+			               micro_cluster_r_factor=param_dict["mc_r_factor"],
+			               time_gap=param_dict["time_gap"], time_window=param_dict["time_window"],
+			               sigma=param_dict["sigma"],
+			               mu=param_dict["mu"], seed=param_dict["seed"],
+			               offline_datascale=param_dict["offline_datascale"], weight_scale=True)
 		elif args.method == "scope_full":
-			param_dict = {"n_macro_clusters": args.class_num, "mmc":args.sumlimit, "time_gap":100000000, "mu":0.5, "sigma":0.5, "offline_datascale":args.gennum} | param_dict
+			param_dict = {"n_macro_clusters": args.class_num, "mmc": args.sumlimit, "time_gap": 100000000, "mu": 0.5,
+			              "sigma": 0.5, "offline_datascale": args.gennum} | param_dict
 			method = SCOPE(n_macro_clusters=param_dict["n_macro_clusters"], max_micro_clusters=param_dict["mmc"],
-			                   micro_cluster_r_factor=param_dict["mc_r_factor"],
-			                   time_gap=param_dict["time_gap"], time_window=param_dict["time_window"], sigma=param_dict["sigma"],
-			                   mu=param_dict["mu"], seed=param_dict["seed"], offline_datascale=param_dict["offline_datascale"], weight_scale=False)
+			               micro_cluster_r_factor=param_dict["mc_r_factor"],
+			               time_gap=param_dict["time_gap"], time_window=param_dict["time_window"],
+			               sigma=param_dict["sigma"],
+			               mu=param_dict["mu"], seed=param_dict["seed"],
+			               offline_datascale=param_dict["offline_datascale"], weight_scale=False)
 		# elif args.method in scope_list:
 		# 	method = SCOPEOffline(n_macro_clusters=args.class_num, max_micro_clusters=param_dict["mmc"],
 		# 	                      micro_cluster_r_factor=param_dict["mcrf"],
@@ -515,14 +536,18 @@ def main(args):
 			is_last = i == len(X) - 1
 			if use_one:
 				method.learn_one(dp)
-				if ((i+1) % args.offline == 0 and i > 0) or is_last:
+				if ((i + 1) % args.offline == 0 and i > 0) or is_last:
 					if has_offline:
 						method.offline_processing()
 					if has_gen:
 						gen_data_step[i] = dps_to_np(method.offline_dataset)
 						gen_label_step[i] = np.array(method.offline_labels).reshape(-1, 1)
-						np.save(f"gen_data/data_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i+1}", gen_data_step[i])
-						np.save(f"gen_data/labels_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}", gen_label_step[i])
+						np.save(
+							f"gen_data/data_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}",
+							gen_data_step[i])
+						np.save(
+							f"gen_data/labels_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}",
+							gen_label_step[i])
 
 					for dp in dp_store:
 						if method_name == "scope_clustream":
@@ -539,12 +564,14 @@ def main(args):
 							pred = method.predict_one(dp)
 						pred_store.append(pred)
 					pred_store_step[i] = copy(pred_store)
+					np.save(f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}_base", pred_store_step[i])
+
 					dp_store_step[i] = copy(dp_store)
 					y_store_step[i] = copy(y_store)
 					assign_step[i] = copy(assign_store)
 
 					metrics, cm = getMetrics(y_store, pred_store)
-					f.write(f"\t{method_name} {j} {i+1} |{metrics}\n")
+					f.write(f"\t{method_name} {j} {i + 1} |{metrics}\n")
 					if has_mcs:
 						mcs = []
 						if args.method == "clustream" or args.method == "wclustream" or args.method == "scope" or args.method == "scope_full":
@@ -552,7 +579,9 @@ def main(args):
 								mcs.append([mcid, mc.center, mc.radius(r_factor=1), mc.weight, mc.var_time, mc.var_x])
 								mc_store[mcid] = mc
 						mc_step[i] = copy(mc_store)
-						np.save(f"mc_data/mcs_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i+1}", mcs)
+						np.save(
+							f"mc_data/mcs_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}",
+							mcs)
 					dp_store = []
 					y_store = []
 					pred_store = []
@@ -574,6 +603,7 @@ def main(args):
 							for cmc in cmcs:
 								for point in cmc.storage:
 									pred_store[point.t] = clu.name
+					np.save(f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}", pred_store)
 					if batch_eval:
 						batchsize = param_dict["batchsize"]
 						for i in range(0, len(pred_store), batchsize):
@@ -584,7 +614,7 @@ def main(args):
 							f.write(f"\t{method_name} {j} {end_batch} |{metrics}\n")
 					else:
 						metrics, cm = getMetrics(y_store, pred_store)
-						f.write(f"\t{method_name} {j} {i+1} |{metrics}\n")
+						f.write(f"\t{method_name} {j} {i + 1} |{metrics}\n")
 
 		if flex_offline:
 			offline_dict = offline_dicts[j]
@@ -596,7 +626,7 @@ def main(args):
 					f.write(f"\t{method_name} {j} {alg} {k} |{vars(args) | param_dict | alg_dict}\n")
 
 					steps = sorted(dp_store_step.keys())
-					#print(steps)
+					# print(steps)
 					off_pred_store_step = {}
 					for step in steps:
 						# cur_dp = dp_store_step[step]
@@ -614,11 +644,11 @@ def main(args):
 							try:
 								clustering, _ = perform_clustering(cur_gen_data, alg, alg_dict)
 							except:
-								clustering = [-1]*len(cur_gen_data)
-								print(f"Clustering for {alg_dict} failed at {step+1}")
+								clustering = [-1] * len(cur_gen_data)
+								print(f"Clustering for {alg_dict} failed at {step + 1}")
 								for l in range(len(cur_gen_data)):
 									clustering[l] = l
-								# print(clustering, flush=True)
+							# print(clustering, flush=True)
 							num_clu = len(np.unique(clustering))
 							_, clustering = np.unique(clustering, return_inverse=True)
 							if method_name == "scope_full" or method_name == "scope":
@@ -631,7 +661,7 @@ def main(args):
 									for i_mc in is_mc:
 										labels_mc[clustering[i_mc]] += 1
 									cur_mc_clu[id] = labels_mc.index(max(labels_mc))
-						elif not method_name=="full":
+						elif not method_name == "full":
 							try:
 								cur_mc_centers = [mc.center for l, mc in cur_mcs.items()]
 								cur_mc_ids = [l for l, mc in cur_mcs.items()]
@@ -643,7 +673,7 @@ def main(args):
 									                                 sample_weight=cur_mc_weight)
 								elif alg == "nooffline":
 									clustering = deepcopy(cur_mc_ids)
-									#print(clustering)
+								# print(clustering)
 								else:
 									cur_mc_centers_np = dps_to_np(cur_mc_centers)
 									clustering, _ = perform_clustering(cur_mc_centers_np, alg, alg_dict)
@@ -653,18 +683,20 @@ def main(args):
 								cur_mc_ids = [l for l, mc in cur_mcs.items()]
 								for l in range(len(cur_mcs)):
 									cur_mc_clu[cur_mc_ids[l]] = l  # assume full segementation
-								print(f"Clustering for {alg_dict} failed at {step+1}")
+								print(f"Clustering for {alg_dict} failed at {step + 1}")
 						if method_name == "full":
 							cur_data = dp_store_step[step]
-							#print(len(cur_data))
+							# print(len(cur_data))
 							cur_pred, _ = perform_clustering(cur_data, alg, alg_dict)
-							#print(cur_pred)
+						# print(cur_pred)
 						else:
 							for mc_id in cur_assign:
 								cur_pred.append(cur_mc_clu[mc_id])
-						np.save(f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{step + 1}_{alg}_{k}", cur_pred)
+						np.save(
+							f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{step + 1}_{alg}_{k}",
+							cur_pred)
 						metrics, cm = getMetrics(cur_y, cur_pred)
-						f.write(f"\t\t{method_name} {j} {step+1} {alg} {k} |{metrics}\n")
+						f.write(f"\t\t{method_name} {j} {step + 1} {alg} {k} |{metrics}\n")
 
 						off_pred_store_step[step] = cur_pred
 
