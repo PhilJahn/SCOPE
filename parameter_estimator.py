@@ -58,7 +58,7 @@ global best_performance
 best_performance = -1
 
 
-def get_clustering_learn_one(clustering_method):
+def get_clustering_learn_one(clustering_method, nooffline=False):
 	dp_store = []
 	prediction = []
 	i = 0
@@ -90,7 +90,10 @@ def get_clustering_learn_one(clustering_method):
 						assignments.append(assign)
 					else:
 						label = clustering_method.predict_one(dp_2)
-					cur_prediction.append(label)
+					if nooffline:
+						cur_prediction.append(assign)
+					else:
+						cur_prediction.append(label)
 				dp_store = []
 				prediction.extend(cur_prediction)
 		i += 1
@@ -214,6 +217,28 @@ def train_clustream(config: Configuration, seed: int = 0) -> float:
 	print("CluStream", config["mc_r_factor"], config["time_window"], score)
 	return 2 - score
 
+def train_clustream_no_offline(config: Configuration, seed: int = 0) -> float:
+	# print(data_dim, class_num, data_length, mc_num, offline_timing)
+	#global offline_timing
+	#offline_timing = config["time_window"]
+	clustering_method = CluStream(n_macro_clusters=1, seed=seed, max_micro_clusters=config["mmc"], time_gap=100000000,
+	                              micro_cluster_r_factor=config["mc_r_factor"], time_window=config["time_window"])
+	score = get_clustering_learn_one(clustering_method, nooffline=True)
+
+	print("CluStream", config["mc_r_factor"], config["time_window"], config["mmc"], score)
+	return 2 - score
+
+def train_clustream_no_offline_fixed(config: Configuration, seed: int = 0) -> float:
+	# print(data_dim, class_num, data_length, mc_num, offline_timing)
+	#global offline_timing
+	#offline_timing = config["time_window"]
+	config["mmc"] = class_num
+	clustering_method = CluStream(n_macro_clusters=1, seed=seed, max_micro_clusters=class_num, time_gap=100000000,
+	                              micro_cluster_r_factor=config["mc_r_factor"], time_window=config["time_window"])
+	score = get_clustering_learn_one(clustering_method, nooffline=True)
+
+	print("CluStream", config["mc_r_factor"], config["time_window"], class_num, score)
+	return 2 - score
 
 def train_dbstream(config: Configuration, seed: int = 0) -> float:
 	clustering_method = DBSTREAM(clustering_threshold=config["clustering_threshold"],
@@ -333,6 +358,13 @@ clustream_mc_r_factor = Float("mc_r_factor", (1.0, 5.0), default=2.0)
 clustream_space.add([clustream_timewindow, clustream_mc_r_factor])
 configspaces["clustream"] = clustream_space
 
+clustream_no_offline_space = ConfigurationSpace()
+clustream_no_offline_space_mmc = Integer("mmc", (1, 100), default=100)
+clustream_no_offline_space.add([clustream_timewindow, clustream_mc_r_factor, clustream_no_offline_space_mmc])
+configspaces["clustream_no_offline"] = clustream_no_offline_space
+
+
+
 denstream_space = ConfigurationSpace()
 denstream_decaying_factor = Float("decaying_factor", (0.1, 1), default=0.25)
 denstream_beta = Float("beta", (0, 1), default=0.75)
@@ -416,6 +448,8 @@ configspaces["gbfuzzystream"] = gbfuzzystream_space
 
 trainmethods = {}
 trainmethods["clustream"] = train_clustream
+trainmethods["clustream_no_offline"] = train_clustream_no_offline
+trainmethods["clustream_no_offline_fixed"] = train_clustream_no_offline_fixed
 trainmethods["dbstream"] = train_dbstream
 trainmethods["denstream"] = train_denstream
 trainmethods["streamkmeans"] = train_streamkmeans
@@ -442,7 +476,7 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="powersupply", type=str, help='Used stream data set')
-	parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="clustream_no_offline_fixed", type=str, help='Stream Clustering Method')
 	parser.add_argument('--use_full', default=0, type=int, help='Use full datset')
 	args = parser.parse_args()
 	print(args, flush=True)
@@ -465,11 +499,13 @@ if __name__ == '__main__':
 		seed_num = 5
 		time_budget = 18000
 		f = open(f'param_logs/params_{dataset}_{method}.txt', 'w', buffering=1)
+
 	if args.method in clustream_methods:
 		time_budget = time_budget/5
 	elif args.method in offline_methods:
 		time_budget = 4*time_budget/5
-	f.write(f"{configspaces[method].get_default_configuration().get_dictionary()};-;-;-;-\n")
+	if not method == "clustream_no_offline_fixed":
+		f.write(f"{configspaces[method].get_default_configuration().get_dictionary()};-;-;-;-\n")
 
 	data_name = dataset
 	for run in range(seed_num):
@@ -484,6 +520,14 @@ if __name__ == '__main__':
 		data_dim = len(X[0])
 		data_length = len(y)
 		class_num = len(uniques)
+		if method == "clustream_no_offline_fixed" and run == 0:
+			clustream_no_offline_fixed_space = ConfigurationSpace()
+			clustream_no_offline_fixed_mmc = Constant("mmc", class_num)
+			clustream_no_offline_fixed_space.add(
+				[clustream_timewindow, clustream_mc_r_factor, clustream_no_offline_fixed_mmc])
+			configspaces["clustream_no_offline_fixed"] = clustream_no_offline_fixed_space
+			f.write(f"{configspaces[method].get_default_configuration().get_dictionary()};-;-;-;-\n")
+
 		if method == "mudistream":
 			dps = []
 			for i in range(len(X)):
