@@ -297,13 +297,25 @@ def main(args):
 				methodindex = best_dict[alg_name]["method"]
 				offlineindex = best_dict[alg_name]["offline"]
 				try:
-					preds = np.load(f"preds/preds_{f.strip('.txt')}_{methodindex}_1000_{alg_name}_{offlineindex}.npy", allow_pickle=True)
-					X, Y = load_data(dataset, seed=0)
-					#print(X.shape)
-					plt.figure(figsize=(8,8))
-					plt.scatter(X[:1000,0], X[:1000,1], c=preds)
-					plt.savefig(f"preds_{f.strip('.txt')}_{alg_name}_1000.pdf")
-					plt.show()
+					timesteps = list(true_result_dict[methodindex][alg_name][offlineindex].keys())
+					#print(timesteps)
+					for ti in range(len(timesteps)-1):
+						if ti == 0:
+							t_start = 0
+						else:
+							t_start = int(timesteps[ti-1])
+						t_stop = int(timesteps[ti])
+						#print(t_stop)
+						#print(t_start)
+						preds = np.load(f"preds/preds_{f.strip('.txt')}_{methodindex}_{t_stop}_{alg_name}_{offlineindex}.npy", allow_pickle=True)
+						#print(len(preds))
+						X, Y = load_data(dataset, seed=0)
+						#print(len(X[t_start:t_stop, 0]))
+						#print(X.shape)
+						plt.figure(figsize=(8,8))
+						plt.scatter(X[t_start:t_stop,0], X[t_start:t_stop,1], c=preds)
+						plt.savefig(f"preds_{f.strip('.txt')}_{alg_name}_{t_stop}.pdf")
+						#plt.show()
 
 					#print(preds.shape)
 				except:

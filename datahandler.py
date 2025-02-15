@@ -197,7 +197,7 @@ def read_subset(dsname):
 static_list = {"mnist", "optdigits", "pendigits", "densired", "complex9", "diamond9"}
 def load_data(dsname, seed = 0):
 
-	print(dsname)
+	#print(dsname)
 	generator = np.random.Generator(PCG64(seed))
 	scaler = MinMaxScaler()
 	if "subset" in dsname:  # no need to scale subsampled data
