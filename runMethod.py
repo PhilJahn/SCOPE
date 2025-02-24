@@ -173,7 +173,7 @@ def main(args):
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
 	parser.add_argument('--offline', default=1000, type=int, help='Timesteps for offline phase')
-	parser.add_argument('--method', default="scope_full", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
 	parser.add_argument('--gpu', default=0, type=int, help='GPU usage')
@@ -216,6 +216,8 @@ def main(args):
 		has_mcs = True
 		needs_dict = True
 		use_one = True
+		if args.method == "clustream_no_offline" or args.method == "clustream_no_offline_fixed":
+			flex_offline = False
 	elif args.method == "wclustream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
@@ -564,7 +566,7 @@ def main(args):
 							pred = method.predict_one(dp)
 						pred_store.append(pred)
 					pred_store_step[i] = copy(pred_store)
-					np.save(f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}_base", pred_store_step[i])
+					#np.save(f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}_base", pred_store_step[i])
 
 					dp_store_step[i] = copy(dp_store)
 					y_store_step[i] = copy(y_store)
@@ -603,18 +605,14 @@ def main(args):
 							for cmc in cmcs:
 								for point in cmc.storage:
 									pred_store[point.t] = clu.name
-					np.save(f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}", pred_store)
-					if batch_eval:
-						batchsize = param_dict["batchsize"]
-						for i in range(0, len(pred_store), batchsize):
-							end_batch = min(i + batchsize, len(pred_store))
-							pred_batch = pred_store[i:end_batch]
-							y_batch = y_store[i:end_batch]
-							metrics, cm = getMetrics(pred_batch, y_batch)
-							f.write(f"\t{method_name} {j} {end_batch} |{metrics}\n")
-					else:
-						metrics, cm = getMetrics(y_store, pred_store)
-						f.write(f"\t{method_name} {j} {i + 1} |{metrics}\n")
+					#np.save(f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}", pred_store)
+					batchsize = args.offline
+					for i in range(0, len(pred_store), batchsize):
+						end_batch = min(i + batchsize, len(pred_store))
+						pred_batch = pred_store[i:end_batch]
+						y_batch = y_store[i:end_batch]
+						metrics, cm = getMetrics(y_batch, pred_batch)
+						f.write(f"\t{method_name} {j} {end_batch} |{metrics}\n")
 
 		if flex_offline:
 			offline_dict = offline_dicts[j]
@@ -692,9 +690,9 @@ def main(args):
 						else:
 							for mc_id in cur_assign:
 								cur_pred.append(cur_mc_clu[mc_id])
-						np.save(
-							f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{step + 1}_{alg}_{k}",
-							cur_pred)
+						#np.save(
+						#	f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{step + 1}_{alg}_{k}",
+						#	cur_pred)
 						metrics, cm = getMetrics(cur_y, cur_pred)
 						f.write(f"\t\t{method_name} {j} {step + 1} {alg} {k} |{metrics}\n")
 
@@ -706,6 +704,7 @@ def main(args):
 		j += 1
 	# f.flush()
 	f.close()
+	print("Done", flush=True)
 
 
 if __name__ == '__main__':

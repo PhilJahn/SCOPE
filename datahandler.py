@@ -14,12 +14,18 @@ def read_file(dsname):
 			file = open("./data/KDDCup99.csv", "r")
 		elif dsname == "gassensor":
 			file = open("./data/GasSensorArray.csv", "r")
+		elif dsname == "electricity":
+			file = open("./data/Electricity.csv", "r")
 		elif dsname == "powersupply":
 			file = open("./data/Powersupply.csv", "r")
 		elif dsname == "starlight":
 			file = open("./data/StarLightCurves.csv", "r")
 		elif dsname == "densired":
-			file = open("./data/densired.csv", "r")
+			densired = np.load("./data/densired_data_50.npy")
+			x = densired[:,:-1]
+			label = densired[:,-1]
+			print(x.shape, label.shape)
+			return np.array(x), np.array(label).reshape(1, len(label))[0]
 		elif dsname == "rbf3":
 			file = open("./data/RBF3_40000.csv", "r")
 		else:
@@ -173,6 +179,8 @@ def read_subset(dsname):
 		suffix = "powersupply_subset_5986"
 	elif "gassensor" in dsname:
 		suffix = "gassensor_subset_6955"
+	elif "electricity" in dsname:
+		suffix = "electricity_subset_6797"
 	elif "rotatinghyperplane" in dsname:
 		suffix = "rotatinghyperplane_subset_10000"
 	elif "movingrbf" in dsname:
@@ -181,6 +189,8 @@ def read_subset(dsname):
 		suffix = "rbf3_subset_8000"
 	elif "starlight" in dsname:
 		suffix = "starlight_subset_4618"
+	elif "letter" in dsname:
+		suffix = "letter_subset_5000"
 	for i in range(5):
 		if f"_{i}" in dsname:
 			suffix += f"_{i}.npy"

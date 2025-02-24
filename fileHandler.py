@@ -190,15 +190,17 @@ def process_file(path, metrics):
 						tkey_results = true_result_dict[method_true_index][alg_name][alg_true_index][t_key]
 						tkey_mean = {}
 						tkey_std = {}
+						tkey_num = 0
 						for metric in metrics:
 							tkey_metrics = []
 							for seed_key in tkey_results.keys():
 								tkey_metrics.append(tkey_results[seed_key][metric])
 							tkey_mean[metric] = np.mean(tkey_metrics)
 							tkey_std[metric] = np.std(tkey_metrics)
+							tkey_num = len(tkey_metrics)
 						true_result_dict[method_true_index][alg_name][alg_true_index][t_key]["mean"] = tkey_mean
 						true_result_dict[method_true_index][alg_name][alg_true_index][t_key]["std"] = tkey_std
-
+						true_result_dict[method_true_index][alg_name][alg_true_index][t_key]["num"] = tkey_num
 		best_dict = {}
 		for alg_name in offline_index_params.keys():
 			best_method_index = -1
@@ -212,7 +214,8 @@ def process_file(path, metrics):
 						best_score = score
 						best_method_index = method_true_index
 						best_alg_index = alg_true_index
-			best_dict[alg_name] = {"method": best_method_index, "offline": best_alg_index}
+			best_num = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["num"]
+			best_dict[alg_name] = {"method": best_method_index, "offline": best_alg_index, "num": best_num}
 			best_mean = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["mean"]
 			best_std = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["std"]
 			for metric in metrics:
@@ -229,11 +232,13 @@ def process_file(path, metrics):
 			best_score = -np.inf
 			for alg_true_index in true_result_dict[method_true_index][alg_name].keys():
 				cur_mean = true_result_dict[method_true_index][alg_name][alg_true_index]["tfull"]["mean"]
+
 				score = cur_mean["ARI"] + cur_mean["AMI"]
 				if score > best_score:
 					best_score = score
 					best_alg_index = alg_true_index
-			default_best_dict[alg_name] = {"method": 0, "offline": best_alg_index}
+			best_num = true_result_dict[0][alg_name][best_alg_index]["tfull"]["num"]
+			default_best_dict[alg_name] = {"method": 0, "offline": best_alg_index, "num":best_num}
 			best_mean = true_result_dict[0][alg_name][best_alg_index]["tfull"]["mean"]
 			best_std = true_result_dict[0][alg_name][best_alg_index]["tfull"]["std"]
 			for metric in metrics:
@@ -245,7 +250,8 @@ def process_file(path, metrics):
 
 		default_dict = {}
 		for alg_name in offline_index_params.keys():
-			default_dict[alg_name] = {"method": 0, "offline": 0}
+			default_num = true_result_dict[0][alg_name][0]["tfull"]["num"]
+			default_dict[alg_name] = {"method": 0, "offline": 0, "num":default_num}
 			default_mean = true_result_dict[0][alg_name][0]["tfull"]["mean"]
 			default_std = true_result_dict[0][alg_name][0]["tfull"]["std"]
 			for metric in metrics:
@@ -263,9 +269,11 @@ def main(args):
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
 	setting = "1000_100_1000"
 	dataset = "complex9"
-	metrics = ["accuracy", "ARI"]
-	method_names = ["clustream"]#, "wclustream", "scope_full", "scope"]
+	metrics = ["accuracy", "ARI", "AMI", "purity"]
+	method_names = ["clustream", "wclustream", "scope_full", "scope", "denstream", "dbstream", "emcstream", "streamkmeans", "mcmststream", "mudistream", "dstream", "gbfuzzystream"]
 	best_dicts = {}
+	default_dicts = {}
+	default_best_dicts = {}
 	for f in onlyfiles:
 		#https://stackoverflow.com/questions/3682748/converting-unix-timestamp-string-to-readable-date
 		last_change = datetime.fromtimestamp(os.path.getmtime(result_dir + f))
@@ -276,7 +284,8 @@ def main(args):
 			print(f, last_change)
 			method_name, param_dict, true_result_dict, best_dict, default_dict, default_best_dict = process_file(result_dir + f, copy.deepcopy(metrics))
 			best_dicts[method_name] = best_dict
-
+			default_dicts[method_name] = default_dict
+			default_best_dicts[method_name] = default_best_dict
 
 
 			if method_name in ["clustream", "wclustream", "scope_full", "scope"]:
@@ -286,11 +295,11 @@ def main(args):
 				except:
 					print(f"Could not find MCs for {f.strip('.txt')}")
 			for alg_name in best_dict.keys():
-				line = f"{method_name} {alg_name}: Best: "
+				line = f"{method_name} {alg_name} ({best_dict[alg_name]['num']}): Best: "
 				for metric in metrics:
 					line += f"{metric}: {best_dict[alg_name][f'{metric}_mean']:.3f} ±{best_dict[alg_name][f'{metric}_std']:.3f}  "
 				print(line)
-				line = f"{method_name} {alg_name}: Default: "
+				line = f"{method_name} {alg_name} ({default_dict[alg_name]['num']}): Default: "
 				for metric in metrics:
 					line += f"{metric}: {default_dict[alg_name][f'{metric}_mean']:.3f} ±{default_dict[alg_name][f'{metric}_std']:.3f}  "
 				#print(line)
@@ -315,6 +324,7 @@ def main(args):
 						plt.figure(figsize=(8,8))
 						plt.scatter(X[t_start:t_stop,0], X[t_start:t_stop,1], c=preds)
 						plt.savefig(f"preds_{f.strip('.txt')}_{alg_name}_{t_stop}.pdf")
+						plt.close()
 						#plt.show()
 
 					#print(preds.shape)
@@ -350,7 +360,8 @@ def main(args):
 				plt.title(metric)
 				plt.xticks(rotation=90)
 				plt.savefig(f"{f.strip('.txt')}_{metric}_best.pdf")
-				plt.show()
+				plt.close()
+				#plt.show()
 			print("---")
 	for metric in metrics:
 		plt.figure(figsize=(10, 7))
@@ -397,8 +408,102 @@ def main(args):
 		plt.xticks(rotation=90)
 		plt.subplots_adjust(bottom=0.30)
 		plt.savefig(f"{dataset}_all_{setting}_{metric}_best.pdf")
-		plt.show()
+		plt.close()
 
+	for metric in metrics:
+		plt.figure(figsize=(10, 7))
+		method_names = list(best_dicts.keys())
+		alg_names = list(best_dicts[method_names[0]].keys())
+		height = []
+		ranges = []
+		colors = []
+		names = []
+		hatches = []
+		for alg_name in alg_names:
+			for method_name in method_names:
+				if alg_name in best_dicts[method_name].keys():
+					if method_name == "clustream":
+						hatches.append("///")
+					elif method_name == "wclustream":
+						hatches.append("\\\\\\")
+					elif method_name == "scope":
+						hatches.append("+++")
+					elif method_name == "scope_full":
+						hatches.append("xxx")
+					else:
+						hatches.append("")
+					if alg_name in ["kmeans", "wkmeans", "subkmeans"]:
+						colors.append("blue")
+					elif alg_name in ["xmeans", "projdipmeans"]:
+						colors.append("lightblue")
+					elif alg_name in ["spectral", "scar", "spectacl"]:
+						colors.append("pink")
+					elif alg_name in ["dec", "idec", "dipencoder", "shade"]:
+						colors.append("green")
+					elif alg_name in ["dpca", "snndpc", "dbhd"]:
+						colors.append("orange")
+					elif alg_name in ["dbscan", "hdbscan", "rnndbscan", "mdbscan"]:
+						colors.append("red")
+					else:
+						colors.append("lightgrey")
+					names.append(f"{method_name} {alg_name}")
+					height.append(default_dicts[method_name][alg_name][f'{metric}_mean'])
+					ranges.append(default_dicts[method_name][alg_name][f'{metric}_std'])
+		plt.bar(names, height, yerr=ranges, color=colors, hatch=hatches, edgecolor="black")
+		plt.errorbar(names, height, yerr=ranges, fmt="o", color="grey")
+		plt.title(metric)
+		plt.xticks(rotation=90)
+		plt.subplots_adjust(bottom=0.30)
+		plt.savefig(f"{dataset}_all_{setting}_{metric}_default.pdf")
+		plt.close()
+		#plt.show()
+
+	for metric in metrics:
+		plt.figure(figsize=(10, 7))
+		method_names = list(best_dicts.keys())
+		alg_names = list(best_dicts[method_names[0]].keys())
+		height = []
+		ranges = []
+		colors = []
+		names = []
+		hatches = []
+		for alg_name in alg_names:
+			for method_name in method_names:
+				if alg_name in best_dicts[method_name].keys():
+					if method_name == "clustream":
+						hatches.append("///")
+					elif method_name == "wclustream":
+						hatches.append("\\\\\\")
+					elif method_name == "scope":
+						hatches.append("+++")
+					elif method_name == "scope_full":
+						hatches.append("xxx")
+					else:
+						hatches.append("")
+					if alg_name in ["kmeans", "wkmeans", "subkmeans"]:
+						colors.append("blue")
+					elif alg_name in ["xmeans", "projdipmeans"]:
+						colors.append("lightblue")
+					elif alg_name in ["spectral", "scar", "spectacl"]:
+						colors.append("pink")
+					elif alg_name in ["dec", "idec", "dipencoder", "shade"]:
+						colors.append("green")
+					elif alg_name in ["dpca", "snndpc", "dbhd"]:
+						colors.append("orange")
+					elif alg_name in ["dbscan", "hdbscan", "rnndbscan", "mdbscan"]:
+						colors.append("red")
+					else:
+						colors.append("lightgrey")
+					names.append(f"{method_name} {alg_name}")
+					height.append(default_best_dicts[method_name][alg_name][f'{metric}_mean'])
+					ranges.append(default_best_dicts[method_name][alg_name][f'{metric}_std'])
+		plt.bar(names, height, yerr=ranges, color=colors, hatch=hatches, edgecolor="black")
+		plt.errorbar(names, height, yerr=ranges, fmt="o", color="grey")
+		plt.title(metric)
+		plt.xticks(rotation=90)
+		plt.subplots_adjust(bottom=0.30)
+		plt.savefig(f"{dataset}_all_{setting}_{metric}_default_best.pdf")
+		plt.close()
 
 
 if __name__ == '__main__':
