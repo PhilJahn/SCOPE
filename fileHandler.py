@@ -1,6 +1,7 @@
 import ast
 import copy
 import os
+import pickle
 import sys
 import traceback
 from datetime import datetime
@@ -93,6 +94,7 @@ def process_file(path, metrics):
 		print(traceback.format_exc())
 	finally:
 		#pprint(result_dict)
+		#print("File Loaded", flush=True)
 		reader.close()
 		#pprint(param_dict)
 		#pprint(result_dict)
@@ -155,9 +157,10 @@ def process_file(path, metrics):
 							t_metric = t_results[t_key][metric_key]
 							t_num = int(t_key)
 							metric_t_list.extend([t_metric]*t_num)
-						avg_metric = np.mean(metric_t_list)
+						#https://stackoverflow.com/questions/57343516/easier-way-to-find-the-average-of-a-set-of-numbers-in-python
+						avg_metric = sum(metric_t_list)/len(metric_t_list)
 						result_dict[method_index][alg_name][offline_index]["tfull"][metric_key] = avg_metric
-
+		#print("Got avg. value across timesteps", flush=True)
 		#build framework for true indexing
 		true_result_dict = {}
 		for method_true_index in method_index_params.keys():
@@ -166,6 +169,7 @@ def process_file(path, metrics):
 				true_result_dict[method_true_index][alg_name] = {}
 				for alg_true_index in offline_index_params[alg_name].keys():
 					true_result_dict[method_true_index][alg_name][alg_true_index] = {}
+
 		#pprint(true_result_dict)
 
 		#transfer contents into true indexed form
@@ -181,7 +185,7 @@ def process_file(path, metrics):
 						if t_key not in true_result_dict[true_method_index][alg_name][true_offline_index].keys():
 							true_result_dict[true_method_index][alg_name][true_offline_index][t_key] = {}
 						true_result_dict[true_method_index][alg_name][true_offline_index][t_key][seed_key] = t_results[t_key]
-
+		#print("Content transferred", flush=True)
 		#get mean per timestep
 		for method_true_index in true_result_dict.keys():
 			for alg_name in true_result_dict[method_true_index].keys():
@@ -201,6 +205,7 @@ def process_file(path, metrics):
 						true_result_dict[method_true_index][alg_name][alg_true_index][t_key]["mean"] = tkey_mean
 						true_result_dict[method_true_index][alg_name][alg_true_index][t_key]["std"] = tkey_std
 						true_result_dict[method_true_index][alg_name][alg_true_index][t_key]["num"] = tkey_num
+		#print("Got mean per timestep", flush=True)
 		best_dict = {}
 		for alg_name in offline_index_params.keys():
 			best_method_index = -1
@@ -208,6 +213,8 @@ def process_file(path, metrics):
 			best_score = -np.inf
 			for method_true_index in true_result_dict.keys():
 				for alg_true_index in true_result_dict[method_true_index][alg_name].keys():
+					#print(true_result_dict[method_true_index][alg_name][alg_true_index])
+					#print(method_true_index, alg_name, alg_true_index)
 					cur_mean = true_result_dict[method_true_index][alg_name][alg_true_index]["tfull"]["mean"]
 					score = cur_mean["ARI"] + cur_mean["AMI"]
 					if score > best_score:
@@ -224,7 +231,7 @@ def process_file(path, metrics):
 				best_dict[alg_name][metric+ "_mean"] = metric_mean
 				best_dict[alg_name][metric + "_std"] = metric_std
 		#pprint(best_dict)
-
+		#print("Got best", flush=True)
 		default_best_dict = {}
 		for alg_name in offline_index_params.keys():
 			method_true_index = 0
@@ -247,7 +254,7 @@ def process_file(path, metrics):
 				default_best_dict[alg_name][metric + "_mean"] = metric_mean
 				default_best_dict[alg_name][metric + "_std"] = metric_std
 		#pprint(default_best_dict)
-
+		#print("Got default-best", flush=True)
 		default_dict = {}
 		for alg_name in offline_index_params.keys():
 			default_num = true_result_dict[0][alg_name][0]["tfull"]["num"]
@@ -260,35 +267,117 @@ def process_file(path, metrics):
 				default_dict[alg_name][metric + "_mean"] = metric_mean
 				default_dict[alg_name][metric + "_std"] = metric_std
 		#pprint(default_dict)
+		#print("Got default", flush=True)
 
 		return method_name, param_dict, true_result_dict, best_dict, default_dict, default_best_dict
+
+#from https://stackoverflow.com/questions/13613336/how-do-i-concatenate-text-files-in-python
+def combine_files(prefix, files, result_dir):
+	filenames = []
+	suffixes = []
+	outputpath = prefix + "_all_combined.txt"
+	files.remove(outputpath)
+	for file in files:
+		if prefix in file:
+			filenames.append(file)
+			suffix = file.split("_")[-1].strip(".txt")
+			if suffix == "False":
+				suffix = 0
+			suffixes.append(int(suffix))
+	#https://stackoverflow.com/questions/6618515/sorting-list-according-to-corresponding-values-from-a-parallel-list
+	filenames = [x for _, x in sorted(zip(suffixes, filenames))]
+	base_ctr = -1
+	last_change_timestamp = 0
+	with open(result_dir + outputpath, 'w') as outfile:
+		for fname in filenames:
+			ctr = 0
+			last_change_timestamp += os.path.getmtime(result_dir + fname)
+			with open(result_dir + fname) as infile:
+				for line in infile:
+					outfile.write(line)
+					ctr += 1
+			if base_ctr == -1:
+				base_ctr = ctr
+			if ctr != base_ctr:
+				print(f"{fname} is incomplete", flush=True)
+				raise Exception
+	return outputpath, last_change_timestamp
 
 def main(args):
 	result_dir = "run_logs/"
 	# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
 	setting = "1000_100_1000"
-	dataset = "complex9"
+	dataset = "rbf3"
 	metrics = ["accuracy", "ARI", "AMI", "purity"]
-	method_names = ["clustream", "wclustream", "scope_full", "scope", "denstream", "dbstream", "emcstream", "streamkmeans", "mcmststream", "mudistream", "dstream", "gbfuzzystream"]
+	method_names = ["wclustream"] #["streamkmeans", "denstream", "dbstream", "emcstream", "mcmststream", "gbfuzzystream",
+	#                "clustream_no_offline", "clustream_no_offline_fixed", "clustream", "wclustream", "scope_full",
+	#                "scope"]
 	best_dicts = {}
 	default_dicts = {}
 	default_best_dicts = {}
 	for f in onlyfiles:
 		#https://stackoverflow.com/questions/3682748/converting-unix-timestamp-string-to-readable-date
-		last_change = datetime.fromtimestamp(os.path.getmtime(result_dir + f))
+		last_change_timestamp = os.path.getmtime(result_dir + f)
+		last_change = datetime.fromtimestamp(last_change_timestamp)
 		relevant = False
 		for method_name in method_names:
 			relevant |= method_name in f
+
+		if "opeclustream" in f:
+			continue
+		if "True" in f:
+			continue
+
 		if setting in f and dataset in f and relevant:
+			if f.strip('.txt') + "_all_1.txt" in onlyfiles:
+				f, last_change_timestamp = combine_files(f.strip('.txt'),onlyfiles,result_dir)
+			elif "_all_" in f:
+				already_seen = False
+				for j in range(1,30):
+					if f"_all_{j}" in f:
+						already_seen = True
+				if already_seen:
+					continue
+			elif "combined" in f:
+				continue
+
 			print(f, last_change)
-			method_name, param_dict, true_result_dict, best_dict, default_dict, default_best_dict = process_file(result_dir + f, copy.deepcopy(metrics))
+			# https://stackoverflow.com/questions/11218477/how-can-i-use-pickle-to-save-a-dict-or-any-other-python-object
+			if os.path.isfile(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default_best.pkl"):
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_result.pkl", 'rb') as handle:
+					true_result_dict = pickle.load(handle)
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_best.pkl", 'rb') as handle:
+					best_dict = pickle.load(handle)
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default.pkl", 'rb') as handle:
+					default_dict = pickle.load(handle)
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default_best.pkl", 'rb') as handle:
+					default_best_dict = pickle.load(handle)
+				f_split = f.split("_")
+				method_name = f_split[1]
+				if f_split[2] == "no":
+					method_name += "_" + f_split[2] + "_" + f_split[3]
+				if f_split[2] == "full":
+					method_name += "_" + f_split[2]
+				if f_split[4] == "fixed":
+					method_name += "_" + f_split[4]
+				print("Loaded from Storage", flush=True)
+			else:
+				method_name, param_dict, true_result_dict, best_dict, default_dict, default_best_dict = process_file(result_dir + f, copy.deepcopy(metrics))
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_result.pkl", 'wb') as out:
+					pickle.dump(true_result_dict, out)
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_best.pkl", 'wb') as out:
+					pickle.dump(best_dict, out)
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default.pkl", 'wb') as out:
+					pickle.dump(default_dict, out)
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default_best.pkl", 'wb') as out:
+					pickle.dump(default_best_dict, out)
+
 			best_dicts[method_name] = best_dict
 			default_dicts[method_name] = default_dict
 			default_best_dicts[method_name] = default_best_dict
 
-
-			if method_name in ["clustream", "wclustream", "scope_full", "scope"]:
+			if method_name in ["clustream", "wclustream", "scope_full", "scope"] and dataset=="complex9":
 				try:
 					mcs = np.load(f"mc_data/mcs_{f.strip('.txt')}_0_1000.npy", allow_pickle=True)
 					print(mcs.shape)
@@ -305,31 +394,32 @@ def main(args):
 				#print(line)
 				methodindex = best_dict[alg_name]["method"]
 				offlineindex = best_dict[alg_name]["offline"]
-				try:
-					timesteps = list(true_result_dict[methodindex][alg_name][offlineindex].keys())
-					#print(timesteps)
-					for ti in range(len(timesteps)-1):
-						if ti == 0:
-							t_start = 0
-						else:
-							t_start = int(timesteps[ti-1])
-						t_stop = int(timesteps[ti])
-						#print(t_stop)
-						#print(t_start)
-						preds = np.load(f"preds/preds_{f.strip('.txt')}_{methodindex}_{t_stop}_{alg_name}_{offlineindex}.npy", allow_pickle=True)
-						#print(len(preds))
-						X, Y = load_data(dataset, seed=0)
-						#print(len(X[t_start:t_stop, 0]))
-						#print(X.shape)
-						plt.figure(figsize=(8,8))
-						plt.scatter(X[t_start:t_stop,0], X[t_start:t_stop,1], c=preds)
-						plt.savefig(f"preds_{f.strip('.txt')}_{alg_name}_{t_stop}.pdf")
-						plt.close()
-						#plt.show()
+				if method_name in ["clustream", "wclustream", "scope_full", "scope"] and dataset == "complex9":
+					try:
+						timesteps = list(true_result_dict[methodindex][alg_name][offlineindex].keys())
+						#print(timesteps)
+						for ti in range(len(timesteps)-1):
+							if ti == 0:
+								t_start = 0
+							else:
+								t_start = int(timesteps[ti-1])
+							t_stop = int(timesteps[ti])
+							#print(t_stop)
+							#print(t_start)
+							preds = np.load(f"preds/preds_{f.strip('.txt')}_{methodindex}_{t_stop}_{alg_name}_{offlineindex}.npy", allow_pickle=True)
+							#print(len(preds))
+							X, Y = load_data(dataset, seed=0)
+							#print(len(X[t_start:t_stop, 0]))
+							#print(X.shape)
+							plt.figure(figsize=(8,8))
+							plt.scatter(X[t_start:t_stop,0], X[t_start:t_stop,1], c=preds)
+							plt.savefig(f"figures/preds_{f.strip('.txt')}_{alg_name}_{t_stop}.pdf", bbox_inches='tight')
+							plt.close()
+							#plt.show()
 
-					#print(preds.shape)
-				except:
-					print(f"Could not find predictions for {f.strip('.txt')} {alg_name}")
+						#print(preds.shape)
+					except:
+						print(f"Could not find predictions for {f.strip('.txt')} {alg_name}")
 
 
 			for metric in metrics:
@@ -359,14 +449,63 @@ def main(args):
 				plt.errorbar(alg_names, height, yerr=ranges, fmt="o", color="grey")
 				plt.title(metric)
 				plt.xticks(rotation=90)
-				plt.savefig(f"{f.strip('.txt')}_{metric}_best.pdf")
+				plt.savefig(f"figures/{f.strip('.txt')}_{metric}_best.pdf", bbox_inches='tight')
 				plt.close()
 				#plt.show()
 			print("---")
+
+	naming = {}
+	naming["complex9"] = "Complex-9"
+	naming["densired"] = "DENSIRED-50"
+	naming["rbf3"] = "RBF-3 40000"
+	naming["letter"] = "Letter"
+	naming["powersupply"] = "Powersupply"
+	naming["elctricity"] = "Electricity"
+	naming["kddcup"] = "KDDCUP99"
+	naming["gassensor"] = "Gas Sensor Array"
+	naming["clustream"] = "CluStream"
+	naming["wclustream"] = "Fake-weighted CluStream"
+	naming["scope_full"] = "Generative CluStream"
+	naming["scope"] = "Scaled Generative CluStream"
+	naming["streamkmeans"] = "STREAMKmeans"
+	naming["denstream"] = "DenStream"
+	naming["dbstream"] = "DBSTREAM"
+	naming["emcstream"] = "EMCStream"
+	naming["mcmststream"] = "MCMSTStream"
+	naming["gbfuzzystream"] = "GB-FuzzyStream"
+	naming["base"] = ""
+	naming["clustream_no_offline"] = "CluStream - No Offline - variable k"
+	naming["clustream_no_offline_fixed"] = "CluStream - No Offline - fixed k"
+	naming["nooffline"] = " - No Offline - k=100"
+	naming["wkmeans"] = " - Weighted k-Means"
+	naming["kmeans"] = " - k-Means"
+	naming["subkmeans"] = " - SubKMeans"
+	naming["xmeans"] = " - X-Means"
+	naming["projdipmeans"] = " - Projected Dip-Means"
+	naming["spectral"] = " - Spectral Clustering"
+	naming["scar"] = " - SCAR"
+	naming["spectacl"] = " - SpectACl"
+	naming["dbscan"] = " - DBSCAN"
+	naming["hdbscan"] = " - HDBSCAN"
+	naming["rnndbscan"] = " - RNN-DBSCAN"
+	naming["mdbscan"] = " - MDBSCAN"
+	naming["dpca"] = " - DPC"
+	naming["snndpc"] = " - SNN-DPC"
+	naming["dbhd"] = " - DBHD"
+
+	#method_names = ["streamkmeans", "denstream", "dbstream", "emcstream", "mcmststream", "gbfuzzystream",
+	#                "clustream_no_offline", "clustream_no_offline_fixed", "clustream", "wclustream", "scope_full",
+	#                "scope"]
+	alg_names = ["base", "nooffline", "wkmeans", "kmeans", "subkmeans", "xmeans", "projdipmeans", "spectral", "scar",
+	             "spectacl", "dbscan", "hdbscan", "rnndbscan", "mdbscan", "dpca", "snndpc", "dbhd"]
+
+
+
 	for metric in metrics:
 		plt.figure(figsize=(10, 7))
-		method_names = list(best_dicts.keys())
-		alg_names = list(best_dicts[method_names[0]].keys())
+		#method_names = list(best_dicts.keys())
+		#alg_names = list(best_dicts[method_names[0]].keys())
+
 		height = []
 		ranges = []
 		colors = []
@@ -375,7 +514,9 @@ def main(args):
 		for alg_name in alg_names:
 			for method_name in method_names:
 				if alg_name in best_dicts[method_name].keys():
-					if method_name == "clustream":
+					if alg_name == "base" and method_name in ["clustream", "wclustream", "scope", "scope_full"]:
+						continue
+					if method_name in ["clustream", "clustream_no_offline", "clustream_no_offline_fixed"]:
 						hatches.append("///")
 					elif method_name == "wclustream":
 						hatches.append("\\\\\\")
@@ -385,124 +526,49 @@ def main(args):
 						hatches.append("xxx")
 					else:
 						hatches.append("")
-					if alg_name in ["kmeans", "wkmeans", "subkmeans"]:
+					if alg_name in ["kmeans", "wkmeans"]:
 						colors.append("blue")
-					elif alg_name in ["xmeans", "projdipmeans"]:
+					elif alg_name == "subkmeans":
+						colors.append("darkblue")
+					elif alg_name in ["xmeans"]:
 						colors.append("lightblue")
-					elif alg_name in ["spectral", "scar", "spectacl"]:
+					elif alg_name == "projdipmeans":
+						colors.append("aqua")
+					elif alg_name in ["spectral"]:
 						colors.append("pink")
-					elif alg_name in ["dec", "idec", "dipencoder", "shade"]:
-						colors.append("green")
-					elif alg_name in ["dpca", "snndpc", "dbhd"]:
+					elif alg_name == "scar":
+						colors.append("deeppink")
+					elif alg_name == "spectacl":
+						colors.append("darkviolet")
+					elif alg_name in ["dpca"]:
 						colors.append("orange")
-					elif alg_name in ["dbscan", "hdbscan", "rnndbscan", "mdbscan"]:
+					elif alg_name == "snndpc":
+						colors.append("tan")
+					elif alg_name == "dbhd":
+						colors.append("yellow")
+					elif alg_name in ["dbscan"]:
 						colors.append("red")
+					elif alg_name == "hdbscan":
+						colors.append("coral")
+					elif alg_name == "rnndbscan":
+						colors.append("darkred")
+					elif alg_name == "mdbscan":
+						colors.append("orangered")
 					else:
 						colors.append("lightgrey")
-					names.append(f"{method_name} {alg_name}")
+					names.append(f"{naming[method_name]}{naming[alg_name]}")
 					height.append(best_dicts[method_name][alg_name][f'{metric}_mean'])
 					ranges.append(best_dicts[method_name][alg_name][f'{metric}_std'])
 		plt.bar(names, height, yerr=ranges, color=colors, hatch=hatches, edgecolor="black")
 		plt.errorbar(names, height, yerr=ranges, fmt="o", color="grey")
-		plt.title(metric)
+		plt.axhline(y=best_dicts["clustream_no_offline"]["base"][f'{metric}_mean'], color="darkgrey", ls="dotted", lw=3)
+		plt.title(naming[dataset])
 		plt.xticks(rotation=90)
 		plt.subplots_adjust(bottom=0.30)
-		plt.savefig(f"{dataset}_all_{setting}_{metric}_best.pdf")
-		plt.close()
-
-	for metric in metrics:
-		plt.figure(figsize=(10, 7))
-		method_names = list(best_dicts.keys())
-		alg_names = list(best_dicts[method_names[0]].keys())
-		height = []
-		ranges = []
-		colors = []
-		names = []
-		hatches = []
-		for alg_name in alg_names:
-			for method_name in method_names:
-				if alg_name in best_dicts[method_name].keys():
-					if method_name == "clustream":
-						hatches.append("///")
-					elif method_name == "wclustream":
-						hatches.append("\\\\\\")
-					elif method_name == "scope":
-						hatches.append("+++")
-					elif method_name == "scope_full":
-						hatches.append("xxx")
-					else:
-						hatches.append("")
-					if alg_name in ["kmeans", "wkmeans", "subkmeans"]:
-						colors.append("blue")
-					elif alg_name in ["xmeans", "projdipmeans"]:
-						colors.append("lightblue")
-					elif alg_name in ["spectral", "scar", "spectacl"]:
-						colors.append("pink")
-					elif alg_name in ["dec", "idec", "dipencoder", "shade"]:
-						colors.append("green")
-					elif alg_name in ["dpca", "snndpc", "dbhd"]:
-						colors.append("orange")
-					elif alg_name in ["dbscan", "hdbscan", "rnndbscan", "mdbscan"]:
-						colors.append("red")
-					else:
-						colors.append("lightgrey")
-					names.append(f"{method_name} {alg_name}")
-					height.append(default_dicts[method_name][alg_name][f'{metric}_mean'])
-					ranges.append(default_dicts[method_name][alg_name][f'{metric}_std'])
-		plt.bar(names, height, yerr=ranges, color=colors, hatch=hatches, edgecolor="black")
-		plt.errorbar(names, height, yerr=ranges, fmt="o", color="grey")
-		plt.title(metric)
-		plt.xticks(rotation=90)
-		plt.subplots_adjust(bottom=0.30)
-		plt.savefig(f"{dataset}_all_{setting}_{metric}_default.pdf")
-		plt.close()
-		#plt.show()
-
-	for metric in metrics:
-		plt.figure(figsize=(10, 7))
-		method_names = list(best_dicts.keys())
-		alg_names = list(best_dicts[method_names[0]].keys())
-		height = []
-		ranges = []
-		colors = []
-		names = []
-		hatches = []
-		for alg_name in alg_names:
-			for method_name in method_names:
-				if alg_name in best_dicts[method_name].keys():
-					if method_name == "clustream":
-						hatches.append("///")
-					elif method_name == "wclustream":
-						hatches.append("\\\\\\")
-					elif method_name == "scope":
-						hatches.append("+++")
-					elif method_name == "scope_full":
-						hatches.append("xxx")
-					else:
-						hatches.append("")
-					if alg_name in ["kmeans", "wkmeans", "subkmeans"]:
-						colors.append("blue")
-					elif alg_name in ["xmeans", "projdipmeans"]:
-						colors.append("lightblue")
-					elif alg_name in ["spectral", "scar", "spectacl"]:
-						colors.append("pink")
-					elif alg_name in ["dec", "idec", "dipencoder", "shade"]:
-						colors.append("green")
-					elif alg_name in ["dpca", "snndpc", "dbhd"]:
-						colors.append("orange")
-					elif alg_name in ["dbscan", "hdbscan", "rnndbscan", "mdbscan"]:
-						colors.append("red")
-					else:
-						colors.append("lightgrey")
-					names.append(f"{method_name} {alg_name}")
-					height.append(default_best_dicts[method_name][alg_name][f'{metric}_mean'])
-					ranges.append(default_best_dicts[method_name][alg_name][f'{metric}_std'])
-		plt.bar(names, height, yerr=ranges, color=colors, hatch=hatches, edgecolor="black")
-		plt.errorbar(names, height, yerr=ranges, fmt="o", color="grey")
-		plt.title(metric)
-		plt.xticks(rotation=90)
-		plt.subplots_adjust(bottom=0.30)
-		plt.savefig(f"{dataset}_all_{setting}_{metric}_default_best.pdf")
+		#plt.rcParams['xtick.labelsize'] = 15
+		#plt.rcParams['ytick.labelsize'] = 15
+		plt.tight_layout()
+		plt.savefig(f"figures/{dataset}_all_{setting}_{metric}_best.pdf", bbox_inches='tight')
 		plt.close()
 
 
