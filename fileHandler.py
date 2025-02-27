@@ -152,13 +152,18 @@ def process_file(path, metrics):
 					result_dict[method_index][alg_name][offline_index]["tfull"] = {}
 
 					for metric_key in metric_keys:
-						metric_t_list = []
+						metric_t_sum = 0
+						t_count = 0
+						old_t_key = 0
 						for t_key in t_keys:
 							t_metric = t_results[t_key][metric_key]
-							t_num = int(t_key)
-							metric_t_list.extend([t_metric]*t_num)
+							t_num = int(t_key) - old_t_key
+							old_t_key = int(t_key)
+							metric_t_sum += t_metric*t_num
+							t_count += t_num
+						#print(t_count)
 						#https://stackoverflow.com/questions/57343516/easier-way-to-find-the-average-of-a-set-of-numbers-in-python
-						avg_metric = sum(metric_t_list)/len(metric_t_list)
+						avg_metric = metric_t_sum/t_count
 						result_dict[method_index][alg_name][offline_index]["tfull"][metric_key] = avg_metric
 		#print("Got avg. value across timesteps", flush=True)
 		#build framework for true indexing
@@ -308,11 +313,12 @@ def main(args):
 	# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
 	setting = "1000_100_1000"
-	dataset = "rbf3"
+	dataset = "powersupply"
 	metrics = ["accuracy", "ARI", "AMI", "purity"]
-	method_names = ["wclustream"] #["streamkmeans", "denstream", "dbstream", "emcstream", "mcmststream", "gbfuzzystream",
-	#                "clustream_no_offline", "clustream_no_offline_fixed", "clustream", "wclustream", "scope_full",
-	#                "scope"]
+	method_names = ["streamkmeans", "denstream", "dbstream", "emcstream", "mcmststream", "gbfuzzystream",
+	                "clustream_no_offline", "clustream_no_offline_fixed", "clustream"
+					#, "wclustream"
+					, "scope_full", "scope"]
 	best_dicts = {}
 	default_dicts = {}
 	default_best_dicts = {}
@@ -322,7 +328,7 @@ def main(args):
 		last_change = datetime.fromtimestamp(last_change_timestamp)
 		relevant = False
 		for method_name in method_names:
-			relevant |= method_name in f
+			relevant |= "_" + method_name + "_" in f
 
 		if "opeclustream" in f:
 			continue
@@ -353,6 +359,8 @@ def main(args):
 					default_dict = pickle.load(handle)
 				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default_best.pkl", 'rb') as handle:
 					default_best_dict = pickle.load(handle)
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_param.pkl", 'rb') as handle:
+					param_dict = pickle.load(handle)
 				f_split = f.split("_")
 				method_name = f_split[1]
 				if f_split[2] == "no":
@@ -372,6 +380,8 @@ def main(args):
 					pickle.dump(default_dict, out)
 				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default_best.pkl", 'wb') as out:
 					pickle.dump(default_best_dict, out)
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_param.pkl", 'wb') as out:
+					pickle.dump(param_dict, out)
 
 			best_dicts[method_name] = best_dict
 			default_dicts[method_name] = default_dict
@@ -497,7 +507,7 @@ def main(args):
 	#                "clustream_no_offline", "clustream_no_offline_fixed", "clustream", "wclustream", "scope_full",
 	#                "scope"]
 	alg_names = ["base", "nooffline", "wkmeans", "kmeans", "subkmeans", "xmeans", "projdipmeans", "spectral", "scar",
-	             "spectacl", "dbscan", "hdbscan", "rnndbscan", "mdbscan", "dpca", "snndpc", "dbhd"]
+				 "spectacl", "dbscan", "hdbscan", "rnndbscan", "mdbscan", "dpca", "snndpc", "dbhd"]
 
 
 
