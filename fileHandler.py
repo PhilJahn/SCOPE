@@ -281,7 +281,8 @@ def combine_files(prefix, files, result_dir):
 	filenames = []
 	suffixes = []
 	outputpath = prefix + "_all_combined.txt"
-	files.remove(outputpath)
+	if outputpath in files:
+		files.remove(outputpath)
 	for file in files:
 		if prefix in file:
 			filenames.append(file)
@@ -293,6 +294,7 @@ def combine_files(prefix, files, result_dir):
 	filenames = [x for _, x in sorted(zip(suffixes, filenames))]
 	base_ctr = -1
 	last_change_timestamp = 0
+	incomplete = False
 	with open(result_dir + outputpath, 'w') as outfile:
 		for fname in filenames:
 			ctr = 0
@@ -305,7 +307,9 @@ def combine_files(prefix, files, result_dir):
 				base_ctr = ctr
 			if ctr != base_ctr:
 				print(f"{fname} is incomplete", flush=True)
-				raise Exception
+				incomplete = True
+	if incomplete:
+		raise Exception
 	return outputpath, last_change_timestamp
 
 def main(args):
@@ -313,7 +317,7 @@ def main(args):
 	# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
 	setting = "1000_100_1000"
-	dataset = "powersupply"
+	dataset = "gassensor"
 	metrics = ["accuracy", "ARI", "AMI", "purity"]
 	method_names = ["streamkmeans", "denstream", "dbstream", "emcstream", "mcmststream", "gbfuzzystream",
 	                "clustream_no_offline", "clustream_no_offline_fixed", "clustream"
