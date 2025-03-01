@@ -217,15 +217,17 @@ def process_file(path, metrics):
 			best_alg_index = -1
 			best_score = -np.inf
 			for method_true_index in true_result_dict.keys():
+				alg_index_num = len(true_result_dict[method_true_index][alg_name].keys())
 				for alg_true_index in true_result_dict[method_true_index][alg_name].keys():
-					#print(true_result_dict[method_true_index][alg_name][alg_true_index])
-					#print(method_true_index, alg_name, alg_true_index)
-					cur_mean = true_result_dict[method_true_index][alg_name][alg_true_index]["tfull"]["mean"]
-					score = cur_mean["ARI"] + cur_mean["AMI"]
-					if score > best_score:
-						best_score = score
-						best_method_index = method_true_index
-						best_alg_index = alg_true_index
+					if not ((method_true_index == 0 and alg_true_index != 0) or (alg_index_num > 1 and method_true_index != 0 and alg_true_index == 0)): # skip optimized for default for fairness
+						#print(true_result_dict[method_true_index][alg_name][alg_true_index])
+						#print(method_true_index, alg_name, alg_true_index)
+						cur_mean = true_result_dict[method_true_index][alg_name][alg_true_index]["tfull"]["mean"]
+						score = cur_mean["ARI"] + cur_mean["AMI"]
+						if score > best_score:
+							best_score = score
+							best_method_index = method_true_index
+							best_alg_index = alg_true_index
 			best_num = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["num"]
 			best_dict[alg_name] = {"method": best_method_index, "offline": best_alg_index, "num": best_num}
 			best_mean = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["mean"]
@@ -320,7 +322,7 @@ def main(args):
 	dataset = "gassensor"
 	metrics = ["accuracy", "ARI", "AMI", "purity"]
 	method_names = ["streamkmeans", "denstream", "dbstream", "emcstream", "mcmststream", "gbfuzzystream",
-	                "clustream_no_offline", "clustream_no_offline_fixed", "clustream"
+					"clustream_no_offline", "clustream_no_offline_fixed", "clustream"
 					#, "wclustream"
 					, "scope_full", "scope"]
 	best_dicts = {}
@@ -355,13 +357,13 @@ def main(args):
 			print(f, last_change)
 			# https://stackoverflow.com/questions/11218477/how-can-i-use-pickle-to-save-a-dict-or-any-other-python-object
 			if os.path.isfile(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default_best.pkl"):
-				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_result.pkl", 'rb') as handle:
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_result.pkl", 'rb') as handle:
 					true_result_dict = pickle.load(handle)
-				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_best.pkl", 'rb') as handle:
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_best.pkl", 'rb') as handle:
 					best_dict = pickle.load(handle)
-				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default.pkl", 'rb') as handle:
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_default.pkl", 'rb') as handle:
 					default_dict = pickle.load(handle)
-				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default_best.pkl", 'rb') as handle:
+				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_default_best.pkl", 'rb') as handle:
 					default_best_dict = pickle.load(handle)
 				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_param.pkl", 'rb') as handle:
 					param_dict = pickle.load(handle)
@@ -376,16 +378,16 @@ def main(args):
 				print("Loaded from Storage", flush=True)
 			else:
 				method_name, param_dict, true_result_dict, best_dict, default_dict, default_best_dict = process_file(result_dir + f, copy.deepcopy(metrics))
-				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_result.pkl", 'wb') as out:
-					pickle.dump(true_result_dict, out)
-				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_best.pkl", 'wb') as out:
-					pickle.dump(best_dict, out)
-				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default.pkl", 'wb') as out:
-					pickle.dump(default_dict, out)
-				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default_best.pkl", 'wb') as out:
-					pickle.dump(default_best_dict, out)
-				with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_param.pkl", 'wb') as out:
-					pickle.dump(param_dict, out)
+				#with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_result.pkl", 'wb') as out:
+				#	pickle.dump(true_result_dict, out)
+				#with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_best.pkl", 'wb') as out:
+				#	pickle.dump(best_dict, out)
+				#with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_default.pkl", 'wb') as out:
+				#	pickle.dump(default_dict, out)
+				#with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_default_best.pkl", 'wb') as out:
+				#	pickle.dump(default_best_dict, out)
+				#with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_param.pkl", 'wb') as out:
+				#	pickle.dump(param_dict, out)
 
 			best_dicts[method_name] = best_dict
 			default_dicts[method_name] = default_dict

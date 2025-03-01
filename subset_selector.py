@@ -126,4 +126,6 @@ if __name__ == '__main__':
 	#select_subset("rbf3", 0.2)
 	#select_subset("starlight", 0.5)
 	#select_subset("letter", 0.25)
-	select_subset("electricity", 0.15)
+	#select_subset("electricity", 0.15)
+	select_subset("densired", 0.2)
+

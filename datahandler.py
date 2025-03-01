@@ -191,6 +191,8 @@ def read_subset(dsname):
 		suffix = "starlight_subset_4618"
 	elif "letter" in dsname:
 		suffix = "letter_subset_5000"
+	elif "densired" in dsname:
+		suffix = "densired_subset_1000"
 	for i in range(5):
 		if f"_{i}" in dsname:
 			suffix += f"_{i}.npy"
