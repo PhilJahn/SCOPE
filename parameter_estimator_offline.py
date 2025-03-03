@@ -151,6 +151,27 @@ def get_gendata(mcs, seed, weight_scale):
 	#print(data_dict)
 	return data_dict, new_assign_dict
 
+def get_scaleddata(mcs, seed, weight_scale):
+	data_dict = {}
+	new_assign_dict = {}
+	generator = np.random.Generator(PCG64(seed))
+	data_reconstructor = DataReconstructor()
+	for i in mcs.keys():
+		dps_i = dps[i]
+		mcsi = mcs[i]
+		data_new, _ = data_reconstructor.reconstruct_data(micro_clusters=mcsi, num=1000, radius_mult=0,
+		                                    generator=generator, use_centroid=True, mc_import=True, weight_scale=False)
+		data_new = dps_to_np(data_new)
+		kdtree = KDTree(data_new)
+		assign_new = kdtree.query(dps_i, 1, return_distance=False).flatten()
+		#print("assign", assign_new.shape)
+		#print("dps", dps_i.shape)
+		data_dict[i] = data_new
+		#print("gen", data_new.shape)
+		new_assign_dict[i] = assign_new
+	#print(data_dict)
+	return data_dict, new_assign_dict
+
 
 def train_clustream(config: Configuration, seed: int = 0) -> float:
 	clustering_dict = {}
@@ -178,6 +199,20 @@ def train_wclustream(config: Configuration, seed: int = 0) -> float:
 		clustering_dict[i] = clustering
 	score = eval_clustering(clustering_dict, new_assign)
 	print("Weighted CluStream", clusterer, param_dict, config_dict, score)
+	return 2 - score
+
+def train_scaledclustream(config: Configuration, seed: int = 0) -> float:
+	clustering_dict = {}
+	config_dict = config.get_dictionary()
+	config_dict["alg_seed"] = seed
+	config_dict["n_clusters"] = class_num
+	data, new_assign = get_scaleddata(mcs, seed, False)
+	for i in new_assign.keys():
+		clustering, _ = perform_clustering(data[i], clusterer, config_dict)
+		#print(clustering)
+		clustering_dict[i] = clustering
+	score = eval_clustering(clustering_dict, new_assign)
+	print("Scaled CluStream", clusterer, param_dict, config_dict, score)
 	return 2 - score
 
 def train_scope_full(config: Configuration, seed: int = 0) -> float:
@@ -323,6 +358,7 @@ configspaces["dbhd"] = dbhd_space
 trainmethods = {}
 trainmethods["clustream"] = train_clustream
 trainmethods["wclustream"] = train_wclustream
+trainmethods["scaledclustream"] = train_scaledclustream
 trainmethods["scope_full"] = train_scope_full
 trainmethods["scope"] = train_scope
 

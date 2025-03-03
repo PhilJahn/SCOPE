@@ -751,3 +751,64 @@ class SCOPE(CluStream):
 			return self.cluster_assignments[index], index
 		else:
 			return self.cluster_assignments[index]
+
+class ScaledCluStream(CluStream):
+
+	def __init__(
+			self,
+			n_macro_clusters: int = 5,
+			max_micro_clusters: int = 100,
+			micro_cluster_r_factor: int = 2,
+			time_window: int = 1000,
+			time_gap: int = 100,
+			seed: int | None = None,
+			offline_algo: str = "kmeans",
+			offline_args=None,
+			offline_datascale: int = 1000,
+			**kwargs,
+	):
+		super().__init__(n_macro_clusters, max_micro_clusters, micro_cluster_r_factor, time_window, time_gap, seed,
+		                 **kwargs)
+
+		self.generator = np.random.Generator(PCG64(seed))
+		self.cluster_assignments = {}
+		self.offline_algo = offline_algo
+		if offline_args is None:
+			self.offline_args = {}
+		else:
+			self.offline_args = offline_args
+		if self.offline_algo in k_algos:
+			self.offline_args["n_clusters"] = n_macro_clusters
+		self.offline_args["alg_seed"] = seed
+		self.offline_datascale = offline_datascale
+
+		self.offline_dataset = []
+		self.offline_labels = []
+		self.kdtree = None
+		self.data_reconstructor = DataReconstructor()
+		self.weight_scale = 0
+
+	def offline_processing(self):
+		gen_data, gen_labels = self.data_reconstructor.reconstruct_data(self.micro_clusters, self.offline_datascale,
+		                                        0, self.generator, use_centroid=True, weight_scale=False)
+		gen_X = dps_to_np(gen_data)
+
+		clustering, self.centers = perform_clustering(gen_X, self.offline_algo, self.offline_args)
+
+
+		self.cluster_assignments = clustering
+
+		self._offline_timestamp = self._timestamp
+
+		self.offline_dataset = gen_data
+		self.offline_labels = gen_labels
+		self.kdtree = KDTree(dps_to_np(self.offline_dataset))
+
+	def predict_one(self, x, recluster=False, sklearn=None, return_mc=False):
+		if self._offline_timestamp != self._timestamp:
+			self.offline_processing()
+		index = self.kdtree.query(dict_to_np(x).reshape(1, -1), 1, return_distance=False)[0][0]
+		if return_mc:
+			return self.cluster_assignments[index], index
+		else:
+			return self.cluster_assignments[index]

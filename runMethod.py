@@ -29,7 +29,7 @@ from datahandler import load_data
 from method.CircSCOPE import CircSCOPE
 # from method.SCOPE import SCOPE
 from method.offlineHandler import OPECluStream, perform_clustering, \
-	WCluStream, SCOPE  # , SCOPE_Offline
+	WCluStream, SCOPE, ScaledCluStream  # , SCOPE_Offline
 from utils import make_param_dicts, dps_to_np, dict_to_np
 import numpy as np
 
@@ -247,6 +247,21 @@ def main(args):
 		needs_dict = True
 		use_one = True
 		has_gen = True
+	elif args.method == "scaledclustream":
+		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
+		param_vals["mmc"] = [args.sumlimit]  # max_micro_clusters
+		param_vals["mc_r_factor"] = [2, 1.5, 3]  # micro_cluster_r_factor
+		param_vals["time_gap"] = [1000000000000]  # time_gap
+		param_vals["time_window"] = [1000, 10000, 10000000]  # time window
+		param_vals["sigma"] = [0.5]
+		param_vals["mu"] = [0.5]
+		param_vals["gen"] = [args.gennum]
+		has_offline = True
+		flex_offline = True
+		has_mcs = True
+		needs_dict = True
+		use_one = True
+		has_gen = True
 	elif args.method == "emcstream":
 		param_vals["seed"] = [0, 1, 2, 3, 4]  # seed
 		param_vals["horizon"] = [20, 50, 80, 100, args.sumlimit, 1000]  # horizon, from paper
@@ -365,7 +380,7 @@ def main(args):
 	# print(offline_dict)
 	if args.automl:
 		param_dicts = utils.load_parameters(args.ds, args.method, args.used_full)
-		if args.method in ["clustream", "wclustream", "scope", "scope_full"]:
+		if args.method in ["clustream", "wclustream", "scaledclustream", "scope", "scope_full"]:
 			if args.category not in ["all", "density_all", "density", "denscon", "spectral", "means", "kestmeans",
 			                         "nkestmeans"]:
 				offlinemethods = [args.category]
@@ -451,6 +466,15 @@ def main(args):
 			               sigma=param_dict["sigma"],
 			               mu=param_dict["mu"], seed=param_dict["seed"],
 			               offline_datascale=param_dict["offline_datascale"], weight_scale=False)
+		elif args.method == "scaledclustream":
+			param_dict = {"n_macro_clusters": args.class_num, "mmc": args.sumlimit, "time_gap": 100000000, "mu": 0.5,
+			              "sigma": 0.5, "offline_datascale": args.gennum} | param_dict
+			method = ScaledCluStream(n_macro_clusters=param_dict["n_macro_clusters"], max_micro_clusters=param_dict["mmc"],
+			               micro_cluster_r_factor=param_dict["mc_r_factor"],
+			               time_gap=param_dict["time_gap"], time_window=param_dict["time_window"],
+			               sigma=param_dict["sigma"],
+			               mu=param_dict["mu"], seed=param_dict["seed"],
+			               offline_datascale=param_dict["offline_datascale"])
 		# elif args.method in scope_list:
 		# 	method = SCOPEOffline(n_macro_clusters=args.class_num, max_micro_clusters=param_dict["mmc"],
 		# 	                      micro_cluster_r_factor=param_dict["mcrf"],
@@ -576,7 +600,7 @@ def main(args):
 					f.write(f"\t{method_name} {j} {i + 1} |{metrics}\n")
 					if has_mcs:
 						mcs = []
-						if args.method == "clustream" or args.method == "wclustream" or args.method == "scope" or args.method == "scope_full":
+						if args.method == "clustream" or args.method == "wclustream" or args.method == "scaledclustream" or args.method == "scope" or args.method == "scope_full":
 							for mcid, mc in method.micro_clusters.items():
 								mcs.append([mcid, mc.center, mc.radius(r_factor=1), mc.weight, mc.var_time, mc.var_x])
 								mc_store[mcid] = mc
