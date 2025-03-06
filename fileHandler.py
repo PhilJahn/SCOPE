@@ -106,6 +106,10 @@ def process_file(path, metrics):
 			method_index_param = copy.deepcopy(param_dict[method_index]["base"][0])
 			if "seed" in method_index_param.keys():
 				method_index_param["seed"] = 0
+			if "startindex" in method_index_param.keys():
+				method_index_param['startindex'] = 0
+			if "endindex" in method_index_param.keys():
+				method_index_param['endindex'] = 0
 			found = -1
 			for j in method_index_params.keys():
 				if method_index_params[j] == method_index_param:
@@ -297,6 +301,7 @@ def combine_files(prefix, files, result_dir):
 	base_ctr = -1
 	last_change_timestamp = 0
 	incomplete = False
+	first = True
 	with open(result_dir + outputpath, 'w') as outfile:
 		for fname in filenames:
 			ctr = 0
@@ -305,11 +310,12 @@ def combine_files(prefix, files, result_dir):
 				for line in infile:
 					outfile.write(line)
 					ctr += 1
-			if base_ctr == -1:
+			if base_ctr == -1 and not first:
 				base_ctr = ctr
-			if ctr != base_ctr:
+			if ctr != base_ctr and not first:
 				print(f"{fname} is incomplete", flush=True)
 				incomplete = True
+			first = False
 	if incomplete:
 		raise Exception
 	return outputpath, last_change_timestamp
@@ -319,12 +325,17 @@ def main(args):
 	# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
 	setting = "1000_100_1000"
-	dataset = "gassensor"
+	dataset = "rbf3"
 	metrics = ["accuracy", "ARI", "AMI", "purity"]
-	method_names = ["streamkmeans", "denstream", "dbstream", "emcstream", "mcmststream", "gbfuzzystream",
-					"clustream_no_offline", "clustream_no_offline_fixed", "clustream"
+	method_names = ["streamkmeans", "denstream", "dbstream"
+	                ,"emcstream"
+					,"mcmststream", "gbfuzzystream"
+					,"clustream_no_offline", "clustream_no_offline_fixed", "clustream"
 					#, "wclustream"
-					, "scope_full", "scope"]
+					,"scaledclustream"
+					, "scope_full"
+					,"scope"
+	                ]
 	best_dicts = {}
 	default_dicts = {}
 	default_best_dicts = {}
@@ -342,7 +353,7 @@ def main(args):
 			continue
 
 		if setting in f and dataset in f and relevant:
-			if f.strip('.txt') + "_all_1.txt" in onlyfiles:
+			if f.strip('.txt') + "_all_1.txt" in onlyfiles or f.strip('.txt') + "_all_12.txt" in onlyfiles:
 				f, last_change_timestamp = combine_files(f.strip('.txt'),onlyfiles,result_dir)
 			elif "_all_" in f:
 				already_seen = False
@@ -438,35 +449,35 @@ def main(args):
 						print(f"Could not find predictions for {f.strip('.txt')} {alg_name}")
 
 
-			for metric in metrics:
-				plt.figure(figsize=(10, 7))
-				alg_names = list(best_dict.keys())
-				height = []
-				ranges = []
-				colors = []
-				for alg_name in alg_names:
-					if alg_name in ["kmeans", "wkmeans", "subkmeans"]:
-						colors.append("blue")
-					elif alg_name in ["xmeans", "projdipmeans"]:
-						colors.append("lightblue")
-					elif alg_name in ["spectral", "scar", "spectacl"]:
-						colors.append("pink")
-					elif alg_name in ["dec", "idec", "dipencoder", "shade"]:
-						colors.append("green")
-					elif alg_name in ["dpca", "snndpc", "dbhd"]:
-						colors.append("orange")
-					elif alg_name in ["dbscan", "hdbscan", "rnndbscan", "mdbscan"]:
-						colors.append("red")
-					else:
-						colors.append("black")
-					height.append(best_dict[alg_name][f'{metric}_mean'])
-					ranges.append(best_dict[alg_name][f'{metric}_std'])
-				plt.bar(alg_names, height, yerr=ranges, color=colors)
-				plt.errorbar(alg_names, height, yerr=ranges, fmt="o", color="grey")
-				plt.title(metric)
-				plt.xticks(rotation=90)
-				plt.savefig(f"figures/{f.strip('.txt')}_{metric}_best.pdf", bbox_inches='tight')
-				plt.close()
+			# for metric in metrics:
+			# 	plt.figure(figsize=(10, 7))
+			# 	alg_names = list(best_dict.keys())
+			# 	height = []
+			# 	ranges = []
+			# 	colors = []
+			# 	for alg_name in alg_names:
+			# 		if alg_name in ["kmeans", "wkmeans", "subkmeans"]:
+			# 			colors.append("blue")
+			# 		elif alg_name in ["xmeans", "projdipmeans"]:
+			# 			colors.append("lightblue")
+			# 		elif alg_name in ["spectral", "scar", "spectacl"]:
+			# 			colors.append("pink")
+			# 		elif alg_name in ["dec", "idec", "dipencoder", "shade"]:
+			# 			colors.append("green")
+			# 		elif alg_name in ["dpca", "snndpc", "dbhd"]:
+			# 			colors.append("orange")
+			# 		elif alg_name in ["dbscan", "hdbscan", "rnndbscan", "mdbscan"]:
+			# 			colors.append("red")
+			# 		else:
+			# 			colors.append("black")
+			# 		height.append(best_dict[alg_name][f'{metric}_mean'])
+			# 		ranges.append(best_dict[alg_name][f'{metric}_std'])
+			# 	plt.bar(alg_names, height, yerr=ranges, color=colors)
+			# 	plt.errorbar(alg_names, height, yerr=ranges, fmt="o", color="grey")
+			# 	plt.title(metric)
+			# 	plt.xticks(rotation=90)
+			# 	plt.savefig(f"figures/{f.strip('.txt')}_{metric}_best.pdf", bbox_inches='tight')
+			# 	plt.close()
 				#plt.show()
 			print("---")
 
@@ -480,9 +491,10 @@ def main(args):
 	naming["kddcup"] = "KDDCUP99"
 	naming["gassensor"] = "Gas Sensor Array"
 	naming["clustream"] = "CluStream"
-	naming["wclustream"] = "Fake-weighted CluStream"
-	naming["scope_full"] = "Generative CluStream"
-	naming["scope"] = "Scaled Generative CluStream"
+	naming["wclustream"] = "CluStream-W"
+	naming["scaledclustream"] = "CluStream-S"
+	naming["scope_full"] = "CluStream-G"
+	naming["scope"] = "CluStream-G+"
 	naming["streamkmeans"] = "STREAMKmeans"
 	naming["denstream"] = "DenStream"
 	naming["dbstream"] = "DBSTREAM"
@@ -490,9 +502,9 @@ def main(args):
 	naming["mcmststream"] = "MCMSTStream"
 	naming["gbfuzzystream"] = "GB-FuzzyStream"
 	naming["base"] = ""
-	naming["clustream_no_offline"] = "CluStream - No Offline - variable k"
-	naming["clustream_no_offline_fixed"] = "CluStream - No Offline - fixed k"
-	naming["nooffline"] = " - No Offline - k=100"
+	naming["clustream_no_offline"] = "CluStream-O - variable k"
+	naming["clustream_no_offline_fixed"] = "CluStream-O - fixed k"
+	naming["nooffline"] = "-O - k=100"
 	naming["wkmeans"] = " - Weighted k-Means"
 	naming["kmeans"] = " - k-Means"
 	naming["subkmeans"] = " - SubKMeans"
@@ -536,10 +548,12 @@ def main(args):
 						hatches.append("///")
 					elif method_name == "wclustream":
 						hatches.append("\\\\\\")
+					elif method_name == "scaledclustream":
+						hatches.append("xxx")
 					elif method_name == "scope":
 						hatches.append("+++")
 					elif method_name == "scope_full":
-						hatches.append("xxx")
+						hatches.append("---")
 					else:
 						hatches.append("")
 					if alg_name in ["kmeans", "wkmeans"]:

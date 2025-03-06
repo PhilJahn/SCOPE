@@ -173,7 +173,7 @@ def main(args):
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
 	parser.add_argument('--offline', default=1000, type=int, help='Timesteps for offline phase')
-	parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="scaledclustream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
 	parser.add_argument('--gpu', default=0, type=int, help='GPU usage')
@@ -368,12 +368,12 @@ def main(args):
 	if args.category == "all" and args.startindex == 0:
 		f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}.txt', 'w',
 		         newline='\n',
-		         buffering=1000)
+		         buffering=100)
 	else:
 		f = open(
 			f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{args.category}_{args.startindex}.txt',
 			'w',
-			newline='\n', buffering=1000)
+			newline='\n', buffering=100)
 	offline_dicts = {}
 	for j in range(len(param_dicts)):
 		offline_dicts[j] = offline_dict
@@ -673,7 +673,7 @@ def main(args):
 							# print(clustering, flush=True)
 							num_clu = len(np.unique(clustering))
 							_, clustering = np.unique(clustering, return_inverse=True)
-							if method_name == "scope_full" or method_name == "scope":
+							if method_name == "scope_full" or method_name == "scope" or method_name == "scaledclustream":
 								for id in np.unique(cur_assign):
 									cur_mc_clu[id] = clustering[id]
 							else:

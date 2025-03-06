@@ -40,7 +40,7 @@ def flatten_dict(d):
 
 def load_parameters(dataset, method, use_full=False):
 	org_method = method
-	if org_method == "wclustream" or org_method == "scope" or org_method == "scope_full":
+	if org_method == "wclustream" or org_method == "scaledclustream"  or org_method == "scope" or org_method == "scope_full":
 		method = "clustream"
 	if not use_full:
 		path = f"./param_logs/params_{dataset}_{method}.txt"
