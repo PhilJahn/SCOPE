@@ -56,7 +56,7 @@ def get_offline_dict(args):
 		offline_dict[dipenc] = dipenc_dicts
 	else:
 
-		if args.category == "all" or args.category == "nkestmeans" or args.category == "means":
+		if args.category == "all" or args.category == "not_projdipmeans" or args.category == "nkestmeans" or args.category == "means":
 			kmeans = "kmeans"
 			kmeans_vals = {"alg_seed": [0, 1, 2, 3, 4]}
 			kmeans_dicts = make_param_dicts(kmeans_vals)
@@ -68,21 +68,23 @@ def get_offline_dict(args):
 			subkmeans_dicts = make_param_dicts(subkmeans_vals)
 			offline_dict[subkmeans] = subkmeans_dicts
 
-		if args.category == "all" or args.category == "kestmeans" or args.category == "means":
+		if args.category == "all" or args.category == "not_projdipmeans" or args.category == "kestmeans" or args.category == "means":
 			xmeans = "xmeans"
 			xmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_split_trials": [10, 20], "check_global_score": [True],
 			               "allow_merging": [True, False]}
 			xmeans_dicts = make_param_dicts(xmeans_vals)
 			offline_dict[xmeans] = xmeans_dicts
 
-			projdipmeans = "projdipmeans"
-			projdipmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "significance": [0.001, 0.01, 0.0001],
-			                     "n_random_projections": [0, 1, 5], "n_split_trials": [10, 20],
-			                     "pval_strategy": ['table', 'function', 'bootstrap']}
-			projdipmeans_dicts = make_param_dicts(projdipmeans_vals)
-			offline_dict[projdipmeans] = projdipmeans_dicts
+			if args.category != "not_projdipmeans":
 
-		if args.category == "all" or args.category == "spectral":
+				projdipmeans = "projdipmeans"
+				projdipmeans_vals = {"alg_seed": [0, 1, 2, 3, 4], "significance": [0.001, 0.01, 0.0001],
+				                     "n_random_projections": [0, 1, 5], "n_split_trials": [10, 20],
+				                     "pval_strategy": ['table', 'function', 'bootstrap']}
+				projdipmeans_dicts = make_param_dicts(projdipmeans_vals)
+				offline_dict[projdipmeans] = projdipmeans_dicts
+
+		if args.category == "all" or args.category == "not_projdipmeans" or args.category == "spectral":
 			spectral = "spectral"
 			spectral_vals_rbf = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['rbf'], "gamma": [1, 0.5, 1.5, 2]}
 			spectral_vals_nn = {"alg_seed": [0, 1, 2, 3, 4], "affinity": ['nearest_neighbors'],
@@ -102,7 +104,7 @@ def get_offline_dict(args):
 			spectacl_dicts = make_param_dicts(spectacl_vals)
 			offline_dict[spectacl] = spectacl_dicts
 
-		if args.category == "all" or args.category == "denscon" or args.category == "density_all":
+		if args.category == "all" or args.category == "not_projdipmeans" or args.category == "denscon" or args.category == "density_all":
 			dbscan = "dbscan"
 			dbscan_vals = {"eps": [0.5, 0.25, 0.1, 0.05, 0.01], "min_samples": [5, 3, 2, 10, 25, 50, 100]}
 			dbscan_dicts = make_param_dicts(dbscan_vals)
@@ -124,7 +126,7 @@ def get_offline_dict(args):
 			mdbscan_dicts = make_param_dicts(mdbscan_vals)
 			offline_dict[mdbscan] = mdbscan_dicts
 
-		if args.category == "all" or args.category == "density" or args.category == "density_all":
+		if args.category == "all" or args.category == "not_projdipmeans" or args.category == "density" or args.category == "density_all":
 			dpca = "dpca"
 			dpca_vals = {"dc": [None, 0.5, 0.1, 0, 0.75, 0.9, 1],
 			             "distance_threshold": [None, 0.5, 0.25, 0.1, 0.05, 0.01],
@@ -382,29 +384,30 @@ def main(args):
 		param_dicts = utils.load_parameters(args.ds, args.method, args.used_full)
 		if args.method in ["clustream", "wclustream", "scaledclustream", "scope", "scope_full"]:
 			if args.category not in ["all", "density_all", "density", "denscon", "spectral", "means", "kestmeans",
-			                         "nkestmeans"]:
+			                         "nkestmeans", "not_projdipmeans"]:
 				offlinemethods = [args.category]
 			else:
 				offlinemethods = []
 				if args.method == "clustream" and args.category == "all":
 					offlinemethods.append("nooffline")
-				if args.category == "all" or args.category == "density_all" or args.category == "density":
+				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "density_all" or args.category == "density":
 					offlinemethods.append("dpca")
 					offlinemethods.append("snndpc")
 					offlinemethods.append("dbhd")
-				if args.category == "all" or args.category == "density_all" or args.category == "denscon":
+				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "density_all" or args.category == "denscon":
 					offlinemethods.append("dbscan")
 					offlinemethods.append("hdbscan")
 					offlinemethods.append("rnndbscan")
 					offlinemethods.append("mdbscan")
-				if args.category == "all" or args.category == "spectral":
+				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "spectral":
 					offlinemethods.append("spectral")
 					offlinemethods.append("scar")
 					offlinemethods.append("spectacl")
-				if args.category == "all" or args.category == "means" or args.category == "kestmeans":
+				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "means" or args.category == "kestmeans":
 					offlinemethods.append("xmeans")
-					offlinemethods.append("projdipmeans")
-				if args.category == "all" or args.category == "means" or args.category == "nkestmeans":
+					if not args.category == "not_projdipmeans":
+						offlinemethods.append("projdipmeans")
+				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "means" or args.category == "nkestmeans":
 					offlinemethods.append("kmeans")
 					if args.method == "clustream":
 						offlinemethods.append("wkmeans")

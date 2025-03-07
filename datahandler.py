@@ -5,6 +5,9 @@ from sklearn.preprocessing import MinMaxScaler
 def read_file(dsname):
 	dic = {}
 	classmember = 0
+	#if dsname == "letter":
+	#	dic = {"A":1, "B":2, "C":3, "D":4, "E":4, "F":5, "G":6, "H":7, "I":8, "J":10, "K":11, "L":12, "M":13,
+	#	       "N":14, "O":15, "P":16, "Q":17, "R":18, "S":19, "T":20, "U":21, "V":22, "W":23, "X":24, "Y":25, "Z":26}
 
 
 	try:
@@ -20,8 +23,32 @@ def read_file(dsname):
 			file = open("./data/Powersupply.csv", "r")
 		elif dsname == "starlight":
 			file = open("./data/StarLightCurves.csv", "r")
-		elif dsname == "densired":
-			densired = np.load("./data/densired_data_50.npy")
+		elif dsname == "densired2":
+			densired = np.load("./data/densired_high_data_2.npy")
+			x = densired[:,:-1]
+			label = densired[:,-1]
+			print(x.shape, label.shape)
+			return np.array(x), np.array(label).reshape(1, len(label))[0]
+		elif dsname == "densired5":
+			densired = np.load("./data/densired_high_data_5.npy")
+			x = densired[:,:-1]
+			label = densired[:,-1]
+			print(x.shape, label.shape)
+			return np.array(x), np.array(label).reshape(1, len(label))[0]
+		elif dsname == "densired10":
+			densired = np.load("./data/densired_high_data_10.npy")
+			x = densired[:,:-1]
+			label = densired[:,-1]
+			print(x.shape, label.shape)
+			return np.array(x), np.array(label).reshape(1, len(label))[0]
+		elif dsname == "densired50":
+			densired = np.load("./data/densired_high_data_50.npy")
+			x = densired[:,:-1]
+			label = densired[:,-1]
+			print(x.shape, label.shape)
+			return np.array(x), np.array(label).reshape(1, len(label))[0]
+		elif dsname == "densired100":
+			densired = np.load("./data/densired_high_data_100.npy")
 			x = densired[:,:-1]
 			label = densired[:,-1]
 			print(x.shape, label.shape)
@@ -191,8 +218,16 @@ def read_subset(dsname):
 		suffix = "starlight_subset_4618"
 	elif "letter" in dsname:
 		suffix = "letter_subset_5000"
-	elif "densired" in dsname:
-		suffix = "densired_subset_1000"
+	elif "densired2" in dsname:
+		suffix = "densired2_subset_2500"
+	elif "densired5" in dsname:
+		suffix = "densired5_subset_2500"
+	elif "densired10" in dsname:
+		suffix = "densired10_subset_2500"
+	elif "densired50" in dsname:
+		suffix = "densired50_subset_2500"
+	elif "densired100" in dsname:
+		suffix = "densired100_subset_2500"
 	for i in range(5):
 		if f"_{i}" in dsname:
 			suffix += f"_{i}.npy"
@@ -206,7 +241,7 @@ def read_subset(dsname):
 
 
 
-static_list = {"mnist", "optdigits", "pendigits", "densired", "complex9", "diamond9"}
+static_list = {"mnist", "optdigits", "pendigits", "densired2", "densired5", "densired10", "densired50", "densired100", "complex9", "diamond9"}
 def load_data(dsname, seed = 0):
 
 	#print(dsname)

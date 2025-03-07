@@ -512,6 +512,7 @@ if __name__ == '__main__':
 	parser.add_argument('--ds', default="letter", type=str, help='Used stream data set')
 	parser.add_argument('--method', default="mudistream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--use_full', default=0, type=int, help='Use full datset')
+	parser.add_argument('--subset', default=-1, type=int, help='Use specific subset')
 	args = parser.parse_args()
 	print(args, flush=True)
 
@@ -532,7 +533,10 @@ if __name__ == '__main__':
 	else:
 		seed_num = 5
 		time_budget = 18000
-		f = open(f'param_logs/params_{dataset}_{method}.txt', 'w', buffering=1)
+		if args.subset != -1:
+			f = open(f'param_logs/params_{dataset}_{method}_{args.subset}.txt', 'w', buffering=1)
+		else:
+			f = open(f'param_logs/params_{dataset}_{method}.txt', 'w', buffering=1)
 
 	if args.method in clustream_methods:
 		time_budget = time_budget/5
@@ -545,31 +549,33 @@ if __name__ == '__main__':
 	for run in range(seed_num):
 		run_index = run
 
-		cur_best_score = -1
-		best_performance = -1
-		if not args.use_full:
-			data_name = dataset + "_subset_" + str(run)
-		X, y = load_data(data_name)
-		uniques = np.unique(y, return_counts=False)
-		data_dim = len(X[0])
-		data_length = len(y)
-		class_num = len(uniques)
-		if method == "clustream_no_offline_fixed" and run == 0:
-			clustream_no_offline_fixed_space = ConfigurationSpace()
-			clustream_no_offline_fixed_mmc = Constant("mmc", class_num)
-			clustream_no_offline_fixed_space.add(
-				[clustream_timewindow, clustream_mc_r_factor, clustream_no_offline_fixed_mmc])
-			configspaces["clustream_no_offline_fixed"] = clustream_no_offline_fixed_space
-			f.write(f"{configspaces[method].get_default_configuration().get_dictionary()};-;-;-;-\n")
+		if (args.subset == run or args.subset == -1):
 
-		if method == "mudistream":
-			dps = []
-			for i in range(len(X)):
-				dps.append([MuDiDataPoint(X[i], i)])
-		else:
-			dps = X
+			cur_best_score = -1
+			best_performance = -1
+			if not args.use_full:
+				data_name = dataset + "_subset_" + str(run)
+			X, y = load_data(data_name)
+			uniques = np.unique(y, return_counts=False)
+			data_dim = len(X[0])
+			data_length = len(y)
+			class_num = len(uniques)
+			if method == "clustream_no_offline_fixed" and run == 0:
+				clustream_no_offline_fixed_space = ConfigurationSpace()
+				clustream_no_offline_fixed_mmc = Constant("mmc", class_num)
+				clustream_no_offline_fixed_space.add(
+					[clustream_timewindow, clustream_mc_r_factor, clustream_no_offline_fixed_mmc])
+				configspaces["clustream_no_offline_fixed"] = clustream_no_offline_fixed_space
+				f.write(f"{configspaces[method].get_default_configuration().get_dictionary()};-;-;-;-\n")
 
-		labels = y
-		best_params, score, run_num = run_parameter_estimation(method, time_budget, 0)
-		f.write(f"{best_params.get_dictionary()};{score};{run_num};{cur_best_score};{best_performance}\n")
+			if method == "mudistream":
+				dps = []
+				for i in range(len(X)):
+					dps.append([MuDiDataPoint(X[i], i)])
+			else:
+				dps = X
+
+			labels = y
+			best_params, score, run_num = run_parameter_estimation(method, time_budget, 0)
+			f.write(f"{best_params.get_dictionary()};{score};{run_num};{cur_best_score};{best_performance}\n")
 	f.close()
