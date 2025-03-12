@@ -76,7 +76,8 @@ def main(args):
 
 		kdtree_offline = KDTree(np.unique(offline_data, axis=0))
 		nndists_offline, assignment = kdtree_offline.query(real_subset)
-		inndists_offline, _ = kdtree_offline.query(offline_data, k=2)
+		kdtree_offline_nonuni = KDTree(offline_data)
+		inndists_offline, _ = kdtree_offline_nonuni.query(offline_data, k=2)
 		kdtree_real = KDTree(real_subset)
 		nndists_online, _ = kdtree_real.query(real_subset, k=2)
 		inndists_online, _ = kdtree_real.query(offline_data)
@@ -130,7 +131,7 @@ def main(args):
 		mmd_rbf_sum += mmd_rbf_val * real_length
 
 		ts_output = f"\t{method} {cur_ts} BoP: {bop_scores['JS'] * sc:.3f} Impurity: {(1 - purity) * sc:.3f} "
-		ts_output += f"C2ST-R: {c2st_real * sc:.3f} C2ST-G: {c2st_offline * sc:.3f} "
+		ts_output += f"C2ST-R: {c2st_real * sc:.3f} C2ST-O: {c2st_offline * sc:.3f} "
 		ts_output += f"NN-dist {nndist_avg * sc:.3f} iNN-dist {inndist_avg * sc:.3f} "
 		ts_output += f"KS {ks_stat * sc:.3f} ({p:.2f}) MMD-rbf {mmd_rbf_val * sc:.3f}"
 		print(ts_output, flush=True)
@@ -145,7 +146,7 @@ def main(args):
 	ks_avg = ks_sum /datalength
 	mmd_rbf_avg = mmd_rbf_sum / datalength
 	output = f"{method} BoP: {bop_jsd_avg * sc:.3f} Impurity: {(1 - purity) * sc:.3f} "
-	output += f"C2ST-R: {c2st_real_avg * sc:.3f} C2ST-G: {c2st_offline_avg * sc:.3f} "
+	output += f"C2ST-R: {c2st_real_avg * sc:.3f} C2ST-O: {c2st_offline_avg * sc:.3f} "
 	output += f"NN-dist {nndists_avg * sc:.3f} iNN-dist {inndists_avg * sc:.3f} "
 	output += f"KS {ks_avg * sc:.3f} MMD-rbf {mmd_rbf_avg * sc:.3f}"
 	print(output, flush=True)
@@ -169,9 +170,9 @@ if __name__ == '__main__':
 	parser.add_argument('--value_scale', default=100, type=int, help='Scaling of metrics')
 
 	args = parser.parse_args()
-	for ds in ["complex9", "densired2", "densired5", "densired10", "densired50", "densired100", "powersupply", "electricity", "letter", "segment", "gassensor"]:
-		#for method in ["clustream", "wclustream", "scaledclustream" "scope_full"]:
-			method = "scaledclustream"
+	#for ds in ["complex9", "rbf3", "densired2", "densired5", "densired10", "densired50", "densired100", "powersupply", "electricity", "letter", "segment", "gassensor"]:
+	for ds in ["kddcup"]:
+		for method in ["scaledclustream"]:
 			args.ds = ds
 			args.method = method
 			main(args)

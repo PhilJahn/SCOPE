@@ -27,31 +27,31 @@ def read_file(dsname):
 			densired = np.load("./data/densired_high_data_2.npy")
 			x = densired[:,:-1]
 			label = densired[:,-1]
-			print(x.shape, label.shape)
+			#print(x.shape, label.shape)
 			return np.array(x), np.array(label).reshape(1, len(label))[0]
 		elif dsname == "densired5":
 			densired = np.load("./data/densired_high_data_5.npy")
 			x = densired[:,:-1]
 			label = densired[:,-1]
-			print(x.shape, label.shape)
+			#print(x.shape, label.shape)
 			return np.array(x), np.array(label).reshape(1, len(label))[0]
 		elif dsname == "densired10":
 			densired = np.load("./data/densired_high_data_10.npy")
 			x = densired[:,:-1]
 			label = densired[:,-1]
-			print(x.shape, label.shape)
+			#print(x.shape, label.shape)
 			return np.array(x), np.array(label).reshape(1, len(label))[0]
 		elif dsname == "densired50":
 			densired = np.load("./data/densired_high_data_50.npy")
 			x = densired[:,:-1]
 			label = densired[:,-1]
-			print(x.shape, label.shape)
+			#print(x.shape, label.shape)
 			return np.array(x), np.array(label).reshape(1, len(label))[0]
 		elif dsname == "densired100":
 			densired = np.load("./data/densired_high_data_100.npy")
 			x = densired[:,:-1]
 			label = densired[:,-1]
-			print(x.shape, label.shape)
+			#print(x.shape, label.shape)
 			return np.array(x), np.array(label).reshape(1, len(label))[0]
 		elif dsname == "rbf3":
 			file = open("./data/RBF3_40000.csv", "r")
