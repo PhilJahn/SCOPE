@@ -24,8 +24,6 @@ from offline_methods.SCAR.SpectralClusteringAcceleratedRobust import SCAR
 from offline_methods.mdbscan import MDBSCAN
 from offline_methods.rnndbscan import RNNDBSCAN
 from offline_methods.spectacl.Spectacl import Spectacl
-from method.CircSCOPE import CircSCOPE
-#from method.SCOPE import SCOPE
 from utils import dps_to_np, dict_to_np
 
 k_algos = ["kmeans", "spectral", "agglomerative", "scar", "spectacl", "subkmeans"]
