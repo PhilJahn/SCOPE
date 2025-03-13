@@ -84,7 +84,7 @@ This repository allows for 14 offline clustering methods to be used (additional 
 | k-Means                  | kmeans          | [Scikit-Learn](https://scikit-learn.org) |
 | Weighted k-Means                  | wkmeans          | [Scikit-Learn](https://scikit-learn.org) |
 | SubkMeans                  | subkmeans          | [ClustPy](https://github.com/collinleiber/ClustPy) |
-| XMeans                  | xmeans          | [ClustPy](https://github.com/collinleiber/ClustPy) |
+| X-Means                  | xmeans          | [ClustPy](https://github.com/collinleiber/ClustPy) |
 | Projected Dip-Means                  | projdipmeans          | [ClustPy](https://github.com/collinleiber/ClustPy) |
 | Spectral Clustering                  | spectral          | [Scikit-Learn](https://scikit-learn.org) |
 | SCAR                 | scar          | [SCAR repository](https://github.com/SpectralClusteringAcceleratedRobust/SCAR) (extract into folder ```offline_methods/SCAR```)|
