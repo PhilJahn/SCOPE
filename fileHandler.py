@@ -27,7 +27,7 @@ def process_file(path):
 	#if "ARI" not in metrics:
 	#	metrics = metrics.append("ARI")
 
-	metrics = ['accuracy', 'ARI', 'AMI', 'NMI', 'completeness', 'fowl', 'homogeneity', 'purity', 'F1', 'precision', 'recall']
+	metrics = ['accuracy', 'ARI', 'AMI', 'NMI', 'completeness', 'fowl', 'homogeneity', 'purity', 'F1', 'precision', 'recall', 'cluster_num']
 	#print(metrics)
 	try:
 		line = reader.readline()
@@ -343,7 +343,7 @@ def main(args):
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
 	setting = "1000_100_1000"
 	dataset = "complex9"
-	metrics = ["accuracy", "ARI", "AMI", "purity"]
+	metrics = ["accuracy", "ARI", "AMI", "purity", "cluster_num"]
 	method_names = ["streamkmeans", "denstream", "dbstream"
 	                ,"emcstream",
 					"mcmststream", "gbfuzzystream",
@@ -503,131 +503,131 @@ def main(args):
 			# 	plt.close()
 				#plt.show()
 			print("---")
+	if False:
+		#return "No figures"
+		naming = {}
+		naming["complex9"] = "Complex-9"
+		naming["densired10"] = "DENSIRED-10"
+		naming["rbf3"] = "RBF-3 40000"
+		naming["letter"] = "Letter"
+		naming["segemnt"] = "Segement"
+		naming["powersupply"] = "Powersupply"
+		naming["electricity"] = "Electricity"
+		naming["kddcup"] = "KDDCUP99"
+		naming["gassensor"] = "Gas Sensor Array"
+		naming["clustream"] = "CluStream"
+		naming["wclustream"] = "CluStream-W"
+		naming["scaledclustream"] = "CluStream-S"
+		naming["scope_full"] = "CluStream-G"
+		naming["scope"] = "CluStream-G+"
+		naming["streamkmeans"] = "STREAMKmeans"
+		naming["denstream"] = "DenStream"
+		naming["dbstream"] = "DBSTREAM"
+		naming["emcstream"] = "EMCStream"
+		naming["mcmststream"] = "MCMSTStream"
+		naming["gbfuzzystream"] = "GB-FuzzyStream"
+		naming["base"] = ""
+		naming["clustream_no_offline"] = "CluStream-O - vari. k"
+		naming["clustream_no_offline_fixed"] = "CluStream-O - fixed k"
+		naming["nooffline"] = "-O - k=100"
+		naming["wkmeans"] = " - Weighted k-Means"
+		naming["kmeans"] = " - k-Means"
+		naming["subkmeans"] = " - SubKMeans"
+		naming["xmeans"] = " - X-Means"
+		naming["projdipmeans"] = " - Projected Dip-Means"
+		naming["spectral"] = " - Spectral Clustering"
+		naming["scar"] = " - SCAR"
+		naming["spectacl"] = " - SpectACl"
+		naming["dbscan"] = " - DBSCAN"
+		naming["hdbscan"] = " - HDBSCAN"
+		naming["rnndbscan"] = " - RNN-DBSCAN"
+		naming["mdbscan"] = " - MDBSCAN"
+		naming["dpca"] = " - DPC"
+		naming["snndpc"] = " - SNN-DPC"
+		naming["dbhd"] = " - DBHD"
 
-	#return "No figures"
-	naming = {}
-	naming["complex9"] = "Complex-9"
-	naming["densired10"] = "DENSIRED-10"
-	naming["rbf3"] = "RBF-3 40000"
-	naming["letter"] = "Letter"
-	naming["segemnt"] = "Segemnt"
-	naming["powersupply"] = "Powersupply"
-	naming["electricity"] = "Electricity"
-	naming["kddcup"] = "KDDCUP99"
-	naming["gassensor"] = "Gas Sensor Array"
-	naming["clustream"] = "CluStream"
-	naming["wclustream"] = "CluStream-W"
-	naming["scaledclustream"] = "CluStream-S"
-	naming["scope_full"] = "CluStream-G"
-	naming["scope"] = "CluStream-G+"
-	naming["streamkmeans"] = "STREAMKmeans"
-	naming["denstream"] = "DenStream"
-	naming["dbstream"] = "DBSTREAM"
-	naming["emcstream"] = "EMCStream"
-	naming["mcmststream"] = "MCMSTStream"
-	naming["gbfuzzystream"] = "GB-FuzzyStream"
-	naming["base"] = ""
-	naming["clustream_no_offline"] = "CluStream-O - vari. k"
-	naming["clustream_no_offline_fixed"] = "CluStream-O - fixed k"
-	naming["nooffline"] = "-O - k=100"
-	naming["wkmeans"] = " - Weighted k-Means"
-	naming["kmeans"] = " - k-Means"
-	naming["subkmeans"] = " - SubKMeans"
-	naming["xmeans"] = " - X-Means"
-	naming["projdipmeans"] = " - Projected Dip-Means"
-	naming["spectral"] = " - Spectral Clustering"
-	naming["scar"] = " - SCAR"
-	naming["spectacl"] = " - SpectACl"
-	naming["dbscan"] = " - DBSCAN"
-	naming["hdbscan"] = " - HDBSCAN"
-	naming["rnndbscan"] = " - RNN-DBSCAN"
-	naming["mdbscan"] = " - MDBSCAN"
-	naming["dpca"] = " - DPC"
-	naming["snndpc"] = " - SNN-DPC"
-	naming["dbhd"] = " - DBHD"
+		#method_names = ["streamkmeans", "denstream", "dbstream", "emcstream", "mcmststream", "gbfuzzystream",
+		#                "clustream_no_offline", "clustream_no_offline_fixed", "clustream", "wclustream", "scaled_clustream", "scope_full"]
+		alg_names = ["base", "nooffline", "wkmeans", "kmeans", "subkmeans", "xmeans", "projdipmeans", "spectral", "scar",
+					 "spectacl", "dbscan", "hdbscan", "rnndbscan", "mdbscan", "dpca", "snndpc", "dbhd"]
 
-	#method_names = ["streamkmeans", "denstream", "dbstream", "emcstream", "mcmststream", "gbfuzzystream",
-	#                "clustream_no_offline", "clustream_no_offline_fixed", "clustream", "wclustream", "scaled_clustream", "scope_full"]
-	alg_names = ["base", "nooffline", "wkmeans", "kmeans", "subkmeans", "xmeans", "projdipmeans", "spectral", "scar",
-				 "spectacl", "dbscan", "hdbscan", "rnndbscan", "mdbscan", "dpca", "snndpc", "dbhd"]
+		plt.rcParams.update({'font.size': 20})
+		for metric in metrics:
+			plt.figure(figsize=(20, 3))
+			#method_names = list(best_dicts.keys())
+			#alg_names = list(best_dicts[method_names[0]].keys())
 
-	plt.rcParams.update({'font.size': 20})
-	for metric in metrics:
-		plt.figure(figsize=(20, 3))
-		#method_names = list(best_dicts.keys())
-		#alg_names = list(best_dicts[method_names[0]].keys())
-
-		height = []
-		ranges = []
-		colors = []
-		names = []
-		hatches = []
-		for alg_name in alg_names:
-			for method_name in method_names:
-				if alg_name in best_dicts[method_name].keys():
-					if alg_name == "base" and method_name in ["clustream", "scaledclustream", "wclustream", "scope", "scope_full"]:
-						continue
-					if method_name in ["clustream", "clustream_no_offline", "clustream_no_offline_fixed"]:
-						hatches.append("///")
-					elif method_name == "wclustream":
-						hatches.append("xxx")
-					elif method_name == "scaledclustream":
-						hatches.append("\\\\\\")
-					elif method_name == "scope":
-						hatches.append("+++")
-					elif method_name == "scope_full":
-						hatches.append("---")
-					else:
-						hatches.append("")
-					if alg_name in ["kmeans", "wkmeans"] or method_name in ["streamkmeans", "emcstream"]:
-						colors.append("blue")
-					elif alg_name == "subkmeans":
-						colors.append("darkblue")
-					elif alg_name in ["xmeans"]:
-						colors.append("lightblue")
-					elif alg_name == "projdipmeans":
-						colors.append("aqua")
-					elif alg_name in ["spectral"]:
-						colors.append("pink")
-					elif alg_name == "scar":
-						colors.append("deeppink")
-					elif alg_name == "spectacl":
-						colors.append("darkviolet")
-					elif alg_name in ["dpca"] or method_name in ["gbfuzzystream"]:
-						colors.append("orange")
-					elif method_name in ["mcmststream"]:
-						colors.append("yellowgreen")
-					elif method_name in ["dbstream"]:
-						colors.append("orchid")
-					elif alg_name == "snndpc":
-						colors.append("tan")
-					elif alg_name == "dbhd":
-						colors.append("yellow")
-					elif alg_name in ["dbscan"] or method_name in ["denstream"]:
-						colors.append("red")
-					elif alg_name == "hdbscan":
-						colors.append("coral")
-					elif alg_name == "rnndbscan":
-						colors.append("darkred")
-					elif alg_name == "mdbscan":
-						colors.append("orangered")
-					else:
-						colors.append("lightgrey")
-					names.append(f"{naming[method_name]}{naming[alg_name]}")
-					height.append(best_dicts[method_name][alg_name][f'{metric}_mean'])
-					ranges.append(best_dicts[method_name][alg_name][f'{metric}_std'])
-		plt.bar(names, height, yerr=ranges, color=colors, hatch=hatches, edgecolor="black")
-		plt.errorbar(names, height, yerr=ranges, fmt="o", color="grey")
-		plt.axhline(y=max(best_dicts["clustream_no_offline"]["base"][f'{metric}_mean'],best_dicts["clustream_no_offline_fixed"]["base"][f'{metric}_mean']), color="darkgrey", ls="dotted", lw=3)
-		#plt.title(naming[dataset])
-		#plt.xticks(rotation=90)
-		plt.gca().axes.get_xaxis().set_visible(False)
-		plt.subplots_adjust(bottom=0.30)
-		#plt.rcParams['xtick.labelsize'] = 15
-		#plt.rcParams['ytick.labelsize'] = 15
-		plt.tight_layout()
-		plt.savefig(f"figures/{dataset}_all_{setting}_{metric}_best.pdf", bbox_inches='tight')
-		plt.close()
+			height = []
+			ranges = []
+			colors = []
+			names = []
+			hatches = []
+			for alg_name in alg_names:
+				for method_name in method_names:
+					if alg_name in best_dicts[method_name].keys():
+						if alg_name == "base" and method_name in ["clustream", "scaledclustream", "wclustream", "scope", "scope_full"]:
+							continue
+						if method_name in ["clustream", "clustream_no_offline", "clustream_no_offline_fixed"]:
+							hatches.append("///")
+						elif method_name == "wclustream":
+							hatches.append("xxx")
+						elif method_name == "scaledclustream":
+							hatches.append("\\\\\\")
+						elif method_name == "scope":
+							hatches.append("+++")
+						elif method_name == "scope_full":
+							hatches.append("---")
+						else:
+							hatches.append("")
+						if alg_name in ["kmeans", "wkmeans"] or method_name in ["streamkmeans", "emcstream"]:
+							colors.append("blue")
+						elif alg_name == "subkmeans":
+							colors.append("darkblue")
+						elif alg_name in ["xmeans"]:
+							colors.append("lightblue")
+						elif alg_name == "projdipmeans":
+							colors.append("aqua")
+						elif alg_name in ["spectral"]:
+							colors.append("pink")
+						elif alg_name == "scar":
+							colors.append("deeppink")
+						elif alg_name == "spectacl":
+							colors.append("darkviolet")
+						elif alg_name in ["dpca"] or method_name in ["gbfuzzystream"]:
+							colors.append("orange")
+						elif method_name in ["mcmststream"]:
+							colors.append("yellowgreen")
+						elif method_name in ["dbstream"]:
+							colors.append("orchid")
+						elif alg_name == "snndpc":
+							colors.append("tan")
+						elif alg_name == "dbhd":
+							colors.append("yellow")
+						elif alg_name in ["dbscan"] or method_name in ["denstream"]:
+							colors.append("red")
+						elif alg_name == "hdbscan":
+							colors.append("coral")
+						elif alg_name == "rnndbscan":
+							colors.append("darkred")
+						elif alg_name == "mdbscan":
+							colors.append("orangered")
+						else:
+							colors.append("lightgrey")
+						names.append(f"{naming[method_name]}{naming[alg_name]}")
+						height.append(best_dicts[method_name][alg_name][f'{metric}_mean'])
+						ranges.append(best_dicts[method_name][alg_name][f'{metric}_std'])
+			plt.bar(names, height, yerr=ranges, color=colors, hatch=hatches, edgecolor="black")
+			plt.errorbar(names, height, yerr=ranges, fmt="o", color="grey")
+			plt.axhline(y=max(best_dicts["clustream_no_offline"]["base"][f'{metric}_mean'],best_dicts["clustream_no_offline_fixed"]["base"][f'{metric}_mean']), color="darkgrey", ls="dotted", lw=3)
+			#plt.title(naming[dataset])
+			#plt.xticks(rotation=90)
+			plt.gca().axes.get_xaxis().set_visible(False)
+			plt.subplots_adjust(bottom=0.30)
+			#plt.rcParams['xtick.labelsize'] = 15
+			#plt.rcParams['ytick.labelsize'] = 15
+			plt.tight_layout()
+			plt.savefig(f"figures/{dataset}_all_{setting}_{metric}_best.pdf", bbox_inches='tight')
+			plt.close()
 
 
 if __name__ == '__main__':

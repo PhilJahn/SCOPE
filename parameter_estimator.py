@@ -11,13 +11,12 @@ import matplotlib.pyplot as plt
 from competitors.clustream import CluStream
 from competitors.EmCStream import EmcStream
 from competitors.MCMSTStream import MCMSTStream
-from competitors.MuDi import MuDiDataPoint, MudiHandler
+#from competitors.MuDi import MuDiDataPoint, MudiHandler
 from competitors.dbstream import DBSTREAM
 from competitors.denstream import DenStream
-from competitors.dstream import DStreamClusterer
+#from competitors.dstream import DStreamClusterer
 from competitors.gbfuzzystream.MBStream import MBStreamHandler
 
-from competitors.full_dataset_learner import full_dataset_leaner
 from competitors.streamkmeans import STREAMKMeans
 from datahandler import load_data
 from evaluate import getMetrics
@@ -64,7 +63,8 @@ def get_clustering_learn_one(clustering_method, nooffline=False):
 	prediction = []
 	i = 0
 	is_clustream = type(clustering_method) == CluStream
-	is_dstream = type(clustering_method) == DStreamClusterer
+	#is_dstream = type(clustering_method) == DStreamClusterer
+	is_dstream = False
 	assignments = []
 	mcs = []
 	cur_prediction = []
@@ -128,7 +128,7 @@ def get_clustering_learn_one(clustering_method, nooffline=False):
 
 def get_clustering(method, config=None):
 	is_emcstream = type(method) == EmcStream
-	is_mudistream = type(method) == MudiHandler
+	is_mudistream = False #type(method) == MudiHandler
 	is_gbstream = type(method) == MBStreamHandler
 	dps_np = np.array(dps)
 	amis = []
@@ -295,43 +295,43 @@ def train_mcmststream(config: Configuration, seed: int = 0) -> float:
 	return 2 - score
 
 
-def train_mudistream(config: Configuration, seed: int = 0) -> float:
-	mini = 0
-	maxi = 1
-	if config["alpha"] + 2 ** (-config["lamda"]) > 1:
-		clustering_method = MudiHandler(mini=mini, maxi=maxi,
-		                                dimension=data_dim,
-		                                lamda=config["lamda"],
-		                                gridGranuality=config["gridgran"],
-		                                alpha=config["alpha"],
-		                                minPts=config["minPts"],
-		                                seed=seed)
+#def train_mudistream(config: Configuration, seed: int = 0) -> float:
+#	mini = 0
+#	maxi = 1
+#	if config["alpha"] + 2 ** (-config["lamda"]) > 1:
+#		clustering_method = MudiHandler(mini=mini, maxi=maxi,
+#		                                dimension=data_dim,
+#		                                lamda=config["lamda"],
+#		                                gridGranuality=config["gridgran"],
+#		                                alpha=config["alpha"],
+#		                                minPts=config["minPts"],
+#		                                seed=seed)
+#
+#		score = get_clustering(clustering_method)
+#	else:
+#		score = -np.inf
+#	print("MudiStream", config["lamda"], config["gridgran"], config["alpha"], config["minPts"], score)
+#	return 2 - score
 
-		score = get_clustering(clustering_method)
-	else:
-		score = -np.inf
-	print("MudiStream", config["lamda"], config["gridgran"], config["alpha"], config["minPts"], score)
-	return 2 - score
 
-
-def train_dstream(config: Configuration, seed: int = 0) -> float:
-	domains_per_dimension = [(0, 1)] * data_dim
-	partitions_per_dimension = [config["partitions_count"]] * data_dim
-	clustering_method = DStreamClusterer(initial_cluster_count=class_num, seed=seed,
-	                                     dense_threshold_parameter=config["dense_threshold_parameter"],
-	                                     sparse_threshold_parameter=config["sparse_threshold_parameter"],
-	                                     sporadic_threshold_parameter=config["sporadic_threshold_parameter"],
-	                                     decay_factor=config["decay_factor"],
-	                                     gap=config["gap"],
-	                                     domains_per_dimension=domains_per_dimension,
-	                                     partitions_per_dimension=partitions_per_dimension,
-	                                     dimensions=data_dim)
-	score = get_clustering_learn_one(clustering_method)
-	print("DStream", config["partitions_count"], config["dense_threshold_parameter"],
-	      config["sparse_threshold_parameter"],
-	      config["sporadic_threshold_parameter"], config["decay_factor"],
-	      config["gap"], score)
-	return 2 - score
+#def train_dstream(config: Configuration, seed: int = 0) -> float:
+#	domains_per_dimension = [(0, 1)] * data_dim
+#	partitions_per_dimension = [config["partitions_count"]] * data_dim
+#	clustering_method = DStreamClusterer(initial_cluster_count=class_num, seed=seed,
+#	                                     dense_threshold_parameter=config["dense_threshold_parameter"],
+#	                                     sparse_threshold_parameter=config["sparse_threshold_parameter"],
+#	                                     sporadic_threshold_parameter=config["sporadic_threshold_parameter"],
+#	                                     decay_factor=config["decay_factor"],
+#	                                     gap=config["gap"],
+#	                                     domains_per_dimension=domains_per_dimension,
+#	                                     partitions_per_dimension=partitions_per_dimension,
+#	                                     dimensions=data_dim)
+#	score = get_clustering_learn_one(clustering_method)
+#	print("DStream", config["partitions_count"], config["dense_threshold_parameter"],
+#	      config["sparse_threshold_parameter"],
+#	      config["sporadic_threshold_parameter"], config["decay_factor"],
+#	      config["gap"], score)
+#	return 2 - score
 
 def train_gbfuzzystream(config: Configuration, seed: int = 0) -> float:
 	clustering_method = MBStreamHandler(lam=config["lam"],
@@ -448,8 +448,8 @@ trainmethods["denstream"] = train_denstream
 trainmethods["streamkmeans"] = train_streamkmeans
 trainmethods["emcstream"] = train_emcstream
 trainmethods["mcmststream"] = train_mcmststream
-trainmethods["mudistream"] = train_mudistream
-trainmethods["dstream"] = train_dstream
+#trainmethods["mudistream"] = train_mudistream
+#trainmethods["dstream"] = train_dstream
 trainmethods["gbfuzzystream"] = train_gbfuzzystream
 # 86400 * 5
 def run_parameter_estimation(method, time_budget, seed):

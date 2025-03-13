@@ -9,15 +9,15 @@ from numpy.random import PCG64
 from scipy.spatial import distance
 from sklearn.cluster import KMeans, SpectralClustering, DBSCAN, OPTICS, MeanShift, HDBSCAN, AgglomerativeClustering
 from sklearn.neighbors import KDTree
-from offline_methods.SHADE.dcdist import DCTree_Clusterer
-from offline_methods.SHADE.shade.shade import SHADE
+#from offline_methods.SHADE.dcdist import DCTree_Clusterer
+#from offline_methods.SHADE.shade.shade import SHADE
 from offline_methods.DPC.DPC import DensityPeakCluster
 from competitors.clustream import CluStream
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as ptc
 
-from offline_methods.DCFcluster.src.DCFcluster import DCFcluster
+#from offline_methods.DCFcluster.src.DCFcluster import DCFcluster
 from offline_methods.SNNDPC import SNNDPC
 from offline_methods.dbhd_clustering.DBHDALGO import DBHD
 from offline_methods.SCAR.SpectralClusteringAcceleratedRobust import SCAR
@@ -316,12 +316,12 @@ def perform_clustering(data, algorithm, args):
 		                    seed=args["alg_seed"])
 		clustering = spectacl.fit_predict(data)
 		return clustering, None
-	elif algorithm == "dcf":
-		args = {"k": None, "beta": 0.4} | args
-
-		dcf_result = DCFcluster.train(X=np.array(data), k=args["k"], beta=args["beta"])
-		clustering = dcf_result.labels
-		return clustering, None
+	#elif algorithm == "dcf":
+	#	args = {"k": None, "beta": 0.4} | args
+#
+	#	dcf_result = DCFcluster.train(X=np.array(data), k=args["k"], beta=args["beta"])
+	#	clustering = dcf_result.labels
+	#	return clustering, None
 	elif algorithm == "mdbscan":
 		args = {"eps": 0.5, "min_samples": 5, "n_neighbors": 10, "t": 0.5} | args
 		clustering = MDBSCAN(np.array(data), eps=args["eps"], min_samples=args["min_samples"],
@@ -440,57 +440,57 @@ def perform_clustering(data, algorithm, args):
 		args = {"n_neighbors": 5} | args
 		clustering = RNNDBSCAN(k=args["n_neighbors"]).fit_predict(data)
 		return clustering, None
-	elif algorithm == "shade":
-		if args["embedding_size"] > len(data[0]):
-			return [-1]*len(data), None
-		args = {"batch_size": 500,
-             "autoencoder":  None,
-             "min_points": 5,
-             "use_complete_dc_tree": False,
-             "use_matrix_dc_distance": True,
-             "increase_inter_cluster_distance": False,
-             "pretrain_epochs": 0,
-             "pretrain_optimizer_params": {"lr": 1e-3},
-             "clustering_epochs": 100,
-             "clustering_optimizer_params": {"lr": 1e-3},
-             "embedding_size": 10,
-             "optimizer_class": torch.optim.Adam,
-             "loss_fn": torch.nn.MSELoss(),
-             "custom_dataloaders": None,
-             "standardize": True,
-             "standardize_axis":  0,
-             "cluster_algorithm": DCTree_Clusterer,
-             "cluster_algorithm_params": {},
-             "degree_of_reconstruction":  1.0,
-             "degree_of_density_preservation": 1.0} | args
-		if args["use_complete_dc_tree"] == 1:
-			args["use_complete_dc_tree"] = True
-		elif args["use_complete_dc_tree"] == 0:
-			args["use_complete_dc_tree"] = False
-		if args["use_matrix_dc_distance"] == 1:
-			args["use_matrix_dc_distance"] = True
-		elif args["use_matrix_dc_distance"] == 0:
-			args["use_matrix_dc_distance"] = False
-		if args["increase_inter_cluster_distance"] == 1:
-			args["increase_inter_cluster_distance"] = True
-		elif args["increase_inter_cluster_distance"] == 0:
-			args["increase_inter_cluster_distance"] = False
-		if args["standardize"] == 1:
-			args["standardize"] = True
-		elif args["standardize"] == 0:
-			args["standardize"] = False
-		clustering = SHADE(batch_size=args["batch_size"], autoencoder=args["autoencoder"], min_points=args["min_points"],
-		                   use_complete_dc_tree=args["use_complete_dc_tree"], use_matrix_dc_distance=args["use_matrix_dc_distance"],
-		                   increase_inter_cluster_distance=args["increase_inter_cluster_distance"], pretrain_epochs=args["pretrain_epochs"],
-		                   pretrain_optimizer_params=args["pretrain_optimizer_params"], clustering_epochs=args["clustering_epochs"],
-		                   clustering_optimizer_params=args["clustering_optimizer_params"], embedding_size=args["embedding_size"],
-		                   optimizer_class=args["optimizer_class"], loss_fn=args["loss_fn"], custom_dataloaders=args["custom_dataloaders"],
-		                   standardize=args["standardize"], standardize_axis=args["standardize_axis"], n_clusters=None,
-		                   cluster_algorithm=args["cluster_algorithm"], cluster_algorithm_params=args["cluster_algorithm_params"],
-		                   degree_of_reconstruction=args["degree_of_reconstruction"], degree_of_density_preservation=args["degree_of_density_preservation"],
-		                   random_state=args["alg_seed"]
-		                   ).fit_predict(np.array(data), None)
-		return clustering, None
+	# elif algorithm == "shade":
+	# 	if args["embedding_size"] > len(data[0]):
+	# 		return [-1]*len(data), None
+	# 	args = {"batch_size": 500,
+    #          "autoencoder":  None,
+    #          "min_points": 5,
+    #          "use_complete_dc_tree": False,
+    #          "use_matrix_dc_distance": True,
+    #          "increase_inter_cluster_distance": False,
+    #          "pretrain_epochs": 0,
+    #          "pretrain_optimizer_params": {"lr": 1e-3},
+    #          "clustering_epochs": 100,
+    #          "clustering_optimizer_params": {"lr": 1e-3},
+    #          "embedding_size": 10,
+    #          "optimizer_class": torch.optim.Adam,
+    #          "loss_fn": torch.nn.MSELoss(),
+    #          "custom_dataloaders": None,
+    #          "standardize": True,
+    #          "standardize_axis":  0,
+    #          "cluster_algorithm": DCTree_Clusterer,
+    #          "cluster_algorithm_params": {},
+    #          "degree_of_reconstruction":  1.0,
+    #          "degree_of_density_preservation": 1.0} | args
+	# 	if args["use_complete_dc_tree"] == 1:
+	# 		args["use_complete_dc_tree"] = True
+	# 	elif args["use_complete_dc_tree"] == 0:
+	# 		args["use_complete_dc_tree"] = False
+	# 	if args["use_matrix_dc_distance"] == 1:
+	# 		args["use_matrix_dc_distance"] = True
+	# 	elif args["use_matrix_dc_distance"] == 0:
+	# 		args["use_matrix_dc_distance"] = False
+	# 	if args["increase_inter_cluster_distance"] == 1:
+	# 		args["increase_inter_cluster_distance"] = True
+	# 	elif args["increase_inter_cluster_distance"] == 0:
+	# 		args["increase_inter_cluster_distance"] = False
+	# 	if args["standardize"] == 1:
+	# 		args["standardize"] = True
+	# 	elif args["standardize"] == 0:
+	# 		args["standardize"] = False
+	# 	clustering = SHADE(batch_size=args["batch_size"], autoencoder=args["autoencoder"], min_points=args["min_points"],
+	# 	                   use_complete_dc_tree=args["use_complete_dc_tree"], use_matrix_dc_distance=args["use_matrix_dc_distance"],
+	# 	                   increase_inter_cluster_distance=args["increase_inter_cluster_distance"], pretrain_epochs=args["pretrain_epochs"],
+	# 	                   pretrain_optimizer_params=args["pretrain_optimizer_params"], clustering_epochs=args["clustering_epochs"],
+	# 	                   clustering_optimizer_params=args["clustering_optimizer_params"], embedding_size=args["embedding_size"],
+	# 	                   optimizer_class=args["optimizer_class"], loss_fn=args["loss_fn"], custom_dataloaders=args["custom_dataloaders"],
+	# 	                   standardize=args["standardize"], standardize_axis=args["standardize_axis"], n_clusters=None,
+	# 	                   cluster_algorithm=args["cluster_algorithm"], cluster_algorithm_params=args["cluster_algorithm_params"],
+	# 	                   degree_of_reconstruction=args["degree_of_reconstruction"], degree_of_density_preservation=args["degree_of_density_preservation"],
+	# 	                   random_state=args["alg_seed"]
+	# 	                   ).fit_predict(np.array(data), None)
+	# 	return clustering, None
 
 	else:
 		raise NotImplementedError

@@ -14,21 +14,18 @@ from sklearn.cluster import KMeans
 import utils
 from competitors.EmCStream import EmcStream
 from competitors.MCMSTStream import MCMSTStream
-from competitors.MuDi import MuDiDataPoint, MudiHandler
+#from competitors.MuDi import MuDiDataPoint, MudiHandler
 from competitors.dbstream import DBSTREAM
 from competitors.denstream import DenStream
-from competitors.dstream import DStreamClusterer
+#from competitors.dstream import DStreamClusterer
 from competitors.gbfuzzystream.MBStream import MBStreamHandler
 
 from competitors.full_dataset_learner import full_dataset_leaner
 from competitors.streamkmeans import STREAMKMeans
 from evaluate import getMetrics
-import mlflow_logger
-from competitors.clustream import CluStream, CluStreamMicroCluster
+from competitors.clustream import CluStream
 from datahandler import load_data
-from method.CircSCOPE import CircSCOPE
-# from method.SCOPE import SCOPE
-from method.offlineHandler import OPECluStream, perform_clustering, \
+from method.offlineHandler import perform_clustering, \
 	WCluStream, SCOPE, ScaledCluStream  # , SCOPE_Offline
 from utils import make_param_dicts, dps_to_np, dict_to_np
 import numpy as np
@@ -175,14 +172,14 @@ def main(args):
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
 	parser.add_argument('--offline', default=1000, type=int, help='Timesteps for offline phase')
-	parser.add_argument('--method', default="scaledclustream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--sumlimit', default=100, type=int, help='Number of micro-clusters/summarizing structures')
 	parser.add_argument('--gennum', default=1000, type=int, help='Scale of generated points')
-	parser.add_argument('--gpu', default=0, type=int, help='GPU usage')
+	#parser.add_argument('--gpu', default=0, type=int, help='GPU usage')
 	parser.add_argument('--category', default="all", type=str, help='Offline algorithm category')
 	# parser.add_argument('--seed', default=0, type=int, help='Seed')
 	parser.add_argument('--startindex', default=0, type=int, help='Start index for parameter configuration')
-	parser.add_argument('--endindex', default=100000000, type=int, help='End index for parameter configuration')
+	parser.add_argument('--endindex', default=np.inf, type=int, help='End index for parameter configuration')
 	parser.add_argument('--automl', default=1, type=int, help='Use AutoML parameters rather than grid search')
 	parser.add_argument('--used_full', default=1, type=int, help='If AutoML used subsampled data or the full dataset')
 
@@ -506,29 +503,29 @@ def main(args):
 		elif args.method == "streamkmeans":
 			method = STREAMKMeans(n_clusters=args.class_num, chunk_size=param_dict["chunk_size"],
 			                      sigma=param_dict["sigma"], mu=param_dict["mu"], seed=param_dict["seed"])
-		elif args.method == "dstream":
-			domains_per_dimension = [(0, 1)] * dim
-			partitions_per_dimension = [param_dict["partitions_count"]] * dim
-			method = DStreamClusterer(initial_cluster_count=args.class_num, seed=param_dict["seed"],
-			                          dense_threshold_parameter=param_dict["dense_threshold_parameter"],
-			                          sparse_threshold_parameter=param_dict["sparse_threshold_parameter"],
-			                          sporadic_threshold_parameter=param_dict["sporadic_threshold_parameter"],
-			                          decay_factor=param_dict["decay_factor"],
-			                          gap=param_dict["gap"],
-			                          domains_per_dimension=domains_per_dimension,
-			                          partitions_per_dimension=partitions_per_dimension,
-			                          dimensions=dim)
-		elif args.method == "mudistream":
-			mini = 0
-			maxi = 1
-
-			method = MudiHandler(mini=mini, maxi=maxi,
-			                     dimension=dim,
-			                     lamda=param_dict["lamda"],
-			                     gridGranuality=param_dict["gridgran"],
-			                     alpha=param_dict["alpha"],
-			                     minPts=param_dict["minPts"],
-			                     seed=param_dict["seed"])
+		#elif args.method == "dstream":
+		#	domains_per_dimension = [(0, 1)] * dim
+		#	partitions_per_dimension = [param_dict["partitions_count"]] * dim
+		#	method = DStreamClusterer(initial_cluster_count=args.class_num, seed=param_dict["seed"],
+		#	                          dense_threshold_parameter=param_dict["dense_threshold_parameter"],
+		#	                          sparse_threshold_parameter=param_dict["sparse_threshold_parameter"],
+		#	                          sporadic_threshold_parameter=param_dict["sporadic_threshold_parameter"],
+		#	                          decay_factor=param_dict["decay_factor"],
+		#	                          gap=param_dict["gap"],
+		#	                          domains_per_dimension=domains_per_dimension,
+		#	                          partitions_per_dimension=partitions_per_dimension,
+		#	                          dimensions=dim)
+		#elif args.method == "mudistream":
+		#	mini = 0
+		#	maxi = 1
+		#
+		#	method = MudiHandler(mini=mini, maxi=maxi,
+		#	                     dimension=dim,
+		#	                     lamda=param_dict["lamda"],
+		#	                     gridGranuality=param_dict["gridgran"],
+		#	                     alpha=param_dict["alpha"],
+		#	                     minPts=param_dict["minPts"],
+		#	                     seed=param_dict["seed"])
 		elif args.method == "gbfuzzystream" or args.method == "gbfuzzystream100" or args.method == "gbfuzzystream1000":
 			method = MBStreamHandler(lam=param_dict["lam"],
 			                         batchsize=param_dict["batchsize"],
@@ -556,8 +553,8 @@ def main(args):
 			y = Y[i]
 			if needs_dict:
 				dp = dict(enumerate(x))
-			elif args.method == "mudistream":
-				dp = [MuDiDataPoint(X[i].tolist(), i)]
+			#elif args.method == "mudistream":
+		    #	dp = [MuDiDataPoint(X[i].tolist(), i)]
 			else:
 				dp = x
 			dp_store.append(dp)
@@ -596,6 +593,8 @@ def main(args):
 					#np.save(f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}_base", pred_store_step[i])
 
 					dp_store_step[i] = copy(dp_store)
+					#np.save(f"temp/data_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}_base", dp_store_step[i])
+
 					y_store_step[i] = copy(y_store)
 					assign_step[i] = copy(assign_store)
 
