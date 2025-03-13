@@ -50,80 +50,15 @@ def select_subset(dataset, ratio):
 		np.save(f"./data/rand_subset/X_{dataset}_subset_{num}_{seed}.npy", X_rand_subset)
 		np.save(f"./data/rand_subset/y_{dataset}_subset_{num}_{seed}.npy", y_rand_subset)
 
-"""
-	generator = np.random.Generator(PCG64(seed))
-	weighted_subset_indices = []
-
-	for i in range(len(uniques)):
-		weight = uniquenum[i]/len(y) * num
-		print(weight)
-		weight = round(weight)
-		print(weight)
-		label = uniques[i]
-		weighted_subset_indices.extend(generator.choice(np.array(range(len(X)))[label == y], size=weight, replace=False).tolist())
-
-	X_weighted_subset, y_weighted_subset = X[weighted_subset_indices], y[weighted_subset_indices]
-	print("----")
-	uniques_weighted_subset, uniquenum_weighted_subset = np.unique(y_weighted_subset, return_counts=True)
-	unique_dict_weighted_subset = {}
-	for i in range(len(uniques_weighted_subset)):
-		unique_dict_weighted_subset[uniques_weighted_subset[i]] = uniquenum_weighted_subset[i]
-	for i in range(len(uniques)):
-		if uniques[i] not in uniques_weighted_subset:
-			unique_dict_weighted_subset[uniques[i]] = 0
-	#https://stackoverflow.com/questions/9001509/how-do-i-sort-a-dictionary-by-key/47017849#47017849
-	unique_dict_weighted_subset = dict(sorted(unique_dict_weighted_subset.items()))
-	print(unique_dict_weighted_subset)
-
-	plt.figure(figsize=(20, 10))
-	plt.bar(list(unique_dict_full.keys()), height = list(unique_dict_full.values()), width=0.8)
-	plt.bar(np.array(list(unique_dict_weighted_subset.keys())), height = np.array(list(unique_dict_weighted_subset.values()))*scale, width=0.6)
-	plt.bar(np.array(list(unique_dict_weighted_subset.keys())), height = list(unique_dict_weighted_subset.values()), width=0.4)
-	plt.show()
-
-	print(len(y_weighted_subset))
-
-	np.save(f"./data/weighted_subset/X_{dataset}_{num}.npy", X_weighted_subset)
-	np.save(f"./data/weighted_subset/y_{dataset}_{num}.npy", y_weighted_subset)
-
-	generator = np.random.Generator(PCG64(seed))
-	start_index = generator.choice(len(X)-num, 1)[0]
-	print(start_index)
-	subsequence_indices = range(start_index,start_index+num)
-
-	X_subsequence, y_subsequence = X[subsequence_indices], y[subsequence_indices]
-	print("----")
-	uniques_subsequence, uniquenum_subsequence = np.unique(y_subsequence, return_counts=True)
-	unique_dict_subsequence = {}
-	for i in range(len(uniques_subsequence)):
-		unique_dict_subsequence[uniques_subsequence[i]] = uniquenum_subsequence[i]
-	for i in range(len(uniques)):
-		if uniques[i] not in uniques_subsequence:
-			unique_dict_subsequence[uniques[i]] = 0
-	#https://stackoverflow.com/questions/9001509/how-do-i-sort-a-dictionary-by-key/47017849#47017849
-	unique_dict_subsequence = dict(sorted(unique_dict_subsequence.items()))
-	print(unique_dict_subsequence)
-
-	plt.figure(figsize=(20, 10))
-	plt.bar(list(unique_dict_full.keys()), height = list(unique_dict_full.values()), width=0.8)
-	plt.bar(np.array(list(unique_dict_subsequence.keys())), height = np.array(list(unique_dict_subsequence.values()))*scale, width=0.6)
-	plt.bar(np.array(list(unique_dict_subsequence.keys())), height = list(unique_dict_subsequence.values()), width=0.4)
-	plt.show()
-
-	print(len(y_subsequence))
-
-	np.save(f"./data/subsequence/X_{dataset}_{num}.npy", X_subsequence)
-	np.save(f"./data/subsequence/y_{dataset}_{num}.npy", y_subsequence)"""
-
 
 if __name__ == '__main__':
-	#select_subset("kddcup", 0.01)
+	select_subset("kddcup", 0.01)
 	#select_subset("covertype", 0.02)
-	#select_subset("powersupply", 0.2)
-	#select_subset("gassensor", 0.5)
+	select_subset("powersupply", 0.2)
+	select_subset("gassensor", 0.5)
 	#select_subset("rotatinghyperplane", 0.05)
 	#select_subset("movingrbf", 0.05)
-	#select_subset("rbf3", 0.2)
+	select_subset("rbf3", 0.2)
 	#select_subset("starlight", 0.5)
 	#select_subset("letter", 0.25)
 	#select_subset("electricity", 0.15)
