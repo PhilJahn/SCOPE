@@ -5,24 +5,101 @@ It is based on code from the [River Stream learning repository](https://github.c
 
 ## Usage
 
-The main code used to perform the evaluation is ```runMethod.py```. It allows for the execution of both the CluStream variants and the competitors. CluStream, DenStream, DBSTREAM, and STREAMKmeans come from the River repository and are included as is. The other competitors need to be obtained from their repositories as linked below in the section **External Content**. They require some modification to use the functions called for them (specifically learn_one/learn and predict_one/predict).
+The main code used to perform the evaluation is ```runMethod.py```. It allows for the execution of both the CluStream variants and the competitors. CluStream, DenStream, DBSTREAM, and STREAMKmeans come from the River repository and are included as is. The other competitors need to be obtained from their repositories as linked below. They require some modification to use the functions called for them (specifically learn_one/learn and predict_one/predict).
 The main method has several parameters that allow for c
 
 | **Parameter**        | **Default Value** | **Function**                                                                                                                                                                                                                                                                      |
 |----------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | --method                  | clustream          | Stream Clustering method to evaluate (CluStream-W is ```wclustream```, CluStream-S is ```scaledclustream```, CluStream-G is ```scope_full```)  |
-| --ds                  | complex9          | Dataset to perform the experiments one  |
+| --ds                  | complex9          | Dataset to perform the experiments on  |
 | --offline                  | 1000          | Timesteps for offline phase/for evaluation  |
 | --sumlimit                  | 100          | Maximal number of micro-clusters  |
 | --gennum                  | 1000          | Approximate number of points that CluStream-S and CluStream-G produce  |
-| --category                  | all | Which offline algorithms to include (For the paper, we used ```all``` for all offline algorithms, ```not_projdipmeans``` to run everything but Projected Dip-Means or the keys for the specific offline clustering methods) |
+| --category                  | all | Which offline algorithms to include (For the paper, we used ```all``` for all offline algorithms, ```not_projdipmeans``` to run everything but Projected Dip-Means or the keys for the specific offline clustering methods); aside from that there are options to choose all centroid-based methods with ```means```, all centroid-based methods without k-estimation with ```nkestmeans```, all centroid-based methods with k-estimation with ```kestmeans```, all Spectral Clustering methods with ```spectral```, all density-connectivity-based methods with ```denscon```, all non-density-connectivity-based density-based methods with ```density``` and all density-based approaches with ```density_all``` |
 | --startindex  | 0          | Starting index for configuration (to only run on a subset of all parameters), inclusive |
 | --endindex                  | np.inf        | Stopping index for configuration (to only run on a subset of all parameters), inclusive |
 | --automl                  | 1         | Whether to use parameters obtained through AutoML or to perform a grid search (requires a parameter dictionary for the desired  dataset and stream clustering setup), Integer Boolean  |
 | --used_full                  | 1          | Whether AutoML used subsampled data or the full dataset, Integer Boolean  |
 
+The method ```file_handler.py```processes the run results into a more manageable format (but needs manual changes for the moment). 
+The produced dictionaries for the experiments performed for the paper are available in the folder ```dicts```.
+
+## AutoML
+
+The AutoML parameter optimization pipeline is based on [SMAC3](https://github.com/automl/SMAC3).
+The subsets are produced with ```subset_selector.py```. The settings used are automatically executed if the file is run, though the respective datasets must be downloaded first (aside from DENSIRED-10, which is already included in this repository).
+To optimize the stream clustering parameters, the code ```parameter_estimator.py``` needs to be run, which has the following parameters.
+
+| **Parameter**        | **Default Value** | **Function**                                                                                                                                                                                                                                                                      |
+|----------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --method                  | clustream          | Stream Clustering method to optimize. For any online-offline CluStream variant, use ```clustream```, otherwise use the method keys |
+| --ds                  | complex9          | Dataset to perform the optimization on  |
+| --use_full                  | 1          | Whether to use the full dataset or subsets, Integer Boolean  |
+| --subset                  | -1          | If a specific subset number is meant to be run (will use 0 to 4 if -1 is given) |
+
+To perform offline optimization for any CluStream variant, use ```clustream_microclusterer.py``` first to get the micro-clusters. This will produce mc and assign files in the ```param_data```-folder.
+
+
+| **Parameter**        | **Default Value** | **Function**                                                                                                                                                                                                                                                                      |
+|----------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --ds                  | complex9          | Dataset to perform the optimization on  |
+| --use_full                  | 1          | Whether to use the full dataset or subsets, Integer Boolean  |
+
+Afterwards, it is possible to run the offline optimization with ```parameter_estimator_offline.py```
+
+
+| **Parameter**        | **Default Value** | **Function**  |
+|----------------------|-------------|--------------------------------------------------|
+| --method                  | clustream          | CluStream variant to optimize for. Use the method keys. |
+| --offline                  | kmeans          | Offline method to optimize. Use method keys.  |
+| --ds                      | complex9          | Dataset to perform the optimization on  |
+| --use_full                | 1          | Whether to use the full dataset or subsets, Integer Boolean  |
+
+## Stream Clustering Methods
+
+The paper was set up with several competitors as well as its own methods
+
+| **Name**        | **Key** | **Where to get**  |
+|----------------------|-------------|--------------------------------------------------|
+| CluStream                  | clustream          | included, originally based on [River](https://github.com/online-ml/river). |
+| CluStream-W                  | wclustream          | included |
+| CluStream-S                  | scaledclustream          | included |
+| CluStream-G                  | scope_full          | included |
+| CluStream-O var. k           | clustream_no_offline          | included |
+| CluStream-O fixed k           | clustream_no_offline_fixed          | included |
+| STREAMKmeans                  | streamkmeans          | included, originally from [River](https://github.com/online-ml/river) |
+| DenStream                  | denstream          | included, originally from [River](https://github.com/online-ml/river) |
+| DBSTREAM                  | dbstream          | included, originally from [River](https://github.com/online-ml/river) |
+| EMCStream | emcstream | [EMCStream repository](https://gitlab.com/alaettinzubaroglu/emcstream), modification required |
+| MCMSTStream | mcmststream | [MCMSTStream repository](https://github.com/senolali/MCMSTStream), modification required |
+| GB-FuzzyStream | gbfuzzystream | [GB-FuzzyStream repository](https://github.com/xjnine/GBFuzzyStream), modification required |
+
+
+## Offline Clustering
+
+This repository allows for 14 offline clustering methods to be used (additional ones are partially set up, but were excluded from the paper early on and as such may be incomplete)
+
+| **Name**        | **Key** | **Where to get**  |
+|----------------------|-------------|--------------------------------------------------|
+| k-Means                  | kmeans          | [Scikit-Learn](https://scikit-learn.org) |
+| Weighted k-Means                  | wkmeans          | [Scikit-Learn](https://scikit-learn.org) |
+| SubkMeans                  | subkmeans          | [ClustPy](https://github.com/collinleiber/ClustPy) |
+| XMeans                  | xmeans          | [ClustPy](https://github.com/collinleiber/ClustPy) |
+| Projected Dip-Means                  | projdipmeans          | [ClustPy](https://github.com/collinleiber/ClustPy) |
+| Spectral Clustering                  | spectral          | [Scikit-Learn](https://scikit-learn.org) |
+| SCAR                 | scar          | [SCAR repository](https://github.com/SpectralClusteringAcceleratedRobust/SCAR) (extract into folder ```offline_methods/SCAR```)|
+| SpectACl                 | spectacl          | [SpectACl repository](https://bitbucket.org/Sibylse/spectacl) (extract into folder ```offline_methods/spectacl```)|
+| DBSCAN                 | dbscan          | [Scikit-Learn](https://scikit-learn.org) |
+| HDBSCAN                 | hdbscan          | [Scikit-Learn](https://scikit-learn.org) |
+| RNN-DBSCAN                 | rnndbscan          | already in repository in folder ```offline_methods``` |
+| MDBSCAN                 | mdbscan          | already in repository in folder ```offline_methods``` |
+| DPC                 | dpca          | [DPCA repository](https://github.com/colinwke/dpca) (take the ```cluster.py```-file, rename it to ```DPC.py``` and put it into the folder ```offline_methods/DPC```)|
+| SNN-DPC                 | snndpc          | [SNN-DPC repository](https://github.com/liurui39660/SNNDPC) (take the ```SNNDPC.py```-file and put it into the folder ```offline_methods```)|
+| DBHD                 | dbhd          | already in repository in folder ```offline_methods``` |
+| CluStream-O k=100/x | nooffline | included, only available for CluStream |
+
 
 ## External Content
 
 
-Additional datasets were taken from the [USP DS repository](https://sites.google.com/view/uspdsrepository) and [Tomas Barton's Clustering benchmark repository](https://github.com/deric/clustering-benchmark).
+Additional datasets were taken from the [USP DS repository](https://sites.google.com/view/uspdsrepository), [Computational Intelligence Group @ UFSCar's data stream repository](https://github.com/CIG-UFSCar/DS_Datasets) and [Tomas Barton's Clustering benchmark repository](https://github.com/deric/clustering-benchmark).
