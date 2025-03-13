@@ -12,17 +12,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import utils
-from competitors.clustream import CluStream
-from competitors.EmCStream import EmcStream
-from competitors.MCMSTStream import MCMSTStream
-from competitors.MuDi import MuDiDataPoint, MudiHandler
-from competitors.dbstream import DBSTREAM
-from competitors.denstream import DenStream
-from competitors.dstream import DStreamClusterer
-from competitors.gbfuzzystream.MBStream import MBStreamHandler
-
-from competitors.full_dataset_learner import full_dataset_leaner
-from competitors.streamkmeans import STREAMKMeans
 from datahandler import load_data, read_subset
 from evaluate import getMetrics
 from method.offlineHandler import perform_clustering, DataReconstructor
