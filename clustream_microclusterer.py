@@ -131,9 +131,10 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
-	parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
+	#parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--use_full', default=1, type=int, help='Use full datset')
 	args = parser.parse_args()
+	args.method = "clustream"
 	print(args, flush=True)
 
 	data_name = args.ds
