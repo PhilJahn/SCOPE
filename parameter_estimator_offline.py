@@ -421,9 +421,9 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
-	parser.add_argument('--method', default="wclustream", type=str, help='Stream Clustering Method')
-	parser.add_argument('--offline', default="snndpc", type=str, help='Offline Clustering Method')
-	parser.add_argument('--use_full', default=0, type=int, help='Use full datset')
+	parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
+	parser.add_argument('--offline', default="kmeans", type=str, help='Offline Clustering Method')
+	parser.add_argument('--use_full', default=1, type=int, help='Use full datset')
 
 	args = parser.parse_args()
 	print(args, flush=True)
