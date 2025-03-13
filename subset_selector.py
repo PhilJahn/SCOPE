@@ -54,7 +54,7 @@ def select_subset(dataset, ratio):
 if __name__ == '__main__':
 	select_subset("kddcup", 0.01)
 	#select_subset("covertype", 0.02)
-	select_subset("powersupply", 0.2)
+	#select_subset("powersupply", 0.2)
 	select_subset("gassensor", 0.5)
 	#select_subset("rotatinghyperplane", 0.05)
 	#select_subset("movingrbf", 0.05)
