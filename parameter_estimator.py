@@ -400,22 +400,6 @@ emcstream_ari_threshold_step = Float("ari_threshold_step", (0.0001, 0.01), defau
 emcstream_space.add([emcstream_horizon, emcstream_ari_threshold, emcstream_ari_threshold_step])
 configspaces["emcstream"] = emcstream_space
 
-emcstream_lim_space = ConfigurationSpace()
-emcstream_lim_horizon = Integer("horizon", (10, 100), default=100)
-emcstream_lim_space.add([emcstream_lim_horizon, emcstream_ari_threshold, emcstream_ari_threshold_step])
-configspaces["emcstream_lim"] = emcstream_lim_space
-
-emcstream_f_space = ConfigurationSpace()
-emcstream_f_horizon = Constant("horizon", 1000)
-emcstream_f_space.add([emcstream_f_horizon, emcstream_ari_threshold, emcstream_ari_threshold_step])
-configspaces["emcstream_fixed"] = emcstream_f_space
-
-emcstream_lim2_space = ConfigurationSpace()
-emcstream_lim2_horizon = Integer("horizon", (2, 20), default=20)
-emcstream_lim2_space.add([emcstream_lim2_horizon, emcstream_ari_threshold, emcstream_ari_threshold_step])
-configspaces["emcstream_lim2"] = emcstream_lim2_space
-
-
 mcmststream_space = ConfigurationSpace()
 mcmststream_W = Integer("W", (100, 2000), default=235)
 # should only be 100 probably
@@ -424,21 +408,6 @@ mcmststream_r = Float("r", (0.001, 0.25), default=0.033, log=True)
 mcmststream_n_micro = Integer("n_micro", (2, 25), default=2)
 mcmststream_space.add([mcmststream_W, mcmststream_N, mcmststream_r, mcmststream_n_micro])
 configspaces["mcmststream"] = mcmststream_space
-
-mcmststream_lim_space = ConfigurationSpace()
-mcmststream_lim_W = Integer("W", (10, 1000), default=235)
-mcmststream_lim_space.add([mcmststream_lim_W, mcmststream_N, mcmststream_r, mcmststream_n_micro])
-configspaces["mcmststream_lim"] = mcmststream_lim_space
-
-mcmststream_f_space = ConfigurationSpace()
-mcmststream_f_W = Constant("W", 1000)
-mcmststream_f_space.add([mcmststream_f_W, mcmststream_N, mcmststream_r, mcmststream_n_micro])
-configspaces["mcmststream_fixed"] = mcmststream_f_space
-
-mcmststream_lim2_space = ConfigurationSpace()
-mcmststream_lim2_W = Integer("W", (10, 100), default=100)
-mcmststream_lim2_space.add([mcmststream_lim_W, mcmststream_N, mcmststream_r, mcmststream_n_micro])
-configspaces["mcmststream_lim2"] = mcmststream_lim2_space
 
 mudistream_space = ConfigurationSpace()
 mudistream_lamda = Float("lamda", (0.03, 32), log=True, default=0.5)
@@ -486,13 +455,6 @@ trainmethods["mcmststream"] = train_mcmststream
 trainmethods["mudistream"] = train_mudistream
 trainmethods["dstream"] = train_dstream
 trainmethods["gbfuzzystream"] = train_gbfuzzystream
-
-trainmethods["emcstream_lim"] = train_emcstream
-trainmethods["mcmststream_lim"] = train_mcmststream
-trainmethods["emcstream_lim2"] = train_emcstream
-trainmethods["mcmststream_lim2"] = train_mcmststream
-trainmethods["emcstream_fixed"] = train_emcstream
-trainmethods["mcmststream_fixed"] = train_mcmststream
 # 86400 * 5
 def run_parameter_estimation(method, time_budget, seed):
 	print("Checksum:", np.sum(labels), " Time Budget:", time_budget)
