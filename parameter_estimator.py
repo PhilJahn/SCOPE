@@ -392,17 +392,13 @@ configspaces["streamkmeans"] = streamkmeans_space
 
 emcstream_space = ConfigurationSpace()
 emcstream_horizon = Integer("horizon", (10, 1000), default=100)
-# should only be 20 or 100
 emcstream_ari_threshold = Float("ari_threshold", (0.5, 1), default=1.0)
-# emcstream_ari_threshold = Constant("ari_threshold", 1.0)
 emcstream_ari_threshold_step = Float("ari_threshold_step", (0.0001, 0.01), default=0.001, log=True)
-# emcstream_ari_threshold_step = Constant("ari_threshold_step", 0.001)
 emcstream_space.add([emcstream_horizon, emcstream_ari_threshold, emcstream_ari_threshold_step])
 configspaces["emcstream"] = emcstream_space
 
 mcmststream_space = ConfigurationSpace()
 mcmststream_W = Integer("W", (100, 2000), default=235)
-# should only be 100 probably
 mcmststream_N = Integer("N", (2, 15), default=5)
 mcmststream_r = Float("r", (0.001, 0.25), default=0.033, log=True)
 mcmststream_n_micro = Integer("n_micro", (2, 25), default=2)
