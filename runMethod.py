@@ -418,10 +418,10 @@ def main(args):
 				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "spectral":
 					offlinemethods.append("spectral")
 					# -- {scar} --
-					offlinemethods.append("scar")
+					#offlinemethods.append("scar")
 					# -- {scar} --
 					# -- {spectacl} --
-					offlinemethods.append("spectacl")
+					#offlinemethods.append("spectacl")
 					# -- {spectacl} --
 				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "means" or args.category == "kestmeans":
 					offlinemethods.append("xmeans")
