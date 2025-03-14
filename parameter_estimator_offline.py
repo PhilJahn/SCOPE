@@ -409,7 +409,7 @@ def import_mcs(data_name, full_data=None):
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
+	parser.add_argument('--ds', default="densired10", type=str, help='Used stream data set')
 	parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--offline', default="kmeans", type=str, help='Offline Clustering Method')
 	parser.add_argument('--use_full', default=1, type=int, help='Use full datset')
