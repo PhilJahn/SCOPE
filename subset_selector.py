@@ -52,15 +52,14 @@ def select_subset(dataset, ratio):
 
 
 if __name__ == '__main__':
-	select_subset("kddcup", 0.01)
-	#select_subset("covertype", 0.02)
-	#select_subset("powersupply", 0.2)
-	select_subset("gassensor", 0.5)
-	#select_subset("rotatinghyperplane", 0.05)
-	#select_subset("movingrbf", 0.05)
-	select_subset("rbf3", 0.2)
-	#select_subset("starlight", 0.5)
-	#select_subset("letter", 0.25)
-	#select_subset("electricity", 0.15)
+	# --{kddcup} --
+	#select_subset("kddcup", 0.01)
+	# --{kddcup} --
+	# --{gassensor} --
+	#select_subset("gassensor", 0.5)
+	# --{gassensor} --
+	# --{rbf3} --
+	#select_subset("rbf3", 0.2)
+	# --{rbf3} --
 	select_subset("densired10", 0.5)
 
