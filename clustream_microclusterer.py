@@ -1,5 +1,6 @@
 import argparse
 import copy
+import os
 
 from ConfigSpace.hyperparameters import FloatHyperparameter
 from smac import HyperparameterOptimizationFacade, Scenario
@@ -98,6 +99,9 @@ def get_clustering_learn_one(clustering_method):
 	ami = float(np.mean(amis))
 	ari = float(np.mean(aris))
 	acc = float(np.mean(accs))
+
+	if not os.path.exists("param_data"):
+		os.mkdir("param_data")
 
 	np.save(f"param_data/assign_{data_name}", assignments)
 	np.save(f"param_data/mcs_{data_name}", mcs)

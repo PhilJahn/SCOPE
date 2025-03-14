@@ -1,5 +1,6 @@
 import argparse
 import copy
+import os
 
 from ConfigSpace.hyperparameters import FloatHyperparameter
 from numpy.random import PCG64
@@ -429,7 +430,8 @@ if __name__ == '__main__':
 	#else:
 	#	time_budget = 3600
 
-
+	if not os.path.exists("param_logs"):
+		os.mkdir("param_logs")
 	if args.use_full:
 		seed_num = 2
 		time_budget = 86400

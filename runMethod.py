@@ -379,6 +379,8 @@ def main(args):
 	else:
 		param_dicts = make_param_dicts(param_vals)
 	j = 0
+	if not os.path.exists("run_logs"):
+		os.mkdir("run_logs")
 	if args.category == "all" and args.startindex == 0:
 		f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}.txt', 'w',
 		         newline='\n',
