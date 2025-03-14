@@ -200,7 +200,7 @@ def main(args):
 
 	args = parser.parse_args()
 	method_name = args.method
-	args.gpu = args.gpu == 1
+	args.gpu = False
 	args.automl = args.automl == 1
 
 	print(args, flush=True)
