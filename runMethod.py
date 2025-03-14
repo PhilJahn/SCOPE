@@ -16,14 +16,14 @@ import utils
 #from competitors.EmCStream import EmcStream
 # -- {emcstream} --
 # -- {mcmststream} --
-from competitors.MCMSTStream import MCMSTStream
+#from competitors.MCMSTStream import MCMSTStream
 # -- {mcmststream} --
 #from competitors.MuDi import MuDiDataPoint, MudiHandler
 from competitors.dbstream import DBSTREAM
 from competitors.denstream import DenStream
 #from competitors.dstream import DStreamClusterer
 # -- {gbfuzzystream} --
-from competitors.gbfuzzystream.MBStream import MBStreamHandler
+#from competitors.gbfuzzystream.MBStream import MBStreamHandler
 # -- {gbfuzzystream} --
 
 
