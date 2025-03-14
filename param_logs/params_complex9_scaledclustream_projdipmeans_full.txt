@@ -1,0 +1,3 @@
+{'allow_merging': 'table', 'n_random_projections': 0, 'n_split_trials': 10, 'significance': 0.001};-;-;-;-
+{'allow_merging': 'bootstrap', 'n_random_projections': 0, 'n_split_trials': 4, 'significance': 0.0001001177073};0.7250763929741031;2567;0.725076392974103;{'accuracy': 0.22005938634114153, 'ARI': 0.14043976859003923, 'AMI': 0.5846366243840637}
+{'allow_merging': 'bootstrap', 'n_random_projections': 0, 'n_split_trials': 23, 'significance': 0.0001400500048};0.6765421860839913;1681;0.6775056950858419;{'accuracy': 0.17749917518970637, 'ARI': 0.11471606784347617, 'AMI': 0.5627896272423657}

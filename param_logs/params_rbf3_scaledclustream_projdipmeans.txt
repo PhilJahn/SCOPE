@@ -1,0 +1,7 @@
+{'allow_merging': 'table', 'n_random_projections': 0, 'n_split_trials': 10, 'significance': 0.001};-;-;-;-
+{'allow_merging': 'bootstrap', 'n_random_projections': 0, 'n_split_trials': 7, 'significance': 0.0001391564895};0.5730431739909971;272;0.5735871142644806;{'accuracy': 0.172625, 'ARI': 0.13152036089254635, 'AMI': 0.44206675337193424}
+{'allow_merging': 'function', 'n_random_projections': 0, 'n_split_trials': 2, 'significance': 0.000112238632};0.6647486758918713;226;0.6647486758918711;{'accuracy': 0.248875, 'ARI': 0.19970882956306585, 'AMI': 0.4650398463288053}
+{'allow_merging': 'table', 'n_random_projections': 0, 'n_split_trials': 14, 'significance': 0.0001013680114};0.6113489086900528;284;0.6118879779485723;{'accuracy': 0.185875, 'ARI': 0.14790195658765537, 'AMI': 0.46398602136091693}
+{'allow_merging': 'function', 'n_random_projections': 0, 'n_split_trials': 22, 'significance': 0.0001383852927};0.6167550896441678;260;0.6167550896441678;{'accuracy': 0.18737500000000004, 'ARI': 0.1565468024637795, 'AMI': 0.46020828718038825}
+{'allow_merging': 'table', 'n_random_projections': 0, 'n_split_trials': 25, 'significance': 0.0001030874597};0.5707478903369383;213;0.5707478903369383;{'accuracy': 0.16525, 'ARI': 0.12537640318199367, 'AMI': 0.44537148715494457}
+{'allow_merging': 'table', 'n_random_projections': 0, 'n_split_trials': 3, 'significance': 0.0001525400373};0.6057470587815332;304;0.6057470587815332;{'accuracy': 0.190625, 'ARI': 0.14928208497432635, 'AMI': 0.45646497380720685}
