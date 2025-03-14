@@ -1,3 +1,0 @@
-{'allow_merging': False, 'check_global_score': True, 'n_clusters_init': 2, 'n_split_trials': 10};-;-;-;-
-{'allow_merging': True, 'check_global_score': False, 'n_clusters_init': 16, 'n_split_trials': 4};0.6438964843090722;2533;0.6498983201657034;{'accuracy': 0.18970636753546688, 'ARI': 0.11055165573355823, 'AMI': 0.5393466644321452}
-{'allow_merging': True, 'check_global_score': False, 'n_clusters_init': 9, 'n_split_trials': 2};0.6389028974101811;1743;0.6389028974101811;{'accuracy': 0.16595183107885184, 'ARI': 0.10197195373331308, 'AMI': 0.536930943676868}

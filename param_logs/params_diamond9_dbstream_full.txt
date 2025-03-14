@@ -1,2 +1,0 @@
-{'cleanup_interval': 2, 'clustering_threshold': 1.0, 'fading_factor': 0.01, 'intersection_factor': 0.3, 'minimum_weight': 1.0};-;-;-;-
-{'cleanup_interval': 100, 'clustering_threshold': 0.2706723626702, 'fading_factor': 0.0077827663969, 'intersection_factor': 0.4696871047319, 'minimum_weight': 4.8692209771886};1.8781517997409083;15647;1.8781517997409083;{'accuracy': 0.972333333333333, 'ARI': 0.9395331530720623, 'AMI': 0.938618646668846}

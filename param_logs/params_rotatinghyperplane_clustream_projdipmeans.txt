@@ -1,2 +1,0 @@
-{'allow_merging': 'table', 'n_random_projections': 0, 'n_split_trials': 10, 'significance': 0.001};-;-;-;-
-{'allow_merging': 'table', 'n_random_projections': 3, 'n_split_trials': 3, 'significance': 0.0094264353839};0.10422654438929513;8056;0.10422654438929521;{'accuracy': 0.5285, 'ARI': 0.05827965941406754, 'AMI': 0.04594688497522766}

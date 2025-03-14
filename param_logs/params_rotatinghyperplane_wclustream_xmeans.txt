@@ -1,2 +1,0 @@
-{'allow_merging': False, 'check_global_score': True, 'n_clusters_init': 2, 'n_split_trials': 10};-;-;-;-
-{'allow_merging': False, 'check_global_score': False, 'n_clusters_init': 7, 'n_split_trials': 26};0.08139390443022032;331;0.08197473275319166;{'accuracy': 0.0659, 'ARI': 0.009744313846909717, 'AMI': 0.07223041890628194}

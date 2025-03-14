@@ -1,2 +1,0 @@
-{'allow_single_cluster': 0, 'alpha': 1.0, 'cluster_selection_epsilon': 0.0, 'cluster_selection_method': 'eom', 'min_cluster_size': 5};-;-;-;-
-{'allow_single_cluster': 1, 'alpha': 0.8581075492827, 'cluster_selection_epsilon': 0.062994403387, 'cluster_selection_method': 'leaf', 'min_cluster_size': 2};0.07443254750101724;3465;0.07443254750101734;{'accuracy': 0.1192, 'ARI': 0.008894433816156332, 'AMI': 0.06553811368486101}

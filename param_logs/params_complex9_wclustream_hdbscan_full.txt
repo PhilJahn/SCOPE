@@ -1,3 +1,0 @@
-{'allow_single_cluster': 0, 'alpha': 1.0, 'cluster_selection_epsilon': 0.0, 'cluster_selection_method': 'eom', 'min_cluster_size': 5};-;-;-;-
-{'allow_single_cluster': 0, 'alpha': 0.2009390363917, 'cluster_selection_epsilon': 0.0198982583174, 'cluster_selection_method': 'leaf', 'min_cluster_size': 67};1.196025473337564;10924;1.196025473337564;{'accuracy': 0.6248762784559552, 'ARI': 0.47896341623925165, 'AMI': 0.7170620570983122}
-{'allow_single_cluster': 0, 'alpha': 0.9533105055015, 'cluster_selection_epsilon': 0.092834646531, 'cluster_selection_method': 'eom', 'min_cluster_size': 12};1.5870586217794371;9705;1.5870586217794371;{'accuracy': 0.7970966677664137, 'ARI': 0.7289349636958863, 'AMI': 0.8581236580835507}

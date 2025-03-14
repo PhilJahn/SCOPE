@@ -1,6 +1,0 @@
-{'alpha': 0.5, 'gridgran': 32, 'lamda': 0.5, 'minPts': 3};-;-;-;-
-{'alpha': 0.2668785210699, 'gridgran': 26, 'lamda': 0.0634831120629, 'minPts': 3};-inf;5966;-1;-1
-{'alpha': 0.2668785210699, 'gridgran': 26, 'lamda': 0.0634831120629, 'minPts': 3};-inf;6483;-1;-1
-{'alpha': 0.2668785210699, 'gridgran': 26, 'lamda': 0.0634831120629, 'minPts': 3};-inf;6544;-1;-1
-{'alpha': 0.2668785210699, 'gridgran': 26, 'lamda': 0.0634831120629, 'minPts': 3};-inf;6579;-1;-1
-{'alpha': 0.2668785210699, 'gridgran': 26, 'lamda': 0.0634831120629, 'minPts': 3};-inf;6579;-1;-1

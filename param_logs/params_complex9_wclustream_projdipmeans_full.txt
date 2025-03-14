@@ -1,3 +1,0 @@
-{'allow_merging': 'table', 'n_random_projections': 0, 'n_split_trials': 10, 'significance': 0.001};-;-;-;-
-{'allow_merging': 'bootstrap', 'n_random_projections': 0, 'n_split_trials': 32, 'significance': 0.0001133036022};0.7324046528133912;3863;0.7365564559571077;{'accuracy': 0.23160673045199603, 'ARI': 0.14749705069299626, 'AMI': 0.5890594052641115}
-{'allow_merging': 'function', 'n_random_projections': 0, 'n_split_trials': 30, 'significance': 0.0001375872269};0.6688569418150023;1877;0.6688569418150024;{'accuracy': 0.16991092048828768, 'ARI': 0.11111997422092719, 'AMI': 0.5577369675940752}
