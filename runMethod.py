@@ -196,7 +196,7 @@ def main(args):
 	parser.add_argument('--startindex', default=0, type=int, help='Start index for parameter configuration')
 	parser.add_argument('--endindex', default=np.inf, type=int, help='End index for parameter configuration')
 	parser.add_argument('--automl', default=1, type=int, help='Use AutoML parameters rather than grid search')
-	parser.add_argument('--used_full', default=1, type=int, help='If AutoML used subsampled data or the full dataset')
+	parser.add_argument('--used_full', default=0, type=int, help='If AutoML used subsampled data or the full dataset')
 
 	args = parser.parse_args()
 	method_name = args.method
