@@ -1,16 +1,20 @@
 import argparse
 import os.path
 from pprint import pprint
-
-from similarity.BoP import BoP
+# --{bop} --
+#from similarity.BoP import BoP
+# --{bop} --
 import numpy as np
 import matplotlib.pyplot as plt
 from datahandler import load_data
-from similarity.dataset_similarity_metrics import rbf_mmd_test, ks_test
+# --{ks} --
+#from similarity.dataset_similarity_metrics import ks_test
+# --{ks} --
 from utils import dict_to_np, dps_to_np
 from sklearn.neighbors import KDTree
-from similarity.mmd_pytorch import MMD_loss
-
+# -- {mmd} --
+#from similarity.mmd_pytorch import MMD_loss
+# -- {mmd} --
 
 def get_mc_centers(dataname, parameters, timestep, mc_folder):
 	mcs = np.load(f"./{mc_folder}/mcs_{dataname}_clustream_1000_100_1000_False_{parameters}_{timestep}.npy",
@@ -69,10 +73,14 @@ def main(args):
 			offline_data = get_gen_data(dataname, parameters, cur_ts, gen_folder, method)
 			offline_data = np.array(offline_data)
 
-		bop_subset = BoP(real_subset, min(bop_centroids, real_length),
-		                 f"{bop_folder}2/{dataname}/{method}/{i}")
-		bop_scores = bop_subset.evaluate(offline_data)
-		bop_jsd_sum += bop_scores['JS'] * real_length
+		# --{bop} --
+		#bop_subset = BoP(real_subset, min(bop_centroids, real_length),
+		#                 f"{bop_folder}2/{dataname}/{method}/{i}")
+		#bop_scores = bop_subset.evaluate(offline_data)
+		#bop_jsd_sum += bop_scores['JS'] * real_length
+		# --{bop} -- instead:
+		bop_scores= {'JS':0}
+		# --{bop} --
 
 		kdtree_offline = KDTree(np.unique(offline_data, axis=0))
 		nndists_offline, assignment = kdtree_offline.query(real_subset)
@@ -123,12 +131,21 @@ def main(args):
 		inndist_avg = np.sum(inndists_online) / len(inndists_online)
 		inndists_sum += inndist_avg * real_length
 
-		p, ks_stat, _, _ , _ = ks_test(real_subset, offline_data)
-		ks_sum += ks_stat * len(real_subset)
+		# --{ks} --
+		#p, ks_stat, _, _ , _ = ks_test(real_subset, offline_data)
+		#ks_sum += ks_stat * len(real_subset)
+		# --{ks} -- instead:
+		ks_stat = 0
+		p = 0
+		# --{ks} --
 
-		mmd_loss = MMD_loss()
-		mmd_rbf_val = mmd_loss.forward(real_subset, offline_data)
-		mmd_rbf_sum += mmd_rbf_val * real_length
+		# -- {mmd} --
+		#mmd_loss = MMD_loss()
+		#mmd_rbf_val = mmd_loss.forward(real_subset, offline_data)
+		#mmd_rbf_sum += mmd_rbf_val * real_length
+		# -- {mmd} -- instead:
+		mmd_rbf_val = 0
+		# -- {mmd} --
 
 		ts_output = f"\t{method} {cur_ts} BoP: {bop_scores['JS'] * sc:.3f} Impurity: {(1 - purity) * sc:.3f} "
 		ts_output += f"C2ST-R: {c2st_real * sc:.3f} C2ST-O: {c2st_offline * sc:.3f} "
@@ -171,8 +188,5 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 	#for ds in ["complex9", "rbf3", "densired2", "densired5", "densired10", "densired50", "densired100", "powersupply", "electricity", "letter", "segment", "gassensor"]:
-	for ds in ["kddcup"]:
-		for method in ["scaledclustream"]:
-			args.ds = ds
-			args.method = method
-			main(args)
+	#for ds in ["kddcup"]:
+	main(args)

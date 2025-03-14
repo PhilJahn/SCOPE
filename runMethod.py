@@ -12,13 +12,20 @@ import torch
 from sklearn.cluster import KMeans
 
 import utils
-from competitors.EmCStream import EmcStream
+# -- {emcstream} --
+#from competitors.EmCStream import EmcStream
+# -- {emcstream} --
+# -- {mcmststream} --
 from competitors.MCMSTStream import MCMSTStream
+# -- {mcmststream} --
 #from competitors.MuDi import MuDiDataPoint, MudiHandler
 from competitors.dbstream import DBSTREAM
 from competitors.denstream import DenStream
 #from competitors.dstream import DStreamClusterer
+# -- {gbfuzzystream} --
 from competitors.gbfuzzystream.MBStream import MBStreamHandler
+# -- {gbfuzzystream} --
+
 
 from competitors.full_dataset_learner import full_dataset_leaner
 from competitors.streamkmeans import STREAMKMeans
@@ -90,16 +97,20 @@ def get_offline_dict(args):
 			spectral_dicts.extend(make_param_dicts(spectral_vals_nn))
 			offline_dict[spectral] = spectral_dicts
 
-			scar = "scar"
-			scar_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_neighbors": ["size_root", 10, 5, 2, 20],
-			             "theta": [20, 30, 100, 200, 500], "alpha": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
-			scar_dicts = make_param_dicts(scar_vals)
-			offline_dict[scar] = scar_dicts
+			# -- {scar} --
+			#scar = "scar"
+			#scar_vals = {"alg_seed": [0, 1, 2, 3, 4], "n_neighbors": ["size_root", 10, 5, 2, 20],
+			#             "theta": [20, 30, 100, 200, 500], "alpha": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
+			#scar_dicts = make_param_dicts(scar_vals)
+			#offline_dict[scar] = scar_dicts
+			# -- {scar} --
 
-			spectacl = "spectacl"
-			spectacl_vals = {"alg_seed": [0, 1, 2, 3, 4], "epsilon": [1.0, 0.5, 0.25, 0.1, 0.05, 0.01]}
-			spectacl_dicts = make_param_dicts(spectacl_vals)
-			offline_dict[spectacl] = spectacl_dicts
+			# -- {spectacl} --
+			#spectacl = "spectacl"
+			#spectacl_vals = {"alg_seed": [0, 1, 2, 3, 4], "epsilon": [1.0, 0.5, 0.25, 0.1, 0.05, 0.01]}
+			#spectacl_dicts = make_param_dicts(spectacl_vals)
+			#offline_dict[spectacl] = spectacl_dicts
+			# -- {spectacl} --
 
 		if args.category == "all" or args.category == "not_projdipmeans" or args.category == "denscon" or args.category == "density_all":
 			dbscan = "dbscan"
@@ -124,18 +135,22 @@ def get_offline_dict(args):
 			offline_dict[mdbscan] = mdbscan_dicts
 
 		if args.category == "all" or args.category == "not_projdipmeans" or args.category == "density" or args.category == "density_all":
-			dpca = "dpca"
-			dpca_vals = {"dc": [None, 0.5, 0.1, 0, 0.75, 0.9, 1],
-			             "distance_threshold": [None, 0.5, 0.25, 0.1, 0.05, 0.01],
-			             "density_threshold": [None, 5, 3, 2, 10, 25, 50, 100],
-			             "anormal": [True, False], "gauss_cutoff": [True, False]}
-			dpca_dicts = make_param_dicts(dpca_vals)
-			offline_dict[dpca] = dpca_dicts
+			# -- {dpca} --
+			#dpca = "dpca"
+			#dpca_vals = {"dc": [None, 0.5, 0.1, 0, 0.75, 0.9, 1],
+			#             "distance_threshold": [None, 0.5, 0.25, 0.1, 0.05, 0.01],
+			#             "density_threshold": [None, 5, 3, 2, 10, 25, 50, 100],
+			#             "anormal": [True, False], "gauss_cutoff": [True, False]}
+			#dpca_dicts = make_param_dicts(dpca_vals)
+			#offline_dict[dpca] = dpca_dicts
+			# -- {dpca} --
 
-			snndpc = "snndpc"
-			snndpc_vals = {"n_neighbors": [10, 5, 2, 20]}
-			snndpc_dicts = make_param_dicts(snndpc_vals)
-			offline_dict[snndpc] = snndpc_dicts
+			# -- {snndpc} --
+			#snndpc = "snndpc"
+			#snndpc_vals = {"n_neighbors": [10, 5, 2, 20]}
+			#snndpc_dicts = make_param_dicts(snndpc_vals)
+			#offline_dict[snndpc] = snndpc_dicts
+			# -- {snndpc} --
 
 			dbhd = "dbhd"
 			dbhd_vals = {"rho": [1.2, 0.5, 0.75, 1, 1.25, 1.5, 2], "beta": [0.1, 0.2, 0.3, 0.4, 0.5, 0.05, 0.01],
@@ -388,8 +403,12 @@ def main(args):
 				if args.method == "clustream" and args.category == "all":
 					offlinemethods.append("nooffline")
 				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "density_all" or args.category == "density":
-					offlinemethods.append("dpca")
-					offlinemethods.append("snndpc")
+					# -- {dpca} --
+					#offlinemethods.append("dpca")
+					# -- {dpca} --
+					# -- {snndpc} --
+					#offlinemethods.append("snndpc")
+					# -- {snndpc} --
 					offlinemethods.append("dbhd")
 				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "density_all" or args.category == "denscon":
 					offlinemethods.append("dbscan")
@@ -398,8 +417,12 @@ def main(args):
 					offlinemethods.append("mdbscan")
 				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "spectral":
 					offlinemethods.append("spectral")
+					# -- {scar} --
 					offlinemethods.append("scar")
+					# -- {scar} --
+					# -- {spectacl} --
 					offlinemethods.append("spectacl")
+					# -- {spectacl} --
 				if args.category == "all" or args.category == "not_projdipmeans" or args.category == "means" or args.category == "kestmeans":
 					offlinemethods.append("xmeans")
 					if not args.category == "not_projdipmeans":
@@ -482,13 +505,17 @@ def main(args):
 		# 	                      mu=param_dict["mu"],
 		# 	                      seed=param_dict["seed"], dissolve=param_dict["dis"],
 		# 	                      max_singletons=param_dict["msmc"], offline_datascale=param_dict["gen"])
-		elif args.method == "emcstream":
-			method = EmcStream(k=args.class_num, horizon=param_dict["horizon"],
-			                   ari_threshold=param_dict["ari_threshold"],
-			                   ari_threshold_step=param_dict["ari_threshold_step"], seed=param_dict["seed"])
-		elif args.method == "mcmststream":
-			method = MCMSTStream(N=param_dict["N"], W=param_dict["W"], r=param_dict["r"], n_micro=param_dict["n_micro"],
-			                     d=dim)
+		# -- {emcstream} --
+		#elif args.method == "emcstream":
+		#	method = EmcStream(k=args.class_num, horizon=param_dict["horizon"],
+		#	                   ari_threshold=param_dict["ari_threshold"],
+		#	                   ari_threshold_step=param_dict["ari_threshold_step"], seed=param_dict["seed"])
+		# -- {emcstream} --
+		# -- {mcmststream} --
+		#elif args.method == "mcmststream":
+		#	method = MCMSTStream(N=param_dict["N"], W=param_dict["W"], r=param_dict["r"], n_micro=param_dict["n_micro"],
+		#	                     d=dim)
+		# -- {mcmststream} --
 		elif args.method == "denstream":
 			method = DenStream(decaying_factor=param_dict["decaying_factor"], beta=param_dict["beta"],
 			                   mu=param_dict["mu"],
@@ -526,12 +553,15 @@ def main(args):
 		#	                     alpha=param_dict["alpha"],
 		#	                     minPts=param_dict["minPts"],
 		#	                     seed=param_dict["seed"])
-		elif args.method == "gbfuzzystream" or args.method == "gbfuzzystream100" or args.method == "gbfuzzystream1000":
-			method = MBStreamHandler(lam=param_dict["lam"],
-			                         batchsize=param_dict["batchsize"],
-			                         threshold=param_dict["threshold"],
-			                         m=param_dict["m"],
-			                         eps=param_dict["eps"])
+
+		# -- {gbfuzzystream} --
+		# elif args.method == "gbfuzzystream" or args.method == "gbfuzzystream100" or args.method == "gbfuzzystream1000":
+		# 	method = MBStreamHandler(lam=param_dict["lam"],
+		# 	                         batchsize=param_dict["batchsize"],
+		# 	                         threshold=param_dict["threshold"],
+		# 	                         m=param_dict["m"],
+		# 	                         eps=param_dict["eps"])
+		# -- {gbfuzzystream} --
 		elif args.method == "full":
 			method = full_dataset_leaner()
 

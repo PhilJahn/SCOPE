@@ -342,17 +342,16 @@ def main(args):
 	# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
 	setting = "1000_100_1000"
-	dataset = "complex9"
+	dataset = "densired10"
 	metrics = ["accuracy", "ARI", "AMI", "purity", "cluster_num"]
 	method_names = ["streamkmeans", "denstream", "dbstream"
-	                ,"emcstream",
-					"mcmststream", "gbfuzzystream",
+	                #,"emcstream",
+					#"mcmststream", "gbfuzzystream",
 					"clustream_no_offline", "clustream_no_offline_fixed",
 					"clustream"
-					, "wclustream"
+					,"wclustream"
 					,"scaledclustream"
 					, "scope_full"
-					#,"scope"
 	                ]
 	best_dicts = {}
 	default_dicts = {}
@@ -387,39 +386,17 @@ def main(args):
 
 			print(f, last_change)
 			# https://stackoverflow.com/questions/11218477/how-can-i-use-pickle-to-save-a-dict-or-any-other-python-object
-			if False:
-			#if os.path.isfile(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_default_best.pkl"):
-			#	with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_result.pkl", 'rb') as handle:
-			#		true_result_dict = pickle.load(handle)
-			#	with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_best.pkl", 'rb') as handle:
-			#		best_dict = pickle.load(handle)
-			#	with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_default.pkl", 'rb') as handle:
-			#		default_dict = pickle.load(handle)
-			#	with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_{metrics}_default_best.pkl", 'rb') as handle:
-			#		default_best_dict = pickle.load(handle)
-			#	with open(f"dicts/{f.strip('.txt')}_{last_change_timestamp}_param.pkl", 'rb') as handle:
-			#		param_dict = pickle.load(handle)
-			#	f_split = f.split("_")
-			#	method_name = f_split[1]
-			#	if f_split[2] == "no":
-			#		method_name += "_" + f_split[2] + "_" + f_split[3]
-			#	if f_split[2] == "full":
-			#		method_name += "_" + f_split[2]
-			#	if f_split[4] == "fixed":
-			#		method_name += "_" + f_split[4]
-				print("Loaded from Storage", flush=True)
-			else:
-				method_name, param_dict, true_result_dict, best_dict, default_dict, default_best_dict = process_file(result_dir + f)
-				with open(f"dicts/{f.strip('.txt')}_result.pkl", 'wb') as out:
-					pickle.dump(true_result_dict, out)
-				with open(f"dicts/{f.strip('.txt')}_best.pkl", 'wb') as out:
-					pickle.dump(best_dict, out)
-				with open(f"dicts/{f.strip('.txt')}_default.pkl", 'wb') as out:
-					pickle.dump(default_dict, out)
-				with open(f"dicts/{f.strip('.txt')}_default_best.pkl", 'wb') as out:
-					pickle.dump(default_best_dict, out)
-				with open(f"dicts/{f.strip('.txt')}_param.pkl", 'wb') as out:
-					pickle.dump(param_dict, out)
+			method_name, param_dict, true_result_dict, best_dict, default_dict, default_best_dict = process_file(result_dir + f)
+			with open(f"dicts/{f.strip('.txt')}_result.pkl", 'wb') as out:
+				pickle.dump(true_result_dict, out)
+			with open(f"dicts/{f.strip('.txt')}_best.pkl", 'wb') as out:
+				pickle.dump(best_dict, out)
+			with open(f"dicts/{f.strip('.txt')}_default.pkl", 'wb') as out:
+				pickle.dump(default_dict, out)
+			with open(f"dicts/{f.strip('.txt')}_default_best.pkl", 'wb') as out:
+				pickle.dump(default_best_dict, out)
+			with open(f"dicts/{f.strip('.txt')}_param.pkl", 'wb') as out:
+				pickle.dump(param_dict, out)
 
 			best_dicts[method_name] = best_dict
 			default_dicts[method_name] = default_dict
@@ -503,132 +480,6 @@ def main(args):
 			# 	plt.close()
 				#plt.show()
 			print("---")
-	if False:
-		#return "No figures"
-		naming = {}
-		naming["complex9"] = "Complex-9"
-		naming["densired10"] = "DENSIRED-10"
-		naming["rbf3"] = "RBF-3 40000"
-		naming["letter"] = "Letter"
-		naming["segemnt"] = "Segement"
-		naming["powersupply"] = "Powersupply"
-		naming["electricity"] = "Electricity"
-		naming["kddcup"] = "KDDCUP99"
-		naming["gassensor"] = "Gas Sensor Array"
-		naming["clustream"] = "CluStream"
-		naming["wclustream"] = "CluStream-W"
-		naming["scaledclustream"] = "CluStream-S"
-		naming["scope_full"] = "CluStream-G"
-		naming["scope"] = "CluStream-G+"
-		naming["streamkmeans"] = "STREAMKmeans"
-		naming["denstream"] = "DenStream"
-		naming["dbstream"] = "DBSTREAM"
-		naming["emcstream"] = "EMCStream"
-		naming["mcmststream"] = "MCMSTStream"
-		naming["gbfuzzystream"] = "GB-FuzzyStream"
-		naming["base"] = ""
-		naming["clustream_no_offline"] = "CluStream-O - vari. k"
-		naming["clustream_no_offline_fixed"] = "CluStream-O - fixed k"
-		naming["nooffline"] = "-O - k=100"
-		naming["wkmeans"] = " - Weighted k-Means"
-		naming["kmeans"] = " - k-Means"
-		naming["subkmeans"] = " - SubKMeans"
-		naming["xmeans"] = " - X-Means"
-		naming["projdipmeans"] = " - Projected Dip-Means"
-		naming["spectral"] = " - Spectral Clustering"
-		naming["scar"] = " - SCAR"
-		naming["spectacl"] = " - SpectACl"
-		naming["dbscan"] = " - DBSCAN"
-		naming["hdbscan"] = " - HDBSCAN"
-		naming["rnndbscan"] = " - RNN-DBSCAN"
-		naming["mdbscan"] = " - MDBSCAN"
-		naming["dpca"] = " - DPC"
-		naming["snndpc"] = " - SNN-DPC"
-		naming["dbhd"] = " - DBHD"
-
-		#method_names = ["streamkmeans", "denstream", "dbstream", "emcstream", "mcmststream", "gbfuzzystream",
-		#                "clustream_no_offline", "clustream_no_offline_fixed", "clustream", "wclustream", "scaled_clustream", "scope_full"]
-		alg_names = ["base", "nooffline", "wkmeans", "kmeans", "subkmeans", "xmeans", "projdipmeans", "spectral", "scar",
-					 "spectacl", "dbscan", "hdbscan", "rnndbscan", "mdbscan", "dpca", "snndpc", "dbhd"]
-
-		plt.rcParams.update({'font.size': 20})
-		for metric in metrics:
-			plt.figure(figsize=(20, 3))
-			#method_names = list(best_dicts.keys())
-			#alg_names = list(best_dicts[method_names[0]].keys())
-
-			height = []
-			ranges = []
-			colors = []
-			names = []
-			hatches = []
-			for alg_name in alg_names:
-				for method_name in method_names:
-					if alg_name in best_dicts[method_name].keys():
-						if alg_name == "base" and method_name in ["clustream", "scaledclustream", "wclustream", "scope", "scope_full"]:
-							continue
-						if method_name in ["clustream", "clustream_no_offline", "clustream_no_offline_fixed"]:
-							hatches.append("///")
-						elif method_name == "wclustream":
-							hatches.append("xxx")
-						elif method_name == "scaledclustream":
-							hatches.append("\\\\\\")
-						elif method_name == "scope":
-							hatches.append("+++")
-						elif method_name == "scope_full":
-							hatches.append("---")
-						else:
-							hatches.append("")
-						if alg_name in ["kmeans", "wkmeans"] or method_name in ["streamkmeans", "emcstream"]:
-							colors.append("blue")
-						elif alg_name == "subkmeans":
-							colors.append("darkblue")
-						elif alg_name in ["xmeans"]:
-							colors.append("lightblue")
-						elif alg_name == "projdipmeans":
-							colors.append("aqua")
-						elif alg_name in ["spectral"]:
-							colors.append("pink")
-						elif alg_name == "scar":
-							colors.append("deeppink")
-						elif alg_name == "spectacl":
-							colors.append("darkviolet")
-						elif alg_name in ["dpca"] or method_name in ["gbfuzzystream"]:
-							colors.append("orange")
-						elif method_name in ["mcmststream"]:
-							colors.append("yellowgreen")
-						elif method_name in ["dbstream"]:
-							colors.append("orchid")
-						elif alg_name == "snndpc":
-							colors.append("tan")
-						elif alg_name == "dbhd":
-							colors.append("yellow")
-						elif alg_name in ["dbscan"] or method_name in ["denstream"]:
-							colors.append("red")
-						elif alg_name == "hdbscan":
-							colors.append("coral")
-						elif alg_name == "rnndbscan":
-							colors.append("darkred")
-						elif alg_name == "mdbscan":
-							colors.append("orangered")
-						else:
-							colors.append("lightgrey")
-						names.append(f"{naming[method_name]}{naming[alg_name]}")
-						height.append(best_dicts[method_name][alg_name][f'{metric}_mean'])
-						ranges.append(best_dicts[method_name][alg_name][f'{metric}_std'])
-			plt.bar(names, height, yerr=ranges, color=colors, hatch=hatches, edgecolor="black")
-			plt.errorbar(names, height, yerr=ranges, fmt="o", color="grey")
-			plt.axhline(y=max(best_dicts["clustream_no_offline"]["base"][f'{metric}_mean'],best_dicts["clustream_no_offline_fixed"]["base"][f'{metric}_mean']), color="darkgrey", ls="dotted", lw=3)
-			#plt.title(naming[dataset])
-			#plt.xticks(rotation=90)
-			plt.gca().axes.get_xaxis().set_visible(False)
-			plt.subplots_adjust(bottom=0.30)
-			#plt.rcParams['xtick.labelsize'] = 15
-			#plt.rcParams['ytick.labelsize'] = 15
-			plt.tight_layout()
-			plt.savefig(f"figures/{dataset}_all_{setting}_{metric}_best.pdf", bbox_inches='tight')
-			plt.close()
-
 
 if __name__ == '__main__':
 	main(sys.argv)

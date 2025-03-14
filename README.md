@@ -3,23 +3,25 @@
 This repository contains the code for the paper submission "Going Offline: An Evaluation of the Offline Phase in Stream Clustering" for ECML PKDD 2025.
 It is based on code from the [River Stream learning repository](https://github.com/online-ml/river).
 
+# Note: as the project used some external code, to ensure that this project is functional just from the requirements file, these aspects have been commented out surrounded by ```# -- {method key(s)} --```.
+
 ## Usage
 
 The main code used to perform the evaluation is ```runMethod.py```. It allows for the execution of both the CluStream variants and the competitors. CluStream, DenStream, DBSTREAM, and STREAMKmeans come from the River repository and are included as is. The other competitors need to be obtained from their repositories as linked below. They require some modification to use the functions called for them (specifically learn_one/learn and predict_one/predict).
 The main method has several parameters that allow for c
 
 | **Parameter**        | **Default Value** | **Function**                                                                                                                                                                                                                                                                      |
-|----------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| --method                  | clustream          | Stream Clustering method to evaluate (CluStream-W is ```wclustream```, CluStream-S is ```scaledclustream```, CluStream-G is ```scope_full```)  |
-| --ds                  | complex9          | Dataset to perform the experiments on  |
-| --offline                  | 1000          | Timesteps for offline phase/for evaluation  |
-| --sumlimit                  | 100          | Maximal number of micro-clusters  |
-| --gennum                  | 1000          | Approximate number of points that CluStream-S and CluStream-G produce  |
-| --category                  | all | Which offline algorithms to include (For the paper, we used ```all``` for all offline algorithms, ```not_projdipmeans``` to run everything but Projected Dip-Means or the keys for the specific offline clustering methods); aside from that there are options to choose all centroid-based methods with ```means```, all centroid-based methods without k-estimation with ```nkestmeans```, all centroid-based methods with k-estimation with ```kestmeans```, all Spectral Clustering methods with ```spectral```, all density-connectivity-based methods with ```denscon```, all non-density-connectivity-based density-based methods with ```density``` and all density-based approaches with ```density_all``` |
-| --startindex  | 0          | Starting index for configuration (to only run on a subset of all parameters), inclusive |
-| --endindex                  | np.inf        | Stopping index for configuration (to only run on a subset of all parameters), inclusive |
-| --automl                  | 1         | Whether to use parameters obtained through AutoML or to perform a grid search (requires a parameter dictionary for the desired  dataset and stream clustering setup), Integer Boolean  |
-| --used_full                  | 1          | Whether AutoML used subsampled data or the full dataset, Integer Boolean  |
+|----------------------|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --method                  | clustream         | Stream Clustering method to evaluate (CluStream-W is ```wclustream```, CluStream-S is ```scaledclustream```, CluStream-G is ```scope_full```)  |
+| --ds                  | densired10        | Dataset to perform the experiments on  |
+| --offline                  | 1000              | Timesteps for offline phase/for evaluation  |
+| --sumlimit                  | 100               | Maximal number of micro-clusters  |
+| --gennum                  | 1000              | Approximate number of points that CluStream-S and CluStream-G produce  |
+| --category                  | all               | Which offline algorithms to include (For the paper, we used ```all``` for all offline algorithms, ```not_projdipmeans``` to run everything but Projected Dip-Means or the keys for the specific offline clustering methods); aside from that there are options to choose all centroid-based methods with ```means```, all centroid-based methods without k-estimation with ```nkestmeans```, all centroid-based methods with k-estimation with ```kestmeans```, all Spectral Clustering methods with ```spectral```, all density-connectivity-based methods with ```denscon```, all non-density-connectivity-based density-based methods with ```density``` and all density-based approaches with ```density_all``` |
+| --startindex  | 0                 | Starting index for configuration (to only run on a subset of all parameters), inclusive |
+| --endindex                  | np.inf            | Stopping index for configuration (to only run on a subset of all parameters), inclusive |
+| --automl                  | 1                 | Whether to use parameters obtained through AutoML or to perform a grid search (requires a parameter dictionary for the desired  dataset and stream clustering setup), Integer Boolean  |
+| --used_full                  | 0                 | Whether AutoML used subsampled data or the full dataset, Integer Boolean  |
 
 The method ```file_handler.py```processes the run results into a more manageable format (but needs manual changes for the moment). 
 The produced dictionaries for the experiments performed for the paper are available in the folder ```dicts```.
@@ -31,29 +33,29 @@ The subsets are produced with ```subset_selector.py```. The settings used are au
 To optimize the stream clustering parameters, the code ```parameter_estimator.py``` needs to be run, which has the following parameters.
 
 | **Parameter**        | **Default Value** | **Function**                                                                                                                                                                                                                                                                      |
-|----------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| --method                  | clustream          | Stream Clustering method to optimize. For any online-offline CluStream variant, use ```clustream```, otherwise use the method keys |
-| --ds                  | complex9          | Dataset to perform the optimization on  |
-| --use_full                  | 1          | Whether to use the full dataset or subsets, Integer Boolean  |
-| --subset                  | -1          | If a specific subset number is meant to be run (will use 0 to 4 if -1 is given) |
+|----------------------|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --method                  | clustream         | Stream Clustering method to optimize. For any online-offline CluStream variant, use ```clustream```, otherwise use the method keys |
+| --ds                  | densired10        | Dataset to perform the optimization on  |
+| --use_full                  | 0                 | Whether to use the full dataset or subsets, Integer Boolean  |
+| --subset                  | -1                | If a specific subset number is meant to be run (will use 0 to 4 if -1 is given) |
 
 To perform offline optimization for any CluStream variant, use ```clustream_microclusterer.py``` first to get the micro-clusters. This will produce mc and assign files in the ```param_data```-folder.
 
 
 | **Parameter**        | **Default Value** | **Function**                                                                                                                                                                                                                                                                      |
-|----------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| --ds                  | complex9          | Dataset to perform the optimization on  |
-| --use_full                  | 1          | Whether to use the full dataset or subsets, Integer Boolean  |
+|----------------------|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --ds                  | densired10        | Dataset to perform the optimization on  |
+| --use_full                  | 0                 | Whether to use the full dataset or subsets, Integer Boolean  |
 
 Afterwards, it is possible to run the offline optimization with ```parameter_estimator_offline.py```
 
 
 | **Parameter**        | **Default Value** | **Function**  |
-|----------------------|-------------|--------------------------------------------------|
-| --method                  | clustream          | CluStream variant to optimize for. Use the method keys. |
-| --offline                  | kmeans          | Offline method to optimize. Use method keys.  |
-| --ds                      | complex9          | Dataset to perform the optimization on  |
-| --use_full                | 1          | Whether to use the full dataset or subsets, Integer Boolean  |
+|----------------------|-------------------|--------------------------------------------------|
+| --method                  | clustream         | CluStream variant to optimize for. Use the method keys. |
+| --offline                  | kmeans            | Offline method to optimize. Use method keys.  |
+| --ds                      | densired10        | Dataset to perform the optimization on  |
+| --use_full                | 0                 | Whether to use the full dataset or subsets, Integer Boolean  |
 
 ## Stream Clustering Methods
 

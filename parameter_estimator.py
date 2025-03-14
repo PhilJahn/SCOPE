@@ -9,14 +9,19 @@ from ConfigSpace import Configuration, ConfigurationSpace, Float, Integer, Categ
 import numpy as np
 import matplotlib.pyplot as plt
 from competitors.clustream import CluStream
-from competitors.EmCStream import EmcStream
-from competitors.MCMSTStream import MCMSTStream
+# -- {emcstream} --
+#from competitors.EmCStream import EmcStream
+# -- {emcstream} --
+# -- {mcmststream} --
+#from competitors.MCMSTStream import MCMSTStream
+# -- {mcmststream} --
 #from competitors.MuDi import MuDiDataPoint, MudiHandler
 from competitors.dbstream import DBSTREAM
 from competitors.denstream import DenStream
 #from competitors.dstream import DStreamClusterer
-from competitors.gbfuzzystream.MBStream import MBStreamHandler
-
+# -- {gbfuzzystream} --
+#from competitors.gbfuzzystream.MBStream import MBStreamHandler
+# -- {gbfuzzystream} --
 from competitors.streamkmeans import STREAMKMeans
 from datahandler import load_data
 from evaluate import getMetrics
@@ -127,28 +132,36 @@ def get_clustering_learn_one(clustering_method, nooffline=False):
 
 
 def get_clustering(method, config=None):
-	is_emcstream = type(method) == EmcStream
+	# -- {emcstream} --
+	# is_emcstream = type(method) == EmcStream
+	# -- {emcstream} --
 	is_mudistream = False #type(method) == MudiHandler
-	is_gbstream = type(method) == MBStreamHandler
+	# -- {gbfuzzystream} --
+	#is_gbstream = type(method) == MBStreamHandler
+	# -- {gbfuzzystream} --
 	dps_np = np.array(dps)
 	amis = []
 	aris = []
 	accs = []
 	y_store = copy.copy(y)
-	if is_emcstream:
-		method.add_label_store(y_store)
+	# -- {emcstream} --
+	#if is_emcstream:
+	#	method.add_label_store(y_store)
+	# -- {emcstream} --
 	pred_store = method.learn(dps_np)
-	if is_emcstream:
-		clustered_X, clustered_y = method.get_clustered_data()
-		y_store = clustered_y
-	elif is_mudistream:
-		clusters = pred_store.copy()
-		pred_store = [-1] * len(X)
-		for clu in clusters:
-			cmcs = clu._cmcList
-			for cmc in cmcs:
-				for point in cmc.storage:
-					pred_store[point.t] = clu.name
+	# -- {emcstream} --
+	# if is_emcstream:
+	# 	clustered_X, clustered_y = method.get_clustered_data()
+	# 	y_store = clustered_y
+	# -- {emcstream} --
+	#elif is_mudistream:
+	#	clusters = pred_store.copy()
+	#	pred_store = [-1] * len(X)
+	#	for clu in clusters:
+	#		cmcs = clu._cmcList
+	#		for cmc in cmcs:
+	#			for point in cmc.storage:
+	#				pred_store[point.t] = clu.name
 		#print(pred_store)
 	batchsize = 1000
 	for i in range(0, len(pred_store), batchsize):
@@ -273,26 +286,28 @@ def train_streamkmeans(config: Configuration, seed: int = 0) -> float:
 	print("STREAMKMeans", config["chunk_size"], config["sigma"], config["mu"], score)
 	return 2 - score
 
+# -- {emcstream} --
+# def train_emcstream(config: Configuration, seed: int = 0) -> float:
+# 	# print(data_dim, class_num, data_length, mc_num, offline_timing)
+# 	clustering_method = EmcStream(k=class_num, seed=seed, horizon=config["horizon"],
+# 	                              ari_threshold=config["ari_threshold"],
+# 	                              ari_threshold_step=config["ari_threshold_step"])
+# 	try:
+# 		score = get_clustering(clustering_method)
+# 	except:
+# 		score = -np.inf
+# 	print("EmCStream", config["horizon"], config["ari_threshold"], config["ari_threshold_step"], score)
+# 	return 2 - score
+# -- {emcstream} --
 
-def train_emcstream(config: Configuration, seed: int = 0) -> float:
-	# print(data_dim, class_num, data_length, mc_num, offline_timing)
-	clustering_method = EmcStream(k=class_num, seed=seed, horizon=config["horizon"],
-	                              ari_threshold=config["ari_threshold"],
-	                              ari_threshold_step=config["ari_threshold_step"])
-	try:
-		score = get_clustering(clustering_method)
-	except:
-		score = -np.inf
-	print("EmCStream", config["horizon"], config["ari_threshold"], config["ari_threshold_step"], score)
-	return 2 - score
-
-
-def train_mcmststream(config: Configuration, seed: int = 0) -> float:
-	clustering_method = MCMSTStream(N=config["N"], W=config["W"], r=config["r"], n_micro=config["n_micro"],
-	                                d=data_dim)
-	score = get_clustering(clustering_method)
-	print("MCMSTStream", config["N"], config["W"], config["r"], config["n_micro"], score)
-	return 2 - score
+# -- {mcmststream} --
+# def train_mcmststream(config: Configuration, seed: int = 0) -> float:
+# 	clustering_method = MCMSTStream(N=config["N"], W=config["W"], r=config["r"], n_micro=config["n_micro"],
+# 	                                d=data_dim)
+# 	score = get_clustering(clustering_method)
+# 	print("MCMSTStream", config["N"], config["W"], config["r"], config["n_micro"], score)
+# 	return 2 - score
+# -- {mcmststream} --
 
 
 #def train_mudistream(config: Configuration, seed: int = 0) -> float:
@@ -333,16 +348,17 @@ def train_mcmststream(config: Configuration, seed: int = 0) -> float:
 #	      config["gap"], score)
 #	return 2 - score
 
-def train_gbfuzzystream(config: Configuration, seed: int = 0) -> float:
-	clustering_method = MBStreamHandler(lam=config["lam"],
-			                         batchsize=config["batchsize"],
-			                         threshold=config["threshold"],
-			                         m=config["m"],
-			                         eps=config["eps"])
-	score = get_clustering(clustering_method, config)
-	print("MCMSTStream", config["lam"],	config["batchsize"], config["threshold"], config["m"], config["eps"], score)
-	return 2 - score
-
+# -- {gbfuzzystream} --
+#def train_gbfuzzystream(config: Configuration, seed: int = 0) -> float:
+#	clustering_method = MBStreamHandler(lam=config["lam"],
+#			                         batchsize=config["batchsize"],
+#			                         threshold=config["threshold"],
+#			                         m=config["m"],
+#			                         eps=config["eps"])
+#	score = get_clustering(clustering_method, config)
+#	print("GBFuzzyStream", config["lam"],	config["batchsize"], config["threshold"], config["m"], config["eps"], score)
+#	return 2 - score
+# -- {gbfuzzystream} --
 
 configspaces = {}
 clustream_space = ConfigurationSpace()
@@ -446,11 +462,17 @@ trainmethods["clustream_no_offline_fixed"] = train_clustream_no_offline_fixed
 trainmethods["dbstream"] = train_dbstream
 trainmethods["denstream"] = train_denstream
 trainmethods["streamkmeans"] = train_streamkmeans
-trainmethods["emcstream"] = train_emcstream
-trainmethods["mcmststream"] = train_mcmststream
+# -- {emcstream} --
+#trainmethods["emcstream"] = train_emcstream
+# -- {emcstream} --
+# -- {mcmststream} --
+#trainmethods["mcmststream"] = train_mcmststream
+# -- {mcmststream} --
 #trainmethods["mudistream"] = train_mudistream
 #trainmethods["dstream"] = train_dstream
-trainmethods["gbfuzzystream"] = train_gbfuzzystream
+# -- {gbfuzzystream} --
+#trainmethods["gbfuzzystream"] = train_gbfuzzystream
+# -- {gbfuzzystream} --
 # 86400 * 5
 def run_parameter_estimation(method, time_budget, seed):
 	print("Checksum:", np.sum(labels), " Time Budget:", time_budget)
@@ -526,12 +548,12 @@ if __name__ == '__main__':
 				configspaces["clustream_no_offline_fixed"] = clustream_no_offline_fixed_space
 				f.write(f"{configspaces[method].get_default_configuration().get_dictionary()};-;-;-;-\n")
 
-			if method == "mudistream":
-				dps = []
-				for i in range(len(X)):
-					dps.append([MuDiDataPoint(X[i], i)])
-			else:
-				dps = X
+			#if method == "mudistream":
+			#	dps = []
+			#	for i in range(len(X)):
+			#		dps.append([MuDiDataPoint(X[i], i)])
+			#else:
+			dps = X
 
 			labels = y
 			best_params, score, run_num = run_parameter_estimation(method, time_budget, 0)

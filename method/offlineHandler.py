@@ -11,19 +11,19 @@ from sklearn.cluster import KMeans, SpectralClustering, DBSCAN, OPTICS, MeanShif
 from sklearn.neighbors import KDTree
 #from offline_methods.SHADE.dcdist import DCTree_Clusterer
 #from offline_methods.SHADE.shade.shade import SHADE
-from offline_methods.DPC.DPC import DensityPeakCluster
+#from offline_methods.DPC.DPC import DensityPeakCluster
 from competitors.clustream import CluStream
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as ptc
 
 #from offline_methods.DCFcluster.src.DCFcluster import DCFcluster
-from offline_methods.SNNDPC import SNNDPC
+#from offline_methods.SNNDPC import SNNDPC
 from offline_methods.dbhd_clustering.DBHDALGO import DBHD
-from offline_methods.SCAR.SpectralClusteringAcceleratedRobust import SCAR
+#from offline_methods.SCAR.SpectralClusteringAcceleratedRobust import SCAR
 from offline_methods.mdbscan import MDBSCAN
 from offline_methods.rnndbscan import RNNDBSCAN
-from offline_methods.spectacl.Spectacl import Spectacl
+#from offline_methods.spectacl.Spectacl import Spectacl
 from utils import dps_to_np, dict_to_np
 
 k_algos = ["kmeans", "spectral", "agglomerative", "scar", "spectacl", "subkmeans"]
@@ -285,37 +285,41 @@ def perform_clustering(data, algorithm, args):
 
 		clustering = agglomerative.fit_predict(data, None)
 		return clustering, None
-	elif algorithm == "scar":
-		args = {"nn": "size_root", "alpha": 0.5, "theta": 20, "m": 0.5, "laplacian": 0, "n_iter": 50,
-		        "normalize": False, "weighted": False} | args
-		if args["normalize"] == 1:
-			args["normalize"] = True
-		elif args["normalize"] == 0:
-			args["normalize"] = False
-		if args["weighted"] == 1:
-			args["weighted"] = True
-		elif args["weighted"] == 0:
-			args["weighted"] = False
-		if args["nn"] == "size_root":
-			args["nn"] = round(len(data) ** 0.5)
-
-		scar = SCAR(k=args["n_clusters"], nn=args["nn"], alpha=args["alpha"], theta=args["theta"], m=args["m"],
-		            laplacian=args["laplacian"], n_iter=args["n_iter"], normalize=args["normalize"],
-		            weighted=args["weighted"], seed=args["alg_seed"])
-
-		clustering = scar.fit_predict(np.array(data))
-		return clustering, None
-	elif algorithm == "spectacl":
-		args = {"affinity": "radius_neighbors", "epsilon": 1.0, "n_jobs": None, "normalize_adjacency": False} | args
-		if args["normalize_adjacency"] == 1:
-			args["normalize_adjacency"] = True
-		elif args["normalize_adjacency"] == 0:
-			args["normalize_adjacency"] = False
-		spectacl = Spectacl(affinity=args["affinity"], n_clusters=args["n_clusters"], epsilon=args["epsilon"],
-		                    n_jobs=args["n_jobs"], normalize_adjacency=args["normalize_adjacency"],
-		                    seed=args["alg_seed"])
-		clustering = spectacl.fit_predict(data)
-		return clustering, None
+	# --{scar} --
+	# elif algorithm == "scar":
+	# 	args = {"nn": "size_root", "alpha": 0.5, "theta": 20, "m": 0.5, "laplacian": 0, "n_iter": 50,
+	# 	        "normalize": False, "weighted": False} | args
+	# 	if args["normalize"] == 1:
+	# 		args["normalize"] = True
+	# 	elif args["normalize"] == 0:
+	# 		args["normalize"] = False
+	# 	if args["weighted"] == 1:
+	# 		args["weighted"] = True
+	# 	elif args["weighted"] == 0:
+	# 		args["weighted"] = False
+	# 	if args["nn"] == "size_root":
+	# 		args["nn"] = round(len(data) ** 0.5)
+	#
+	# 	scar = SCAR(k=args["n_clusters"], nn=args["nn"], alpha=args["alpha"], theta=args["theta"], m=args["m"],
+	# 	            laplacian=args["laplacian"], n_iter=args["n_iter"], normalize=args["normalize"],
+	# 	            weighted=args["weighted"], seed=args["alg_seed"])
+	#
+	# 	clustering = scar.fit_predict(np.array(data))
+	# 	return clustering, None
+	# --{scar} --
+	# --{spectacl} --
+	# elif algorithm == "spectacl":
+	# 	args = {"affinity": "radius_neighbors", "epsilon": 1.0, "n_jobs": None, "normalize_adjacency": False} | args
+	# 	if args["normalize_adjacency"] == 1:
+	# 		args["normalize_adjacency"] = True
+	# 	elif args["normalize_adjacency"] == 0:
+	# 		args["normalize_adjacency"] = False
+	# 	spectacl = Spectacl(affinity=args["affinity"], n_clusters=args["n_clusters"], epsilon=args["epsilon"],
+	# 	                    n_jobs=args["n_jobs"], normalize_adjacency=args["normalize_adjacency"],
+	# 	                    seed=args["alg_seed"])
+	# 	clustering = spectacl.fit_predict(data)
+	# 	return clustering, None
+	# --{spectacl} --
 	#elif algorithm == "dcf":
 	#	args = {"k": None, "beta": 0.4} | args
 #
@@ -358,11 +362,13 @@ def perform_clustering(data, algorithm, args):
 		                               n_boots=args["n_boots"], n_split_trials=args["n_split_trials"], n_clusters_init=args["n_clusters_init"],
 		                               max_n_clusters=args["max_n_clusters"]).fit_predict(np.array(data), None)
 		return clustering, None
-	elif algorithm == "snndpc":
-		args = {"n_neighbors": 5} | args
-		centroid, clustering = SNNDPC(nc=args["n_clusters"], k=args["n_neighbors"], data=np.array(data))
-		#print(clustering)
-		return clustering, centroid
+	# --{snndpc} --
+	# elif algorithm == "snndpc":
+	# 	args = {"n_neighbors": 5} | args
+	# 	centroid, clustering = SNNDPC(nc=args["n_clusters"], k=args["n_neighbors"], data=np.array(data))
+	# 	#print(clustering)
+	# 	return clustering, centroid
+	# --{snndpc} --
 	elif algorithm == "dec":
 		if args["embedding_size"] > len(data[0]):
 			return [-1]*len(data), None
@@ -405,37 +411,39 @@ def perform_clustering(data, algorithm, args):
 		                        reconstruction_loss_weight =args["reconstruction_loss_weight"],
 		                        optimizer_class=args["optimizer_class"], loss_fn=args["loss_fn"], max_cluster_size_diff_factor=args["max_cluster_size_diff_factor"]).fit_predict(np.array(data), None)
 		return clustering, None
-	elif algorithm == "dpca":
-		args = {"dc":None, "distance_metric": 'euclidean',
-             "silence": True,
-             "gauss_cutoff": True,
-             "density_threshold": None,
-             "distance_threshold":  None,
-             "anormal": True} | args
-		if args["silence"] == 1:
-			args["silence"] = True
-		elif args["silence"] == 0:
-			args["silence"] = False
-		if args["gauss_cutoff"] == 1:
-			args["gauss_cutoff"] = True
-		elif args["gauss_cutoff"] == 0:
-			args["gauss_cutoff"] = False
-		if args["anormal"] == 1:
-			args["anormal"] = True
-		elif args["anormal"] == 0:
-			args["anormal"] = False
-		if args["distance_threshold"] < 0:
-			args["distance_threshold"] = None
-		if args["density_threshold"] < 0:
-			args["density_threshold"] = None
-		if args["dc"] < 0:
-			args["dc"] = None
-		dpc = DensityPeakCluster(dc = args["dc"], distance_metric =args["distance_metric"], silence=args["silence"], gauss_cutoff=args["gauss_cutoff"],
-		                         density_threshold=args["density_threshold"], distance_threshold=args["distance_threshold"],
-		                         anormal=args["anormal"])
-		dpc.fit(np.array(data))
-		clustering = dpc.labels_
-		return clustering, None
+	# --{dpca} --
+	# elif algorithm == "dpca":
+	# 	args = {"dc":None, "distance_metric": 'euclidean',
+    #          "silence": True,
+    #          "gauss_cutoff": True,
+    #          "density_threshold": None,
+    #          "distance_threshold":  None,
+    #          "anormal": True} | args
+	# 	if args["silence"] == 1:
+	# 		args["silence"] = True
+	# 	elif args["silence"] == 0:
+	# 		args["silence"] = False
+	# 	if args["gauss_cutoff"] == 1:
+	# 		args["gauss_cutoff"] = True
+	# 	elif args["gauss_cutoff"] == 0:
+	# 		args["gauss_cutoff"] = False
+	# 	if args["anormal"] == 1:
+	# 		args["anormal"] = True
+	# 	elif args["anormal"] == 0:
+	# 		args["anormal"] = False
+	# 	if args["distance_threshold"] < 0:
+	# 		args["distance_threshold"] = None
+	# 	if args["density_threshold"] < 0:
+	# 		args["density_threshold"] = None
+	# 	if args["dc"] < 0:
+	# 		args["dc"] = None
+	# 	dpc = DensityPeakCluster(dc = args["dc"], distance_metric =args["distance_metric"], silence=args["silence"], gauss_cutoff=args["gauss_cutoff"],
+	# 	                         density_threshold=args["density_threshold"], distance_threshold=args["distance_threshold"],
+	# 	                         anormal=args["anormal"])
+	# 	dpc.fit(np.array(data))
+	# 	clustering = dpc.labels_
+	# 	return clustering, None
+	# --{dpca} --
 	elif algorithm == "rnndbscan":
 		args = {"n_neighbors": 5} | args
 		clustering = RNNDBSCAN(k=args["n_neighbors"]).fit_predict(data)

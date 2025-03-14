@@ -10,16 +10,7 @@ import matplotlib.pyplot as plt
 
 import utils
 from competitors.clustream import CluStream
-from competitors.EmCStream import EmcStream
-from competitors.MCMSTStream import MCMSTStream
-from competitors.MuDi import MuDiDataPoint, MudiHandler
-from competitors.dbstream import DBSTREAM
-from competitors.denstream import DenStream
-from competitors.dstream import DStreamClusterer
-from competitors.gbfuzzystream.MBStream import MBStreamHandler
 
-from competitors.full_dataset_learner import full_dataset_leaner
-from competitors.streamkmeans import STREAMKMeans
 from datahandler import load_data
 from evaluate import getMetrics
 from utils import dps_to_np
@@ -65,17 +56,15 @@ def get_clustering_learn_one(clustering_method):
 	prediction = []
 	i = 0
 	is_clustream = type(clustering_method) == CluStream
-	is_dstream = type(clustering_method) == DStreamClusterer
 	assignments = []
 	mcs = []
 	cur_prediction = []
 	for dp in dps:
 		is_last = i == len(X) - 1
-		if not is_dstream:
-			dp = dict(enumerate(dp))
+		dp = dict(enumerate(dp))
 		dp_store.append(dp)
 		clustering_method.learn_one(dp)
-		if not is_clustream and not is_dstream:
+		if not is_clustream:
 			label = clustering_method.predict_one(dp)
 			prediction.append(label)
 		else:
