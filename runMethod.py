@@ -381,6 +381,10 @@ def main(args):
 	j = 0
 	if not os.path.exists("run_logs"):
 		os.mkdir("run_logs")
+	if not os.path.exists("mc_data"):
+		os.mkdir("mc_data")
+	if not os.path.exists("gen_data"):
+		os.mkdir("gen_data")
 	if args.category == "all" and args.startindex == 0:
 		f = open(f'run_logs/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}.txt', 'w',
 		         newline='\n',

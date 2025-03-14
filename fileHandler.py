@@ -387,6 +387,8 @@ def main(args):
 			print(f, last_change)
 			# https://stackoverflow.com/questions/11218477/how-can-i-use-pickle-to-save-a-dict-or-any-other-python-object
 			method_name, param_dict, true_result_dict, best_dict, default_dict, default_best_dict = process_file(result_dir + f)
+			if not os.path.exists("dicts"):
+				os.mkdir("dicts")
 			with open(f"dicts/{f.strip('.txt')}_result.pkl", 'wb') as out:
 				pickle.dump(true_result_dict, out)
 			with open(f"dicts/{f.strip('.txt')}_best.pkl", 'wb') as out:
