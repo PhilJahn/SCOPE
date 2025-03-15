@@ -70,7 +70,7 @@ def main(args):
 			offline_data = np.array(offline_data)
 
 		bop_subset = BoP(real_subset, min(bop_centroids, real_length),
-		                 f"{bop_folder}2/{dataname}/{method}/{i}")
+		                 f"{bop_folder}/{dataname}/{method}/{i}")
 		bop_scores = bop_subset.evaluate(offline_data)
 		bop_jsd_sum += bop_scores['JS'] * real_length
 
