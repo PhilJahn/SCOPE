@@ -100,8 +100,11 @@ This repository allows for 14 offline clustering methods to be used (additional 
 | DBHD                 | dbhd          | already in repository in folder ```offline_methods``` |
 | CluStream-O k=100/x | nooffline | included, only available for CluStream |
 
-
 ## External Content
 
-
 Additional datasets were taken from the [USP DS repository](https://sites.google.com/view/uspdsrepository), [Computational Intelligence Group @ UFSCar's data stream repository](https://github.com/CIG-UFSCar/DS_Datasets) and [Tomas Barton's Clustering benchmark repository](https://github.com/deric/clustering-benchmark).
+
+## Experiment Files
+
+We added some examples of the experiment results to the repository. Due to the large size of the result files, we only give the files in /run_logs (direct experiment results) for Complex-9 as an example.
+We added most of the files in /dicts that store the results for actual usage to the repository, however the result pkl-files for CluStream, CluStream-S and CluStream-G were too large for GitHub.
