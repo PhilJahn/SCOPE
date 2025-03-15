@@ -47,7 +47,7 @@ To perform offline optimization for any CluStream variant, use ```clustream_micr
 | --ds                  | densired10        | Dataset to perform the optimization on  |
 | --use_full                  | 0                 | Whether to use the full dataset or subsets, Integer Boolean  |
 
-Afterwards, it is possible to run the offline optimization with ```parameter_estimator_offline.py```
+Afterward, it is possible to run the offline optimization with ```parameter_estimator_offline.py```
 
 
 | **Parameter**        | **Default Value** | **Function**  |
@@ -56,6 +56,23 @@ Afterwards, it is possible to run the offline optimization with ```parameter_est
 | --offline                  | kmeans            | Offline method to optimize. Use method keys.  |
 | --ds                      | densired10        | Dataset to perform the optimization on  |
 | --use_full                | 0                 | Whether to use the full dataset or subsets, Integer Boolean  |
+
+## Offline Reconstruction Quality
+
+To measure the offline reconstruction quality, the file ```reconstruction_quality.py``` is used. 
+
+| **Parameter**        | **Default Value** | **Function**  |
+|----------------------|-------------------|--------------------------------------------------|
+| --method                  | clustream         | CluStream variant to evaluate the offline reconstruction data for. |
+| --ds                      | densired10        | Dataset to perform the evaluation on  |
+| --index                | 0                 | Parameter index to evaluate the micro-clusters for  |
+| --gen_folder                | ./gen_data                 | Where the generated points are stored (CluStream-G, CluStream-W, and CluStream-S) |
+| --mc_folder                | ./mc_data                 | Where the generated points are stored (CluStream-G, CluStream-W, and CluStream-S) |
+| --bop_folder                | ./bop                 | Where to store the BoP files. The BoP implementation uses the one from [here](https://github.com/Klaus-Tu/Bag-of-Prototypes) |
+| --bop_centroids                | 100               | Number of centroids for BoP |
+| --max_length                | np.inf               | Maximum evaluation length (uses minimum value of out of this and the full dataset): this was used to get results for running experiments, all results in the paper are from the full length of the dataset |
+| --batch_size                | 1000               | Batch size for examination (must match evaluation length of stream clustering) |
+| --value_scale                | 100               | Factor on all results (100 to get the value in percent) |
 
 ## Stream Clustering Methods
 
