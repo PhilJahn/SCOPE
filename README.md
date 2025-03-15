@@ -7,8 +7,8 @@ It is based on code from the [River Stream learning repository](https://github.c
 
 ## Usage
 
-The main code used to perform the evaluation is ```runMethod.py```. It allows for the execution of both the CluStream variants and the competitors. CluStream, DenStream, DBSTREAM, and STREAMKmeans come from the River repository and are included as is. The other competitors need to be obtained from their repositories as linked below. They require some modification to use the functions called for them (specifically learn_one/learn and predict_one/predict).
-The main method has several parameters that allow for c
+The main code used to perform the evaluation is ```runMethod.py```. It allows for the execution of both the CluStream variants and the competitors. CluStream, DenStream, DBSTREAM, and STREAMKmeans come from the River repository and are included. The other competitors need to be obtained from their repositories, which are linked below. They require some modification to use the functions called for them (specifically learn_one/learn and predict_one/predict).
+The main method has several parameters.
 
 | **Parameter**        | **Default Value** | **Function**                                                                                                                                                                                                                                                                      |
 |----------------------|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -119,10 +119,10 @@ This repository allows for 14 offline clustering methods to be used (additional 
 | DBHD                 | dbhd          | already in repository in folder ```offline_methods``` |
 | CluStream-O k=100/x | nooffline | included, only available for CluStream |
 
-## External Content
+## Datasets
 
-Additional datasets were taken from the [USP DS repository](https://sites.google.com/view/uspdsrepository), [Computational Intelligence Group @ UFSCar's data stream repository](https://github.com/CIG-UFSCar/DS_Datasets) and [Tomas Barton's Clustering benchmark repository](https://github.com/deric/clustering-benchmark).
+Additional datasets were taken from the [USP DS repository](https://sites.google.com/view/uspdsrepository), [Computational Intelligence Group @ UFSCar's data stream repository](https://github.com/CIG-UFSCar/DS_Datasets) and [Tomas Barton's Clustering benchmark repository](https://github.com/deric/clustering-benchmark). The dataset .csv files of the first two only need to be added to the ```data``` folder for the datasets described in the paper. For the Clustering benchmark, the ```artificial``` folder from [here](https://github.com/deric/clustering-benchmark/tree/master/src/main/resources/datasets) needs to be added to the ````data``` directory. The DENSIRED datasets are already available in this repository.
 
 ## Experiment Files
 
-We added most of the files in /dicts that store the results to the repository, however the full result pkl-files for KDDCUP99 for CluStream, CluStream-S and CluStream-G were too large to be added on GitHub, as such we only added the parameters, as well as the summary reports of the default, default_best (parameter optimization for default online paramters) and best runs for these experiments. We will make these three files accessible outside of GitHub once the Double-blind aspect is over.
+We added most of the files in /dicts that store the results to the repository however the full result pkl-files for KDDCUP99 for CluStream, CluStream-S and CluStream-G were too large to be added on GitHub. We still  added the parameters, as well as the summary reports of the default, default_best (parameter optimization for default online parameters) and best runs for these experiments to the repository. We will make these three files accessible outside of GitHub once the Double-blind aspect is finished.
