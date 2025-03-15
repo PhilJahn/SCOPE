@@ -125,5 +125,5 @@ Additional datasets were taken from the [USP DS repository](https://sites.google
 
 ## Experiment Files
 
-We added some examples of the experiment results to the repository. Due to the large size of the result files, we only give the files in /run_logs (direct experiment results) for Complex-9 as an example.
+We added some examples of the experiment results to the repository.
 We added most of the files in /dicts that store the results for actual usage to the repository, however the result pkl-files for CluStream, CluStream-S and CluStream-G were too large for GitHub.
