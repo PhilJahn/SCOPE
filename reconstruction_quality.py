@@ -1,9 +1,7 @@
 import argparse
 import os.path
 from pprint import pprint
-# --{bop} --
-#from similarity.BoP import BoP
-# --{bop} --
+from similarity.BoP import BoP
 import numpy as np
 import matplotlib.pyplot as plt
 from datahandler import load_data
@@ -73,14 +71,10 @@ def main(args):
 			offline_data = get_gen_data(dataname, parameters, cur_ts, gen_folder, method)
 			offline_data = np.array(offline_data)
 
-		# --{bop} --
-		#bop_subset = BoP(real_subset, min(bop_centroids, real_length),
-		#                 f"{bop_folder}2/{dataname}/{method}/{i}")
-		#bop_scores = bop_subset.evaluate(offline_data)
-		#bop_jsd_sum += bop_scores['JS'] * real_length
-		# --{bop} -- instead:
-		bop_scores= {'JS':0}
-		# --{bop} --
+		bop_subset = BoP(real_subset, min(bop_centroids, real_length),
+		                 f"{bop_folder}2/{dataname}/{method}/{i}")
+		bop_scores = bop_subset.evaluate(offline_data)
+		bop_jsd_sum += bop_scores['JS'] * real_length
 
 		kdtree_offline = KDTree(np.unique(offline_data, axis=0))
 		nndists_offline, assignment = kdtree_offline.query(real_subset)
