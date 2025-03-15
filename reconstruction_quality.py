@@ -10,9 +10,7 @@ from datahandler import load_data
 # --{ks} --
 from utils import dict_to_np, dps_to_np
 from sklearn.neighbors import KDTree
-# -- {mmd} --
-#from similarity.mmd_pytorch import MMD_loss
-# -- {mmd} --
+from similarity.mmd_pytorch import MMD_loss
 
 def get_mc_centers(dataname, parameters, timestep, mc_folder):
 	mcs = np.load(f"./{mc_folder}/mcs_{dataname}_clustream_1000_100_1000_False_{parameters}_{timestep}.npy",
@@ -125,7 +123,7 @@ def main(args):
 		inndist_avg = np.sum(inndists_online) / len(inndists_online)
 		inndists_sum += inndist_avg * real_length
 
-		# --{ks} --
+		# --{ks} - Unused --
 		#p, ks_stat, _, _ , _ = ks_test(real_subset, offline_data)
 		#ks_sum += ks_stat * len(real_subset)
 		# --{ks} -- instead:
@@ -133,13 +131,9 @@ def main(args):
 		p = 0
 		# --{ks} --
 
-		# -- {mmd} --
-		#mmd_loss = MMD_loss()
-		#mmd_rbf_val = mmd_loss.forward(real_subset, offline_data)
-		#mmd_rbf_sum += mmd_rbf_val * real_length
-		# -- {mmd} -- instead:
-		mmd_rbf_val = 0
-		# -- {mmd} --
+		mmd_loss = MMD_loss()
+		mmd_rbf_val = mmd_loss.forward(real_subset, offline_data)
+		mmd_rbf_sum += mmd_rbf_val * real_length
 
 		ts_output = f"\t{method} {cur_ts} BoP: {bop_scores['JS'] * sc:.3f} Impurity: {(1 - purity) * sc:.3f} "
 		ts_output += f"C2ST-R: {c2st_real * sc:.3f} C2ST-O: {c2st_offline * sc:.3f} "
