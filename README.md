@@ -125,5 +125,4 @@ Additional datasets were taken from the [USP DS repository](https://sites.google
 
 ## Experiment Files
 
-We added the experiment results to the repository. Runs that ran into timeout (runtime of more than a week) and did not terminate are not included.
-We added most of the files in /dicts that store the results for actual usage to the repository, however the result pkl-files for KDDCUP99 for CluStream, CluStream-S and CluStream-G were too large to be added on GitHub.
+We added most of the files in /dicts that store the results to the repository, however the result pkl-files for KDDCUP99 for CluStream, CluStream-S and CluStream-G were too large to be added on GitHub.
