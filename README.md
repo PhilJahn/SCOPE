@@ -59,7 +59,7 @@ Afterward, it is possible to run the offline optimization with ```parameter_esti
 
 ## Offline Reconstruction Quality
 
-To measure the offline reconstruction quality, the file ```reconstruction_quality.py``` is used. 
+To measure the offline reconstruction quality, the file ```reconstruction_quality.py``` is used.
 
 | **Parameter**        | **Default Value** | **Function**  |
 |----------------------|-------------------|--------------------------------------------------|
@@ -73,6 +73,8 @@ To measure the offline reconstruction quality, the file ```reconstruction_qualit
 | --max_length                | np.inf               | Maximum evaluation length (uses minimum value of out of this and the full dataset): this was used to get results for running experiments, all results in the paper are from the full length of the dataset |
 | --batch_size                | 1000               | Batch size for examination (must match evaluation length of stream clustering) |
 | --value_scale                | 100               | Factor on all results (100 to get the value in percent) |
+
+The MMD calculation is from the [Transfer Learning Repo](https://github.com/jindongwang/transferlearning/tree/master).
 
 ## Stream Clustering Methods
 
