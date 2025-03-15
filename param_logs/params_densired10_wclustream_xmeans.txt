@@ -4,3 +4,4 @@
 {'allow_merging': True, 'check_global_score': False, 'n_clusters_init': 11, 'n_split_trials': 4};1.2459644358693907;721;1.2459644358693907;{'accuracy': 0.5244, 'ARI': 0.5059816691369248, 'AMI': 0.7399827667324659}
 {'allow_merging': False, 'check_global_score': True, 'n_clusters_init': 7, 'n_split_trials': 2};1.296244038245007;931;1.297845535184487;{'accuracy': 0.5916, 'ARI': 0.5585722808824414, 'AMI': 0.7392732543020456}
 {'allow_merging': False, 'check_global_score': True, 'n_clusters_init': 4, 'n_split_trials': 7};1.3052197471536233;1041;1.3052197471536233;{'accuracy': 0.5948, 'ARI': 0.5563920750326861, 'AMI': 0.7488276721209373}
+{'allow_merging': True, 'check_global_score': False, 'n_clusters_init': 2, 'n_split_trials': 4};1.3301432996878702;640;1.3308129032530898;{'accuracy': 0.584, 'ARI': 0.586908062548976, 'AMI': 0.7439048407041138}

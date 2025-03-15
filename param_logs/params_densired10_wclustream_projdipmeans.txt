@@ -2,3 +2,4 @@
 {'allow_merging': 'table', 'n_random_projections': 3, 'n_split_trials': 7, 'significance': 0.0002651871488};-inf;3;-1;-1
 {'allow_merging': 'table', 'n_random_projections': 3, 'n_split_trials': 7, 'significance': 0.0002651871488};-inf;3;-1;-1
 {'allow_merging': 'table', 'n_random_projections': 3, 'n_split_trials': 7, 'significance': 0.0002651871488};-inf;3;-1;-1
+{'allow_merging': 'table', 'n_random_projections': 3, 'n_split_trials': 7, 'significance': 0.0002651871488};-inf;3;-1;-1
