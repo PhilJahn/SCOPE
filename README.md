@@ -125,4 +125,4 @@ Additional datasets were taken from the [USP DS repository](https://sites.google
 
 ## Experiment Files
 
-We added most of the files in /dicts that store the results to the repository, however the result pkl-files for KDDCUP99 for CluStream, CluStream-S and CluStream-G were too large to be added on GitHub.
+We added most of the files in /dicts that store the results to the repository, however the full result pkl-files for KDDCUP99 for CluStream, CluStream-S and CluStream-G were too large to be added on GitHub, as such we only added the parameters, as well as the summary reports of the default, default_best (parameter optimization for default online paramters) and best runs for these experiments.
