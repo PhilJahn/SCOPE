@@ -174,7 +174,7 @@ def main(args):
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--ds', default="complex9", type=str, help='Used stream data set')
+	parser.add_argument('--ds', default="densired10", type=str, help='Used stream data set')
 	parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
 	parser.add_argument('--index', default=0, type=int, help='Index Stream Clustering Method')
 	parser.add_argument('--gen_folder', default="./gen_data", type=str, help='Path to generated data')
