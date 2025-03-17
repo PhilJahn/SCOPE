@@ -790,6 +790,7 @@ class ScaledCluStream(CluStream):
 
 		self.offline_dataset = []
 		self.offline_labels = []
+		self.unique_inidces = []
 		self.kdtree = None
 		self.data_reconstructor = DataReconstructor()
 		self.weight_scale = 0
@@ -808,12 +809,13 @@ class ScaledCluStream(CluStream):
 
 		self.offline_dataset = gen_data
 		self.offline_labels = gen_labels
-		self.kdtree = KDTree(dps_to_np(self.offline_dataset))
+		unique_offline, self.unique_indices = np.unique(dps_to_np(self.offline_dataset), axis=0, return_index=True)
+		self.kdtree = KDTree(unique_offline)
 
 	def predict_one(self, x, recluster=False, sklearn=None, return_mc=False):
 		if self._offline_timestamp != self._timestamp:
 			self.offline_processing()
-		index = self.kdtree.query(dict_to_np(x).reshape(1, -1), 1, return_distance=False)[0][0]
+		index = self.unique_indices[self.kdtree.query(dict_to_np(x).reshape(1, -1), 1, return_distance=False)[0][0]]
 		if return_mc:
 			return self.cluster_assignments[index], index
 		else:
