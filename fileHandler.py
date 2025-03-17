@@ -107,10 +107,12 @@ def process_file(path):
 		for method_index in param_dict.keys():
 			method_index_param = copy.deepcopy(param_dict[method_index]["base"][0])
 			if "seed" in method_index_param.keys():
-				method_index_param["seed"] = method_index_param["seed"] // 5
+				method_index_param["seed"] = int(method_index) // 5
 				#print(method_index_param["seed"])
 			if "startindex" in method_index_param.keys():
 				method_index_param['startindex'] = 0
+			if "category" in method_index_param.keys():
+				method_index_param['category'] = 0
 			if "endindex" in method_index_param.keys():
 				method_index_param['endindex'] = 0
 			found = -1
@@ -192,10 +194,12 @@ def process_file(path):
 
 		#pprint(true_result_dict)
 		#transfer contents into true indexed form
+
 		for method_index in result_dict.keys():
 			true_method_index = method_index_mapping[method_index]
 			for alg_name in result_dict[method_index].keys():
 				for offline_index in result_dict[method_index][alg_name].keys():
+					#print(true_method_index, alg_name, offline_index)
 					true_offline_index = offline_index_mapping[true_method_index][alg_name][offline_index]
 					t_results = result_dict[method_index][alg_name][offline_index]
 					seed_key = f"m{method_index}_o{offline_index}"
@@ -237,26 +241,29 @@ def process_file(path):
 			best_score = -np.inf
 			for method_true_index in true_result_dict.keys():
 				#print(method_true_index, alg_name)
-				alg_index_num = len(true_result_dict[method_true_index][alg_name].keys())
-				for alg_true_index in true_result_dict[method_true_index][alg_name].keys():
-					if not ((method_true_index == 0 and alg_true_index != 0) or (alg_index_num > 1 and method_true_index != 0 and alg_true_index == 0)): # skip optimized for default for fairness
-						#print(true_result_dict[method_true_index][alg_name][alg_true_index])
-						#print(method_true_index, alg_name, alg_true_index)
-						cur_mean = true_result_dict[method_true_index][alg_name][alg_true_index]["tfull"]["mean"]
-						score = cur_mean["ARI"] + cur_mean["AMI"]
-						if score > best_score:
-							best_score = score
-							best_method_index = method_true_index
-							best_alg_index = alg_true_index
-			best_num = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["num"]
-			best_dict[alg_name] = {"method": best_method_index, "offline": best_alg_index, "num": best_num}
-			best_mean = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["mean"]
-			best_std = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["std"]
-			for metric in metrics:
-				metric_mean = best_mean[metric]
-				metric_std = best_std[metric]
-				best_dict[alg_name][metric+ "_mean"] = metric_mean
-				best_dict[alg_name][metric + "_std"] = metric_std
+				if alg_name in true_result_dict[method_true_index].keys():
+					alg_index_num = len(true_result_dict[method_true_index][alg_name].keys())
+					for alg_true_index in true_result_dict[method_true_index][alg_name].keys():
+						if not ((method_true_index == 0 and alg_true_index != 0) or (alg_index_num > 1 and method_true_index != 0 and alg_true_index == 0)): # skip optimized for default and default for optimized
+							#print(true_result_dict[method_true_index][alg_name][alg_true_index])
+							if len(true_result_dict[method_true_index][alg_name][alg_true_index]) > 0:
+							#print(method_true_index, alg_name, alg_true_index)
+								cur_mean = true_result_dict[method_true_index][alg_name][alg_true_index]["tfull"]["mean"]
+								score = cur_mean["ARI"] + cur_mean["AMI"]
+								if score > best_score:
+									best_score = score
+									best_method_index = method_true_index
+									best_alg_index = alg_true_index
+			if best_alg_index != -1:
+				best_num = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["num"]
+				best_dict[alg_name] = {"method": best_method_index, "offline": best_alg_index, "num": best_num}
+				best_mean = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["mean"]
+				best_std = true_result_dict[best_method_index][alg_name][best_alg_index]["tfull"]["std"]
+				for metric in metrics:
+					metric_mean = best_mean[metric]
+					metric_std = best_std[metric]
+					best_dict[alg_name][metric+ "_mean"] = metric_mean
+					best_dict[alg_name][metric + "_std"] = metric_std
 		#pprint(best_dict)
 		#print("Got best", flush=True)
 		default_best_dict = {}
@@ -264,35 +271,39 @@ def process_file(path):
 			method_true_index = 0
 			best_alg_index = -1
 			best_score = -np.inf
-			for alg_true_index in true_result_dict[method_true_index][alg_name].keys():
-				cur_mean = true_result_dict[method_true_index][alg_name][alg_true_index]["tfull"]["mean"]
+			if alg_name in true_result_dict[method_true_index].keys():
+				for alg_true_index in true_result_dict[method_true_index][alg_name].keys():
+					if len(true_result_dict[method_true_index][alg_name][alg_true_index]) > 0:
+						cur_mean = true_result_dict[method_true_index][alg_name][alg_true_index]["tfull"]["mean"]
 
-				score = cur_mean["ARI"] + cur_mean["AMI"]
-				if score > best_score:
-					best_score = score
-					best_alg_index = alg_true_index
-			best_num = true_result_dict[0][alg_name][best_alg_index]["tfull"]["num"]
-			default_best_dict[alg_name] = {"method": 0, "offline": best_alg_index, "num":best_num}
-			best_mean = true_result_dict[0][alg_name][best_alg_index]["tfull"]["mean"]
-			best_std = true_result_dict[0][alg_name][best_alg_index]["tfull"]["std"]
-			for metric in metrics:
-				metric_mean = best_mean[metric]
-				metric_std = best_std[metric]
-				default_best_dict[alg_name][metric + "_mean"] = metric_mean
-				default_best_dict[alg_name][metric + "_std"] = metric_std
+						score = cur_mean["ARI"] + cur_mean["AMI"]
+						if score > best_score:
+							best_score = score
+							best_alg_index = alg_true_index
+			if best_alg_index != -1:
+				best_num = true_result_dict[0][alg_name][best_alg_index]["tfull"]["num"]
+				default_best_dict[alg_name] = {"method": 0, "offline": best_alg_index, "num":best_num}
+				best_mean = true_result_dict[0][alg_name][best_alg_index]["tfull"]["mean"]
+				best_std = true_result_dict[0][alg_name][best_alg_index]["tfull"]["std"]
+				for metric in metrics:
+					metric_mean = best_mean[metric]
+					metric_std = best_std[metric]
+					default_best_dict[alg_name][metric + "_mean"] = metric_mean
+					default_best_dict[alg_name][metric + "_std"] = metric_std
 		#pprint(default_best_dict)
 		#print("Got default-best", flush=True)
 		default_dict = {}
 		for alg_name in offline_index_params[0].keys():
-			default_num = true_result_dict[0][alg_name][0]["tfull"]["num"]
-			default_dict[alg_name] = {"method": 0, "offline": 0, "num":default_num}
-			default_mean = true_result_dict[0][alg_name][0]["tfull"]["mean"]
-			default_std = true_result_dict[0][alg_name][0]["tfull"]["std"]
-			for metric in metrics:
-				metric_mean = default_mean[metric]
-				metric_std = default_std[metric]
-				default_dict[alg_name][metric + "_mean"] = metric_mean
-				default_dict[alg_name][metric + "_std"] = metric_std
+			if len(true_result_dict[0][alg_name][0]) > 0:
+				default_num = true_result_dict[0][alg_name][0]["tfull"]["num"]
+				default_dict[alg_name] = {"method": 0, "offline": 0, "num":default_num}
+				default_mean = true_result_dict[0][alg_name][0]["tfull"]["mean"]
+				default_std = true_result_dict[0][alg_name][0]["tfull"]["std"]
+				for metric in metrics:
+					metric_mean = default_mean[metric]
+					metric_std = default_std[metric]
+					default_dict[alg_name][metric + "_mean"] = metric_mean
+					default_dict[alg_name][metric + "_std"] = metric_std
 		#pprint(default_dict)
 		#print("Got default", flush=True)
 
@@ -318,22 +329,29 @@ def combine_files(prefix, files, result_dir):
 	base_ctr = -1
 	last_change_timestamp = 0
 	incomplete = False
+	suffix_counter = {}
 	first = True
 	with open(result_dir + outputpath, 'w') as outfile:
 		for fname in filenames:
 			ctr = 0
+			suffix_subsets = fname.split("_")[6:-1]
+			suffix = ""
+			for suffix_subset in suffix_subsets:
+				suffix += suffix_subset
 			last_change_timestamp += os.path.getmtime(result_dir + fname)
 			with open(result_dir + fname) as infile:
 				for line in infile:
 					outfile.write(line)
 					ctr += 1
-			if base_ctr == -1 and not first:
-				base_ctr = ctr
-			if ctr != base_ctr and not first:
-				print(f"{fname} is incomplete", flush=True)
-				incomplete = True
+			if suffix in suffix_counter.keys():
+				if ctr != suffix_counter[suffix] and not first:
+					print(f"{fname} is incomplete", flush=True)
+					incomplete = True
+			else:
+				suffix_counter[suffix] = ctr
 			first = False
-	if incomplete:
+	outfile.close()
+	if incomplete and not ("kddcup" in prefix and "scaledclustream"):
 		raise Exception
 	return outputpath, last_change_timestamp
 
@@ -344,14 +362,14 @@ def main(args):
 	setting = "1000_100_1000"
 	dataset = "densired10"
 	metrics = ["accuracy", "ARI", "AMI", "purity", "cluster_num"]
-	method_names = ["streamkmeans", "denstream", "dbstream"
-	                #,"emcstream",
-					#"mcmststream", "gbfuzzystream",
+	method_names = ["streamkmeans", "denstream", "dbstream",
+	                #"emcstream",
+					#"mcmststream", #"gbfuzzystream",
 					"clustream_no_offline", "clustream_no_offline_fixed",
-					"clustream"
-					,"wclustream"
-					,"scaledclustream"
-					, "scope_full"
+					"clustream",
+					"wclustream",
+					"scaledclustream",
+					"scope_full"
 	                ]
 	best_dicts = {}
 	default_dicts = {}
@@ -374,15 +392,19 @@ def main(args):
 				f, last_change_timestamp = combine_files(f.removesuffix('.txt'),onlyfiles,result_dir)
 			elif f.removesuffix('_not_projdipmeans_0.txt') + "_not_projdipmeans_1.txt" in onlyfiles:
 				f, last_change_timestamp = combine_files(f.removesuffix('_not_projdipmeans_0.txt'),onlyfiles,result_dir)
-			elif "_all_" in f or "_not_projdipmeans_" in f:
+			elif f.removesuffix('_density_0.txt') + "_density_1.txt" in onlyfiles:
+				f, last_change_timestamp = combine_files(f.removesuffix('_density_0.txt'),onlyfiles,result_dir)
+			elif "combined" in f:
+				continue
+			elif "_all_" in f or "_not_projdipmeans_" in f or "_projdipmeans_" in f or "_density_" in f or "vardbscan_" in f \
+					or "_kest_" in f or "nkest" in f:
 				already_seen = False
-				for j in range(1,30):
-					if f"_all_{j}" in f or f"_not_projdipmeans_{j}" in f :
+				for j in range(0,29):
+					if f"_all_{j}" in f or f"_not_projdipmeans_{j}" in f or f"_projdipmeans_{j}" in f or f"_density_{j}" in f\
+							or f"_vardbscan_{j}" in f or f"_kest_{j}" in f or f"_nkest_{j}" in f:
 						already_seen = True
 				if already_seen:
 					continue
-			elif "combined" in f:
-				continue
 
 			print(f, last_change)
 			# https://stackoverflow.com/questions/11218477/how-can-i-use-pickle-to-save-a-dict-or-any-other-python-object
