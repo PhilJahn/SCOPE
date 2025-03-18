@@ -268,18 +268,20 @@ def process_file(path):
 		#print("Got best", flush=True)
 		default_best_dict = {}
 		for alg_name in offline_index_params[0].keys():
-			method_true_index = 0
+
 			best_alg_index = -1
 			best_score = -np.inf
-			if alg_name in true_result_dict[method_true_index].keys():
-				for alg_true_index in true_result_dict[method_true_index][alg_name].keys():
-					if len(true_result_dict[method_true_index][alg_name][alg_true_index]) > 0:
-						cur_mean = true_result_dict[method_true_index][alg_name][alg_true_index]["tfull"]["mean"]
+			print(alg_name)
+			for alg_true_index in true_result_dict[0][alg_name].keys():
+				if len(true_result_dict[0][alg_name][alg_true_index]) > 0:
+					cur_mean = true_result_dict[0][alg_name][alg_true_index]["tfull"]["mean"]
 
-						score = cur_mean["ARI"] + cur_mean["AMI"]
-						if score > best_score:
-							best_score = score
-							best_alg_index = alg_true_index
+					score = cur_mean["ARI"] + cur_mean["AMI"]
+					print(alg_true_index, score, cur_mean["ARI"],  cur_mean["AMI"])
+					if score > best_score:
+						best_score = score
+						best_alg_index = alg_true_index
+			print(best_alg_index,best_score)
 			if best_alg_index != -1:
 				best_num = true_result_dict[0][alg_name][best_alg_index]["tfull"]["num"]
 				default_best_dict[alg_name] = {"method": 0, "offline": best_alg_index, "num":best_num}
@@ -304,7 +306,12 @@ def process_file(path):
 					metric_std = default_std[metric]
 					default_dict[alg_name][metric + "_mean"] = metric_mean
 					default_dict[alg_name][metric + "_std"] = metric_std
+				score = default_mean["ARI"] + default_mean["AMI"]
+				print(alg_name)
+				print(0, score, default_mean["ARI"],  default_mean["AMI"])
+		raise Exception
 		#pprint(default_dict)
+
 		#print("Got default", flush=True)
 
 		return method_name, offline_index_params, true_result_dict, best_dict, default_dict, default_best_dict
@@ -360,11 +367,11 @@ def main(args):
 	# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
 	onlyfiles = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
 	setting = "1000_100_1000"
-	dataset = "densired10"
+	dataset = "rbf3"
 	metrics = ["accuracy", "ARI", "AMI", "purity", "cluster_num"]
 	method_names = ["streamkmeans", "denstream", "dbstream",
-	                #"emcstream",
-					#"mcmststream", #"gbfuzzystream",
+	                "emcstream",
+					"mcmststream", "gbfuzzystream",
 					"clustream_no_offline", "clustream_no_offline_fixed",
 					"clustream",
 					"wclustream",
