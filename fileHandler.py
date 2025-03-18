@@ -309,7 +309,6 @@ def process_file(path):
 				score = default_mean["ARI"] + default_mean["AMI"]
 				print(alg_name)
 				print(0, score, default_mean["ARI"],  default_mean["AMI"])
-		raise Exception
 		#pprint(default_dict)
 
 		#print("Got default", flush=True)
