@@ -1,0 +1,2 @@
+{'decay_factor': 0.998, 'dense_threshold_parameter': 3.0, 'gap': 100, 'partitions_count': 5, 'sparse_threshold_parameter': 0.8, 'sporadic_threshold_parameter': 0.3};-;-;-;-
+{'decay_factor': 0.9910904149722, 'dense_threshold_parameter': 4.2777463022793, 'gap': 0, 'partitions_count': 6, 'sparse_threshold_parameter': 0.7852516763418, 'sporadic_threshold_parameter': 0.0990367285428};1.7922973406079192;4051;1.7922973406079192;{'accuracy': 0.9753363228699552, 'ARI': 0.9117625200846174, 'AMI': 0.8805348205233018}

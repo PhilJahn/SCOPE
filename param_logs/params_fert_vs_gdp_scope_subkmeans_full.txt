@@ -1,0 +1,3 @@
+{'check_global_score': 'default', 'mdl_for_noisespace': 0, 'n_init ': 1, 'outliers': 0};-;-;-;-
+{'check_global_score': 'mdl', 'mdl_for_noisespace': 1, 'n_init ': 7, 'outliers': 0};1.8879757294011332;209;1.8879757294011332;{'accuracy': 0.9882909815645242, 'ARI': 0.955168277965783, 'AMI': 0.9328074514353503}
+{'check_global_score': 'mdl', 'mdl_for_noisespace': 1, 'n_init ': 7, 'outliers': 0};1.8903299178689617;179;1.8903299178689617;{'accuracy': 0.9885401096163428, 'ARI': 0.9560776456447885, 'AMI': 0.9342522722241733}

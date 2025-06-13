@@ -1,0 +1,1 @@
+{'alpha': 0.5, 'laplacian': 0, 'm': 0.5, 'nn': 32, 'normalize': 0, 'theta': 50, 'weighted': 0};-;-;-;-

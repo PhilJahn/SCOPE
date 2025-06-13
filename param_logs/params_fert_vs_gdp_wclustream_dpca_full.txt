@@ -1,0 +1,3 @@
+{'anormal': 1, 'dc': -0.1, 'density_threshold': -0.1, 'distance_metric': 'euclidean', 'distance_threshold': -0.1, 'gauss_cutoff': 1};-;-;-;-
+{'anormal': 0, 'dc': -0.008790358233, 'density_threshold': -0.0657148664774, 'distance_metric': 'euclidean', 'distance_threshold': -0.0815789786755, 'gauss_cutoff': 0};1.5161164445171789;2582;1.5161164445171789;{'accuracy': 0.8390632785251619, 'ARI': 0.7398144045521, 'AMI': 0.776302039965079}
+{'anormal': 1, 'dc': -0.016518895328, 'density_threshold': -0.0468855123967, 'distance_metric': 'euclidean', 'distance_threshold': 0.2182089805603, 'gauss_cutoff': 0};1.8010162928121094;3687;1.8010162928121094;{'accuracy': 0.6258096661684106, 'ARI': 0.8893514141765768, 'AMI': 0.9116648786355327}
