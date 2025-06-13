@@ -124,7 +124,9 @@ This repository allows for 14 offline clustering methods to be used (additional 
 ## Cluster Evolution Evaluation
 
 For evaluating cluster evolution, we use the Temporal Silhouette index and the Cluster Mapping Measure. The code ```evalClusterEvolution.py``` can be run to apply the metrics. However, it requires stored labels, which are only created when running the Fertility-vs-Income dataset, and is only configured to work with that dataset.
+
 The Temporal Silhouette index needs to be downloaded from the [py-temporal-silhouette repository](github.com/CN-TU/py-temporal-silhouette). The files should be placed in a ```temporalsilhouette``` directory. 
+
 CMM was reimplemented in this repository and can be found in ```cmm.py```. The assumption was made that every data point can only receive a single label, which was the case for our experiments, but deviates from the assumptions made in the original paper. The CMM score is obtained by calling ```get_cmm(x, gt, clu, w, k)```, where x is the dataset, gt are the ground truth labels, clu the cluster labels, w the weights (set to ones for our use case) and k is the number of nearest neighbors.
 
 ## Datasets
