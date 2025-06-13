@@ -136,4 +136,4 @@ py-temporal-silhouette repository](github.com/CN-TU/py-temporal-silhouette) need
 
 ## Experiment Files
 
-We added most of the files in /dicts that store the results to the repository; however, the full result pkl-files for KDDCUP99 for CluStream, CluStream-S, and CluStream-G were too large to be added to GitHub. We still  added the parameters, as well as the summary reports of the default, default_best (parameter optimization for default online parameters), and best runs for these experiments to the repository. We will make these three files accessible outside of GitHub once the Double-blind aspect is finished.
+We added most of the files in /dicts that store the results to the repository; however, the full result pkl-files for KDDCUP99 for CluStream, CluStream-W, CluStream-S, and CluStream-G were too large to be added to GitHub. We still added the parameters, as well as the summary reports of the default, default_best (parameter optimization for default online parameters), and best runs for these experiments to the repository. We will make these three files accessible outside of GitHub soon.
