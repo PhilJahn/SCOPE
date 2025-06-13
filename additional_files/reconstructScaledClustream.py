@@ -62,11 +62,9 @@ def main(args):
 	has_gen = True
 
 	offline_dict = {}
-	if not os.path.exists("../run_logs"):
-		os.mkdir("../run_logs_re")
 
 	f = open(
-		f'run_logs_re/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{args.category}_{args.startindex}.txt',
+		f'run_logs_re_sclustream/{args.ds}_{args.method}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{args.category}_{args.startindex}.txt',
 		'w',
 		newline='\n', buffering=100)
 	offline_dicts = {}
