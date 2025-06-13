@@ -1,6 +1,6 @@
 # Repository for Going Offline: An Evaluation of the Offline Phase in Stream Clustering
 
-This repository contains the code for the paper submission "Going Offline: An Evaluation of the Offline Phase in Stream Clustering" for ECML PKDD 2025.
+This repository contains the code for the paper "Going Offline: An Evaluation of the Offline Phase in Stream Clustering" for ECML PKDD 2025.
 It is based on code from the [River Stream learning repository](https://github.com/online-ml/river).
 
 # Note: as the project used some external code, to ensure that this project is functional just from the requirements file, these aspects have been commented out surrounded by ```# -- {method key(s)} --```.
