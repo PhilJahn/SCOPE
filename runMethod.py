@@ -441,6 +441,12 @@ def main(args):
             offline_dicts = utils.load_offline_parameters(args.ds, args.method, offlinemethods, args.used_full)
     # pprint(offline_dicts)
 
+    save_preds = False
+    if args.ds == "fert_vs_gdp":
+        save_preds = True
+        if not os.path.exists("preds_clueval"):
+            os.mkdir("preds_clueval")
+
     param_index = -1
     j = 0
     for param_dict in param_dicts:
@@ -627,7 +633,8 @@ def main(args):
                             pred = method.predict_one(dp)
                         pred_store.append(pred)
                     pred_store_step[i] = copy(pred_store)
-                    #np.save(f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}_base", pred_store_step[i])
+                    if save_preds:
+                        np.save(f"preds_clueval/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}_base", pred_store_step[i])
 
                     dp_store_step[i] = copy(dp_store)
                     #np.save(f"temp/data_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{i + 1}_base", dp_store_step[i])
@@ -669,7 +676,8 @@ def main(args):
                             for cmc in cmcs:
                                 for point in cmc.storage:
                                     pred_store[point.t] = clu.name
-                    #np.save(f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}", pred_store)
+                    if save_preds:
+                        np.save(f"preds_clueval/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}", pred_store)
                     batchsize = args.offline
                     for i in range(0, len(pred_store), batchsize):
                         end_batch = min(i + batchsize, len(pred_store))
@@ -755,9 +763,8 @@ def main(args):
                         else:
                             for mc_id in cur_assign:
                                 cur_pred.append(cur_mc_clu[mc_id])
-                        #np.save(
-                        #	f"preds/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{step + 1}_{alg}_{k}",
-                        #	cur_pred)
+                        if save_preds:
+                            np.save(f"preds_clueval/preds_{args.ds}_{method_name}_{args.offline}_{args.sumlimit}_{args.gennum}_{args.gpu}_{j}_{step + 1}_{alg}_{k}",cur_pred)
                         metrics, cm = getMetrics(cur_y, cur_pred)
                         f.write(f"\t\t{method_name} {j} {step + 1} {alg} {k} |{metrics}\n")
 
