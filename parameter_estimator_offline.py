@@ -7,8 +7,8 @@ from numpy.random import PCG64
 from sklearn.neighbors import KDTree
 from smac import HyperparameterOptimizationFacade, Scenario
 from ConfigSpace import Configuration, ConfigurationSpace, Float, Integer, Categorical, Constant, \
-	ForbiddenGreaterThanRelation, ForbiddenLessThanRelation, ForbiddenValueError, EqualsCondition, \
-	ForbiddenEqualsClause, ForbiddenAndConjunction
+    ForbiddenGreaterThanRelation, ForbiddenLessThanRelation, ForbiddenValueError, EqualsCondition, \
+    ForbiddenEqualsClause, ForbiddenAndConjunction
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -60,178 +60,178 @@ global param_dict
 param_dict = {}
 
 def eval_clustering(clustering, assigns):
-	amis = []
-	aris = []
-	accs = []
-	for i in assigns.keys():
-		clustering_assigned = []
-		for assign in assigns[i]:
-			#print(clustering[i], assign)
-			clustering_assigned.append(clustering[i][assign])
-		y_step = labels[i]
-		length = len(assigns[i])
-		metrics, _ = getMetrics(y_step, clustering_assigned)
-		amis.extend([metrics["AMI"]] * length)
-		aris.extend([metrics["ARI"]] * length)
-		accs.extend([metrics["accuracy"]] * length)
-	# print(len(amis))
-	ami = float(np.mean(amis))
-	ari = float(np.mean(aris))
-	acc = float(np.mean(accs))
+    amis = []
+    aris = []
+    accs = []
+    for i in assigns.keys():
+        clustering_assigned = []
+        for assign in assigns[i]:
+            #print(clustering[i], assign)
+            clustering_assigned.append(clustering[i][assign])
+        y_step = labels[i]
+        length = len(assigns[i])
+        metrics, _ = getMetrics(y_step, clustering_assigned)
+        amis.extend([metrics["AMI"]] * length)
+        aris.extend([metrics["ARI"]] * length)
+        accs.extend([metrics["accuracy"]] * length)
+    # print(len(amis))
+    ami = float(np.mean(amis))
+    ari = float(np.mean(aris))
+    acc = float(np.mean(accs))
 
-	global cur_best_score
-	global best_performance
-	if ami + ari > cur_best_score:
-		cur_best_score = ami + ari
-		best_performance = {"accuracy": acc, "ARI": ari, "AMI": ami}
+    global cur_best_score
+    global best_performance
+    if ami + ari > cur_best_score:
+        cur_best_score = ami + ari
+        best_performance = {"accuracy": acc, "ARI": ari, "AMI": ami}
 
-	return ami + ari
+    return ami + ari
 
 
 def get_centroid(mcs):
-	data_dict = {}
-	for i in mcs.keys():
-		mcsi = mcs[i]
-		datai = []
-		for mc in mcsi:
-			datai.append(dict_to_np(mc[2]))
-		data_dict[i] = datai
-	return data_dict
+    data_dict = {}
+    for i in mcs.keys():
+        mcsi = mcs[i]
+        datai = []
+        for mc in mcsi:
+            datai.append(dict_to_np(mc[2]))
+        data_dict[i] = datai
+    return data_dict
 
 
 def get_multi_centroid(mcs, assign):
-	data_dict = {}
-	new_assign_dict = {}
-	for i in mcs.keys():
-		mcsi = mcs[i]
-		#print(mcsi)
-		assigni = assign[i]
-		new_assigni = [-1]*len(assigni)
-		datai = []
-		for mc in mcsi:
-			mcid = mc[1]
-			cur_pos = len(datai)
-			for _ in range(int(mc[4])):
-				datai.append(dict_to_np(mc[2]))
-			for j in range(len(assigni)):
-				if assigni[j] == mcid:
-					new_assigni[j] = cur_pos
-		data_dict[i] = datai
-		new_assign_dict[i] = new_assigni
-	return data_dict, new_assign_dict
+    data_dict = {}
+    new_assign_dict = {}
+    for i in mcs.keys():
+        mcsi = mcs[i]
+        #print(mcsi)
+        assigni = assign[i]
+        new_assigni = [-1]*len(assigni)
+        datai = []
+        for mc in mcsi:
+            mcid = mc[1]
+            cur_pos = len(datai)
+            for _ in range(int(mc[4])):
+                datai.append(dict_to_np(mc[2]))
+            for j in range(len(assigni)):
+                if assigni[j] == mcid:
+                    new_assigni[j] = cur_pos
+        data_dict[i] = datai
+        new_assign_dict[i] = new_assigni
+    return data_dict, new_assign_dict
 
 def get_gendata(mcs, seed, weight_scale):
-	data_dict = {}
-	new_assign_dict = {}
-	generator = np.random.Generator(PCG64(seed))
-	data_reconstructor = DataReconstructor()
-	for i in mcs.keys():
-		dps_i = dps[i]
-		mcsi = mcs[i]
-		data_new, _ = data_reconstructor.reconstruct_data(micro_clusters=mcsi, num=1000, radius_mult=param_dict['mc_r_factor'],
-		                                    generator=generator, use_centroid=True, mc_import=True, weight_scale=weight_scale)
-		data_new = dps_to_np(data_new)
-		kdtree = KDTree(data_new)
-		assign_new = kdtree.query(dps_i, 1, return_distance=False).flatten()
-		#print("assign", assign_new.shape)
-		#print("dps", dps_i.shape)
-		data_dict[i] = data_new
-		#print("gen", data_new.shape)
-		new_assign_dict[i] = assign_new
-	#print(data_dict)
-	return data_dict, new_assign_dict
+    data_dict = {}
+    new_assign_dict = {}
+    generator = np.random.Generator(PCG64(seed))
+    data_reconstructor = DataReconstructor()
+    for i in mcs.keys():
+        dps_i = dps[i]
+        mcsi = mcs[i]
+        data_new, _ = data_reconstructor.reconstruct_data(micro_clusters=mcsi, num=1000, radius_mult=param_dict['mc_r_factor'],
+                                            generator=generator, use_centroid=True, mc_import=True, weight_scale=weight_scale)
+        data_new = dps_to_np(data_new)
+        kdtree = KDTree(data_new)
+        assign_new = kdtree.query(dps_i, 1, return_distance=False).flatten()
+        #print("assign", assign_new.shape)
+        #print("dps", dps_i.shape)
+        data_dict[i] = data_new
+        #print("gen", data_new.shape)
+        new_assign_dict[i] = assign_new
+    #print(data_dict)
+    return data_dict, new_assign_dict
 
 def get_scaleddata(mcs, seed, weight_scale):
-	data_dict = {}
-	new_assign_dict = {}
-	generator = np.random.Generator(PCG64(seed))
-	data_reconstructor = DataReconstructor()
-	for i in mcs.keys():
-		dps_i = dps[i]
-		mcsi = mcs[i]
-		data_new, _ = data_reconstructor.reconstruct_data(micro_clusters=mcsi, num=1000, radius_mult=0,
-		                                    generator=generator, use_centroid=True, mc_import=True, weight_scale=False)
-		data_new = dps_to_np(data_new)
-		kdtree = KDTree(data_new)
-		assign_new = kdtree.query(dps_i, 1, return_distance=False).flatten()
-		#print("assign", assign_new.shape)
-		#print("dps", dps_i.shape)
-		data_dict[i] = data_new
-		#print("gen", data_new.shape)
-		new_assign_dict[i] = assign_new
-	#print(data_dict)
-	return data_dict, new_assign_dict
+    data_dict = {}
+    new_assign_dict = {}
+    generator = np.random.Generator(PCG64(seed))
+    data_reconstructor = DataReconstructor()
+    for i in mcs.keys():
+        dps_i = dps[i]
+        mcsi = mcs[i]
+        data_new, _ = data_reconstructor.reconstruct_data(micro_clusters=mcsi, num=1000, radius_mult=0,
+                                            generator=generator, use_centroid=True, mc_import=True, weight_scale=False)
+        data_new = dps_to_np(data_new)
+        kdtree = KDTree(data_new)
+        assign_new = kdtree.query(dps_i, 1, return_distance=False).flatten()
+        #print("assign", assign_new.shape)
+        #print("dps", dps_i.shape)
+        data_dict[i] = data_new
+        #print("gen", data_new.shape)
+        new_assign_dict[i] = assign_new
+    #print(data_dict)
+    return data_dict, new_assign_dict
 
 
 def train_clustream(config: Configuration, seed: int = 0) -> float:
-	clustering_dict = {}
-	config_dict = config.get_dictionary()
-	config_dict["alg_seed"] = seed
-	config_dict["n_clusters"] = class_num
-	data = get_centroid(mcs)
-	for i in assignment.keys():
-		clustering, _ = perform_clustering(data[i], clusterer, config_dict)
-		#print(clustering)
-		clustering_dict[i] = clustering
-	score = eval_clustering(clustering_dict, assignment)
-	print("CluStream", clusterer, param_dict, config_dict, score)
-	return 2 - score
+    clustering_dict = {}
+    config_dict = config.get_dictionary()
+    config_dict["alg_seed"] = seed
+    config_dict["n_clusters"] = class_num
+    data = get_centroid(mcs)
+    for i in assignment.keys():
+        clustering, _ = perform_clustering(data[i], clusterer, config_dict)
+        #print(clustering)
+        clustering_dict[i] = clustering
+    score = eval_clustering(clustering_dict, assignment)
+    print("CluStream", clusterer, param_dict, config_dict, score)
+    return 2 - score
 
 def train_wclustream(config: Configuration, seed: int = 0) -> float:
-	clustering_dict = {}
-	config_dict = config.get_dictionary()
-	config_dict["alg_seed"] = seed
-	config_dict["n_clusters"] = class_num
-	data, new_assign = get_multi_centroid(mcs, assignment)
-	for i in new_assign.keys():
-		clustering, _ = perform_clustering(data[i], clusterer, config_dict)
-		#print(clustering)
-		clustering_dict[i] = clustering
-	score = eval_clustering(clustering_dict, new_assign)
-	print("Weighted CluStream", clusterer, param_dict, config_dict, score)
-	return 2 - score
+    clustering_dict = {}
+    config_dict = config.get_dictionary()
+    config_dict["alg_seed"] = seed
+    config_dict["n_clusters"] = class_num
+    data, new_assign = get_multi_centroid(mcs, assignment)
+    for i in new_assign.keys():
+        clustering, _ = perform_clustering(data[i], clusterer, config_dict)
+        #print(clustering)
+        clustering_dict[i] = clustering
+    score = eval_clustering(clustering_dict, new_assign)
+    print("Weighted CluStream", clusterer, param_dict, config_dict, score)
+    return 2 - score
 
 def train_scaledclustream(config: Configuration, seed: int = 0) -> float:
-	clustering_dict = {}
-	config_dict = config.get_dictionary()
-	config_dict["alg_seed"] = seed
-	config_dict["n_clusters"] = class_num
-	data, new_assign = get_scaleddata(mcs, seed, False)
-	for i in new_assign.keys():
-		clustering, _ = perform_clustering(data[i], clusterer, config_dict)
-		#print(clustering)
-		clustering_dict[i] = clustering
-	score = eval_clustering(clustering_dict, new_assign)
-	print("Scaled CluStream", clusterer, param_dict, config_dict, score)
-	return 2 - score
+    clustering_dict = {}
+    config_dict = config.get_dictionary()
+    config_dict["alg_seed"] = seed
+    config_dict["n_clusters"] = class_num
+    data, new_assign = get_scaleddata(mcs, seed, False)
+    for i in new_assign.keys():
+        clustering, _ = perform_clustering(data[i], clusterer, config_dict)
+        #print(clustering)
+        clustering_dict[i] = clustering
+    score = eval_clustering(clustering_dict, new_assign)
+    print("Scaled CluStream", clusterer, param_dict, config_dict, score)
+    return 2 - score
 
 def train_scope_full(config: Configuration, seed: int = 0) -> float:
-	clustering_dict = {}
-	config_dict = config.get_dictionary()
-	config_dict["alg_seed"] = seed
-	config_dict["n_clusters"] = class_num
-	data, new_assign = get_gendata(mcs, seed, False)
-	for i in new_assign.keys():
-		clustering, _ = perform_clustering(data[i], clusterer, config_dict)
-		#print(clustering)
-		clustering_dict[i] = clustering
-	score = eval_clustering(clustering_dict, new_assign)
-	print("SCOPE (full)", clusterer, param_dict, config_dict, score)
-	return 2 - score
+    clustering_dict = {}
+    config_dict = config.get_dictionary()
+    config_dict["alg_seed"] = seed
+    config_dict["n_clusters"] = class_num
+    data, new_assign = get_gendata(mcs, seed, False)
+    for i in new_assign.keys():
+        clustering, _ = perform_clustering(data[i], clusterer, config_dict)
+        #print(clustering)
+        clustering_dict[i] = clustering
+    score = eval_clustering(clustering_dict, new_assign)
+    print("SCOPE (full)", clusterer, param_dict, config_dict, score)
+    return 2 - score
 
 def train_scope(config: Configuration, seed: int = 0) -> float:
-	clustering_dict = {}
-	config_dict = config.get_dictionary()
-	config_dict["alg_seed"] = seed
-	config_dict["n_clusters"] = class_num
-	data, new_assign = get_gendata(mcs, seed, True)
-	for i in new_assign.keys():
-		clustering, _ = perform_clustering(data[i], clusterer, config_dict)
-		#print(clustering)
-		clustering_dict[i] = clustering
-	score = eval_clustering(clustering_dict, new_assign)
-	print("SCOPE", clusterer, param_dict, config_dict, score)
-	return 2 - score
+    clustering_dict = {}
+    config_dict = config.get_dictionary()
+    config_dict["alg_seed"] = seed
+    config_dict["n_clusters"] = class_num
+    data, new_assign = get_gendata(mcs, seed, True)
+    for i in new_assign.keys():
+        clustering, _ = perform_clustering(data[i], clusterer, config_dict)
+        #print(clustering)
+        clustering_dict[i] = clustering
+    score = eval_clustering(clustering_dict, new_assign)
+    print("SCOPE", clusterer, param_dict, config_dict, score)
+    return 2 - score
 
 
 configspaces = {}
@@ -355,122 +355,125 @@ trainmethods["scope"] = train_scope
 
 # 86400 * 5
 def run_parameter_estimation(method, offline_method, time_budget, seed):
-	print("Time Budget:", time_budget)
-	scenario = Scenario(configspaces[offline_method], deterministic=False, use_default_config=True, walltime_limit=time_budget,
-	                    n_trials=100000, seed=seed, name=f"{data_name}_{method}_{offline_method}_{time_budget}_{seed}")
-	smac = HyperparameterOptimizationFacade(scenario, trainmethods[method], overwrite=True)
-	incumbent = smac.optimize()
-	run_num = len(smac.runhistory.items())
-	return incumbent, 2 - smac.runhistory.get_min_cost(incumbent), run_num
+    print("Time Budget:", time_budget)
+    scenario = Scenario(configspaces[offline_method], deterministic=False, use_default_config=True, walltime_limit=time_budget,
+                        n_trials=100000, seed=seed, name=f"{data_name}_{method}_{offline_method}_{time_budget}_{seed}")
+    smac = HyperparameterOptimizationFacade(scenario, trainmethods[method], overwrite=True)
+    incumbent = smac.optimize()
+    run_num = len(smac.runhistory.items())
+    return incumbent, 2 - smac.runhistory.get_min_cost(incumbent), run_num
 
 
 def import_mcs(data_name, full_data=None):
 
-	mcs = np.load(f"./param_data/mcs_{data_name}.npy", allow_pickle=True)
-	#print(mcs.shape)
-	steps = np.unique(mcs[:, 0])
-	#print(steps)
-	assign = np.load(f"./param_data/assign_{data_name}.npy")
-	if full_data is None:
-		data_x, data_y = load_data(f"{data_name}", 0)
-	else:
-		data_x, data_y = load_data(f"{full_data}", 0)
-	#print(data_x.shape, data_y.shape)
-	#print(assign.shape)
-	mindex = 0
-	uniques = np.unique(data_y, return_counts=False)
+    mcs = np.load(f"./param_data/mcs_{data_name}.npy", allow_pickle=True)
+    #print(mcs.shape)
+    steps = np.unique(mcs[:, 0])
+    #print(steps)
+    assign = np.load(f"./param_data/assign_{data_name}.npy")
+    if full_data is None:
+        data_x, data_y = load_data(f"{data_name}", 0)
+    else:
+        data_x, data_y = load_data(f"{full_data}", 0)
+    #print(data_x.shape, data_y.shape)
+    #print(assign.shape)
+    mindex = 0
+    uniques = np.unique(data_y, return_counts=False)
 
-	data_x_dict = {}
-	data_y_dict = {}
-	mcs_dict = {}
-	assign_dict = {}
+    data_x_dict = {}
+    data_y_dict = {}
+    mcs_dict = {}
+    assign_dict = {}
 
-	i = 0
+    i = 0
 
-	for step in sorted(steps):
-		data_x_step = data_x[mindex:step + 1]
-		data_y_step = data_y[mindex:step + 1]
+    for step in sorted(steps):
+        data_x_step = data_x[mindex:step + 1]
+        data_y_step = data_y[mindex:step + 1]
 
-		assign_step = assign[mindex:step + 1]
+        assign_step = assign[mindex:step + 1]
 
-		mcs_step = mcs[mcs[:, 0] == step]
-		data_x_dict[i] = data_x_step
-		data_y_dict[i] = data_y_step
-		mcs_dict[i] = mcs_step
-		assign_dict[i] = assign_step
-		mindex = step + 1
-		i += 1
+        mcs_step = mcs[mcs[:, 0] == step]
+        data_x_dict[i] = data_x_step
+        data_y_dict[i] = data_y_step
+        mcs_dict[i] = mcs_step
+        assign_dict[i] = assign_step
+        mindex = step + 1
+        i += 1
 
-	#print(mcs_dict)
-	#print(assign_dict)
+    #print(mcs_dict)
+    #print(assign_dict)
 
-	return mcs_dict, assign_dict, data_x_dict, data_y_dict, uniques
+    return mcs_dict, assign_dict, data_x_dict, data_y_dict, uniques
 
 
 if __name__ == '__main__':
 
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--ds', default="densired10", type=str, help='Used stream data set')
-	parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
-	parser.add_argument('--offline', default="kmeans", type=str, help='Offline Clustering Method')
-	parser.add_argument('--use_full', default=0, type=int, help='Use full datset')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ds', default="densired10", type=str, help='Used stream data set')
+    parser.add_argument('--method', default="clustream", type=str, help='Stream Clustering Method')
+    parser.add_argument('--offline', default="kmeans", type=str, help='Offline Clustering Method')
+    parser.add_argument('--use_full', default=0, type=int, help='Use full datset')
 
-	args = parser.parse_args()
-	print(args, flush=True)
+    args = parser.parse_args()
+    print(args, flush=True)
 
-	method = args.method
-	offline_method = args.offline
-	dataset = args.ds
-	args.use_full = args.use_full == 1
+    method = args.method
+    offline_method = args.offline
+    dataset = args.ds
+    args.use_full = args.use_full == 1
 
-	clusterer = offline_method
+    clusterer = offline_method
 
-	#if method not in clustream_methods and method not in offline_methods:
-	#	time_budget = 18000 # 5 hours
-	#else:
-	#	time_budget = 3600
+    #if method not in clustream_methods and method not in offline_methods:
+    #	time_budget = 18000 # 5 hours
+    #else:
+    #	time_budget = 3600
 
-	if not os.path.exists("param_logs"):
-		os.mkdir("param_logs")
-	if args.use_full:
-		seed_num = 2
-		time_budget = 86400
-		f = open(f'param_logs/params_{dataset}_{method}_{offline_method}_full.txt', 'w', buffering=1)
-	else:
-		seed_num = 6
-		time_budget = 18000
-		f = open(f'param_logs/params_{dataset}_{method}_{offline_method}.txt', 'w', buffering=1)
-	time_budget = 4*time_budget/5
-	f.write(f"{configspaces[offline_method].get_default_configuration().get_dictionary()};-;-;-;-\n")
+    if not os.path.exists("param_logs"):
+        os.mkdir("param_logs")
+    if args.use_full:
+        seed_num = 2
+        time_budget = 86400
+        f = open(f'param_logs/params_{dataset}_{method}_{offline_method}_full.txt', 'w', buffering=1)
+    else:
+        seed_num = 6
+        time_budget = 18000
+        f = open(f'param_logs/params_{dataset}_{method}_{offline_method}.txt', 'w', buffering=1)
+    time_budget = 4*time_budget/5
+    f.write(f"{configspaces[offline_method].get_default_configuration().get_dictionary()};-;-;-;-\n")
 
-	data_name = dataset
-	param_dicts = utils.load_parameters(args.ds, "clustream", args.use_full)
+    data_name = dataset
+    param_dicts = utils.load_parameters(args.ds, "clustream", args.use_full)
 
-	for run in range(seed_num):
-		param_dict = param_dicts[5*run]
-		if run == 0:
-			run = "default"
-		else:
-			run = run-1
-		run_index = run
+    for run in range(seed_num):
+        param_dict = param_dicts[5*run]
+        if run == 0:
+            run = "default"
+        else:
+            run = run-1
+        run_index = run
 
-		cur_best_score = -1
-		best_performance = -1
-		if not args.use_full:
-			data_name = dataset + "_subset_" + str(run)
-			mcs, assignment, X, y, y_uniques = import_mcs(data_name)
-		else:
-			data_name = dataset + "_" + str(run)
-			mcs, assignment, X, y, y_uniques = import_mcs(data_name, dataset)
+        cur_best_score = -1
+        best_performance = -1
+        if not args.use_full:
+            data_name = dataset + "_subset_" + str(run)
+            mcs, assignment, X, y, y_uniques = import_mcs(data_name)
+        else:
+            data_name = dataset + "_" + str(run)
+            mcs, assignment, X, y, y_uniques = import_mcs(data_name, dataset)
 
 
 
-		data_dim = len(X[0])
-		data_length = len(y)
-		class_num = len(y_uniques)
-		dps = X
-		labels = y
+        data_dim = len(X[0])
+        data_length = len(y)
+        if dataset == "kddcup":
+            class_num = 23
+        else:
+            class_num = len(y_uniques)
+        dps = X
+        labels = y
 
-		best_params, score, run_num = run_parameter_estimation(method, offline_method, time_budget, 0)
-		f.write(f"{best_params.get_dictionary()};{score};{run_num};{cur_best_score};{best_performance}\n")
-	f.close()
+        best_params, score, run_num = run_parameter_estimation(method, offline_method, time_budget, 0)
+        f.write(f"{best_params.get_dictionary()};{score};{run_num};{cur_best_score};{best_performance}\n")
+    f.close()
