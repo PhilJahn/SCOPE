@@ -57,7 +57,7 @@ Afterward, it is possible to run the offline optimization with ```parameter_esti
 | --ds                      | densired10        | Dataset to perform the optimization on  |
 | --use_full                | 0                 | Whether to use the full dataset or subsets, Integer Boolean  |
 
-As the initial runs of CluStream-S failed to terminate on KDDCUP99, we used ```reconstructScaledCluStream.py``` to obtain the results based on the stored sampled data of the initial experiments. The methods should be equivalent to the ```flex_offline``` part of ```runMethod.py```. In practice, these were only included for transparency, as the regular ```runMethod.py``` should be preferred and is required before these can be used. They offer the options of ```nkest``` for partitioning approaches, ```density``` for all density-based approaches, ```vardbscan``` for density-connectivity approaches and ```kest``` for X-Means. 
+We used the ```reconstruct....py``` to obtain the results based on the stored sampled data/intermediary results of the initial experiments. The methods should be equivalent to the ```flex_offline``` part of ```runMethod.py```. In practice, these were only included for transparency, as the regular ```runMethod.py``` should be preferred and is required before these can be used.
 
 ## Offline Reconstruction Quality
 
@@ -121,10 +121,17 @@ This repository allows for 14 offline clustering methods to be used (additional 
 | DBHD                 | dbhd          | already in repository in folder ```offline_methods``` |
 | CluStream-O k=100/x | nooffline | included, only available for CluStream |
 
+## Cluster Evolution Evaluation
+
+For evaluating cluster evolution, we use the Temporal Silhouette index and the Cluster Mapping Measure. The code ```evalClusterEvolution.py``` can be run to apply the metrics. However, it requires stored labels, which are only created when running the Fertility-vs-Income dataset, and is only configured to work with that dataset.
+The Temporal Silhouette index needs to be downloaded from the [py-temporal-silhouette repository](github.com/CN-TU/py-temporal-silhouette). The files should be placed in a ```temporalsilhouette``` directory. 
+CMM was reimplemented in this repository and can be found in ```cmm.py```. The assumption was made that every data point can only receive a single label, which was the case for our experiments, but deviates from the assumptions made in the original paper. The CMM score is obtained by calling ```get_cmm(x, gt, clu, w, k)```, where x is the dataset, gt are the ground truth labels, clu the cluster labels, w the weights (set to ones for our use case) and k is the number of nearest neighbors.
+
 ## Datasets
 
-Additional datasets were taken from the [USP DS repository](https://sites.google.com/view/uspdsrepository), [Computational Intelligence Group @ UFSCar's data stream repository](https://github.com/CIG-UFSCar/DS_Datasets) and [Tomas Barton's Clustering benchmark repository](https://github.com/deric/clustering-benchmark). The dataset .csv files of the first two only need to be added to the ```data``` folder for the datasets described in the paper. For the Clustering benchmark, the ```artificial``` folder from [here](https://github.com/deric/clustering-benchmark/tree/master/src/main/resources/datasets) needs to be added to the ````data``` directory. The DENSIRED datasets are already available in this repository.
+Additional datasets were taken from the [USP DS repository](https://sites.google.com/view/uspdsrepository), [Computational Intelligence Group @ UFSCar's data stream repository](https://github.com/CIG-UFSCar/DS_Datasets) and [Tomas Barton's Clustering benchmark repository](https://github.com/deric/clustering-benchmark). The dataset .csv files of the first two only need to be added to the ```data``` folder for the datasets described in the paper. For the Clustering benchmark, the ```artificial``` folder from [here](https://github.com/deric/clustering-benchmark/tree/master/src/main/resources/datasets) needs to be added to the ````data``` directory. For the Fertility-vs-Income dataset, the content of ```fert_vs_gdp.arff``` from the the [real-world data folder](https://github.com/CN-TU/py-temporal-silhouette/tree/main/dataR) of the [
+py-temporal-silhouette repository](github.com/CN-TU/py-temporal-silhouette) needs to be added inside a ```real-world``` directory in the ````data``` directory. The DENSIRED datasets are already available in this repository.
 
 ## Experiment Files
 
-We added most of the files in /dicts that store the results to the repository however the full result pkl-files for KDDCUP99 for CluStream, CluStream-S and CluStream-G were too large to be added on GitHub. We still  added the parameters, as well as the summary reports of the default, default_best (parameter optimization for default online parameters) and best runs for these experiments to the repository. We will make these three files accessible outside of GitHub once the Double-blind aspect is finished.
+We added most of the files in /dicts that store the results to the repository; however, the full result pkl-files for KDDCUP99 for CluStream, CluStream-S, and CluStream-G were too large to be added to GitHub. We still  added the parameters, as well as the summary reports of the default, default_best (parameter optimization for default online parameters), and best runs for these experiments to the repository. We will make these three files accessible outside of GitHub once the Double-blind aspect is finished.
