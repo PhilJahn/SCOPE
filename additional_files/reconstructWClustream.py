@@ -102,6 +102,10 @@ def main(args):
         offlinemethods.append("hdbscan")
         offlinemethods.append("rnndbscan")
         offlinemethods.append("mdbscan")
+    elif args.category == "dpcacat":
+        offlinemethods.append("dpca")
+    elif args.category == "snndpccat":
+        offlinemethods.append("snndpc")
     elif args.category == "dbhdcat":
         offlinemethods.append("dbhd")
     elif args.category == "mdbscancat":
@@ -115,6 +119,10 @@ def main(args):
         offlinemethods.append("kmeans")
         offlinemethods.append("subkmeans")
         offlinemethods.append("spectral")
+        offlinemethods.append("spectacl")
+    elif args.category == "scarcat":
+        offlinemethods.append("scar")
+    elif args.category == "spectaclcat":
         offlinemethods.append("spectacl")
     elif args.category == "nkest":
         offlinemethods.append("kmeans")
